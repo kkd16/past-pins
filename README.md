@@ -21,7 +21,8 @@ The native dependencies used here are included in Expo Go for SDK 57. A developm
 - `src/theme.ts`: shared colors, typography, spacing, and motion.
 - `src/components/`: shared controls and screen layout. Scrollable children own their bottom safe-area inset.
 - `src/hooks/`: visits state and keyboard visibility.
-- `src/countries/`: the country screen, map, checklist, catalog/search, and storage interface.
+- `src/screens/`: full screens that compose components and hooks.
+- `src/countries/`: the map, checklist, catalog/search, and storage interface.
 - `src/storage/`: storage implementations; `visits.ts` selects the app's backend.
 - `src/app/`: Expo Router entry points and dependency wiring.
 

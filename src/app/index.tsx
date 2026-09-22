@@ -1,4 +1,4 @@
-import { CountriesScreen } from '../countries/CountriesScreen';
+import { CountriesScreen } from '../screens/CountriesScreen';
 import { visitStorage } from '../storage/visits';
 
 export default function HomeScreen() {

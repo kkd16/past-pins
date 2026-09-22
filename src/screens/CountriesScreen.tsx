@@ -2,20 +2,20 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useState } from 'react';
 import { Keyboard, StyleSheet } from 'react-native';
 
-import { Screen } from '../components/Screen';
 import { AppText } from '../components/AppText';
+import { Screen } from '../components/Screen';
 import { SearchField } from '../components/SearchField';
+import { countries } from '../countries/catalog';
+import { CountriesHeader } from '../countries/CountriesHeader';
+import { CountryChecklist } from '../countries/CountryChecklist';
+import { ProgressSummary } from '../countries/ProgressSummary';
+import type { CountryId } from '../countries/types';
+import type { VisitStorage } from '../countries/visit-storage';
+import { VisitsFeedback } from '../countries/VisitsFeedback';
+import { WorldMap } from '../countries/WorldMap';
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible';
-import { theme } from '../theme';
-import { CountriesHeader } from './CountriesHeader';
-import { CountryChecklist } from './CountryChecklist';
-import { ProgressSummary } from './ProgressSummary';
-import { VisitsFeedback } from './VisitsFeedback';
-import { WorldMap } from './WorldMap';
-import { countries } from './catalog';
-import type { VisitStorage } from './visit-storage';
 import { useVisitedCountries } from '../hooks/useVisitedCountries';
-import type { CountryId } from './types';
+import { theme } from '../theme';
 
 export function CountriesScreen({ storage }: { storage: VisitStorage }) {
   const [query, setQuery] = useState('');
