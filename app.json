@@ -3,14 +3,21 @@
     "name": "PastPins",
     "slug": "past-pins",
     "version": "1.0.0",
+    "platforms": ["ios"],
+    "scheme": "past-pins",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
     },
-    "platforms": [
-      "ios"
-    ]
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
