@@ -1,6 +1,6 @@
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { theme } from '../../theme';
+import { theme } from '../theme';
 
 const paths = {
   check: 'm5 12 4 4L19 6',
@@ -10,15 +10,17 @@ const paths = {
   compass: 'm16 8-3 5-5 3 3-5 5-3Z',
 } as const;
 
+export type IconProps = {
+  name: keyof typeof paths;
+  size?: number;
+  color?: string;
+};
+
 export function Icon({
   name,
   size = theme.size.icon,
   color = theme.color.textMuted,
-}: {
-  name: keyof typeof paths;
-  size?: number;
-  color?: string;
-}) {
+}: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
       {name === 'search' && (

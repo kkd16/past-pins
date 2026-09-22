@@ -3,9 +3,9 @@ import { useMemo } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppText } from '../../components/ui/AppText';
-import { theme } from '../../theme';
-import { searchCountries } from './catalog';
+import { AppText } from '../components/AppText';
+import { theme } from '../theme';
+import { searchCountries } from './search';
 import { CountryRow } from './CountryRow';
 import type { CountryId } from './types';
 

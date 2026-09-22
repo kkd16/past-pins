@@ -32,8 +32,5 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
-  "private": true,
-  "overrides": {
-    "react-native-screens": "~4.26.2"
-  }
+  "private": true
 }

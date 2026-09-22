@@ -1,5 +1,6 @@
-import { CountriesScreen } from '../features/countries/CountriesScreen';
+import { CountriesScreen } from '../countries/CountriesScreen';
+import { visitStorage } from '../storage/visits';
 
 export default function HomeScreen() {
-  return <CountriesScreen />;
+  return <CountriesScreen storage={visitStorage} />;
 }

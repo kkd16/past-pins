@@ -3,9 +3,9 @@ import { describe, expect, test } from 'bun:test';
 import {
   countries,
   countryIds,
-  searchCountries,
   worldMap,
-} from '../src/features/countries/catalog';
+} from '../src/countries/catalog';
+import { searchCountries } from '../src/countries/search';
 
 describe('single-source country catalog', () => {
   test('every checklist entry has a unique ID and a map shape', () => {
@@ -26,5 +26,17 @@ describe('single-source country catalog', () => {
     expect(searchCountries('xk').map(({ name }) => name)).toEqual(['Kosovo']);
     expect(searchCountries('not-a-country')).toEqual([]);
     expect(searchCountries('')).toHaveLength(countries.length);
+  });
+
+  test('search preserves catalog order and returns the original country objects', () => {
+    expect(searchCountries('   ')).toEqual([...countries]);
+    const results = searchCountries('island');
+    expect(results.length).toBeGreaterThan(1);
+    expect(results).toEqual(
+      [...results].sort((a, b) => a.name.localeCompare(b.name, 'en')),
+    );
+    for (const result of results) {
+      expect(countries.find(({ id }) => id === result.id)).toBe(result);
+    }
   });
 });

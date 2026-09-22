@@ -8,7 +8,7 @@ import {
   type PressableProps,
 } from 'react-native';
 
-import { theme } from '../../theme';
+import { theme } from '../theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 

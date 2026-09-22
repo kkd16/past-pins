@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
-import { theme } from '../../theme';
+import { theme } from '../theme';
 import { AppText } from './AppText';
 
 export type ButtonProps = Omit<PressableProps, 'children'> & {

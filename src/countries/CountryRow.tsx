@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { CheckRow } from '../../components/ui/CheckRow';
+import { CheckRow } from '../components/CheckRow';
 import type { Country, CountryId } from './types';
 
 export const CountryRow = memo(function CountryRow({

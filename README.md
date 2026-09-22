@@ -18,12 +18,14 @@ The native dependencies used here are included in Expo Go for SDK 57. A developm
 
 ## Where changes belong
 
-- `src/theme.ts`: the permanent dark palette, text variants, spacing, radii, control sizes, and motion. Change shared visual decisions here.
-- `src/components/ui/`: reusable text, buttons, search, and check rows. Native props and layout styles remain available; common interaction styling lives in these components.
-- `src/features/countries/`: the screen, map, checklist, catalog, and local persistence. Components receive data and callbacks; the visits hook owns state.
-- `src/app/`: Expo Router entry points only.
+- `src/theme.ts`: shared colors, typography, spacing, and motion.
+- `src/components/`: shared controls and screen layout. Scrollable children own their bottom safe-area inset.
+- `src/hooks/`: visits state and keyboard visibility.
+- `src/countries/`: the country screen, map, checklist, catalog/search, and storage interface.
+- `src/storage/`: storage implementations; `visits.ts` selects the app's backend.
+- `src/app/`: Expo Router entry points and dependency wiring.
 
-Use the existing native components and shared controls before adding abstractions. Add a shared token or variant when it represents a real shared choice. There is no light theme or theme provider.
+Prefer existing controls and native props. Keep country-specific code together; extract shared pieces when they have a clear use. There is no light theme or theme provider.
 
 ## Map and checklist data
 
@@ -36,6 +38,8 @@ To update data, use `bunx expo install @svg-maps/world --bun` and review the ups
 ## Saved visits
 
 AsyncStorage stores `{ version: 1, visitedIds: [...] }` under `past-pins.visits.v1`. Reads finish before editing is enabled; writes are serialized so quick checks cannot save out of order. Failed saves show a retry action. Invalid saved data stays untouched unless the user explicitly confirms a reset.
+
+To swap storage, implement [VisitStorage](src/countries/visit-storage.ts) (`load` and `save`) and select it in `src/storage/visits.ts`. The route injects it; the UI and hook do not depend on AsyncStorage or JSON. Keep the adapter stable for the screen's lifetime and preserve validation, ordered snapshot writes, and error handling. Migrate existing visits explicitly when changing backends.
 
 ## Attribution
 

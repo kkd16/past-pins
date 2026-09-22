@@ -1,23 +1,23 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { countryIds } from './catalog';
-import type { CountryId } from './types';
-import { createVisitStorage, InvalidVisitsError } from './visit-storage';
+import { countryIds } from '../countries/catalog';
+import { InvalidVisitsError, type VisitStorage } from '../countries/visit-storage';
+import type { CountryId } from '../countries/types';
 
-const storage = createVisitStorage(AsyncStorage, countryIds);
+type LoadState =
+  | { status: 'loading' | 'ready'; error: null }
+  | { status: 'load-error'; error: { message: string; canReset: boolean } };
 
-export function useVisitedCountries() {
+export type VisitedCountries = ReturnType<typeof useVisitedCountries>;
+
+export function useVisitedCountries(storage: VisitStorage) {
   const [visitedIds, setVisitedIds] = useState<ReadonlySet<CountryId>>(
-    new Set(),
+    () => new Set(),
   );
-  const [status, setStatus] = useState<'loading' | 'ready' | 'load-error'>(
-    'loading',
-  );
-  const [loadError, setLoadError] = useState<{
-    message: string;
-    canReset: boolean;
-  } | null>(null);
+  const [{ status, error: loadError }, setLoadState] = useState<LoadState>({
+    status: 'loading',
+    error: null,
+  });
   const [saveError, setSaveError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const latestIds = useRef(visitedIds);
@@ -33,39 +33,43 @@ export function useVisitedCountries() {
         if (!active) return;
         latestIds.current = ids;
         setVisitedIds(ids);
-        setLoadError(null);
-        setStatus('ready');
+        setLoadState({ status: 'ready', error: null });
       })
       .catch((error: unknown) => {
         if (!active) return;
-        setLoadError({
-          message:
-            error instanceof InvalidVisitsError
-              ? error.message
-              : 'Could not load your visits. Try again.',
-          canReset: error instanceof InvalidVisitsError,
+        setLoadState({
+          status: 'load-error',
+          error: {
+            message:
+              error instanceof InvalidVisitsError
+                ? error.message
+                : 'Could not load your visits. Try again.',
+            canReset: error instanceof InvalidVisitsError,
+          },
         });
-        setStatus('load-error');
       });
     return () => {
       active = false;
       mounted.current = false;
     };
-  }, [attempt]);
+  }, [attempt, storage]);
 
-  const persist = useCallback((ids: ReadonlySet<CountryId>) => {
-    const currentRevision = ++revision.current;
-    storage
-      .save(ids)
-      .then(() => {
-        if (mounted.current && revision.current === currentRevision)
-          setSaveError(false);
-      })
-      .catch(() => {
-        if (mounted.current && revision.current === currentRevision)
-          setSaveError(true);
-      });
-  }, []);
+  const persist = useCallback(
+    (ids: ReadonlySet<CountryId>) => {
+      const currentRevision = ++revision.current;
+      storage
+        .save(ids)
+        .then(() => {
+          if (mounted.current && revision.current === currentRevision)
+            setSaveError(false);
+        })
+        .catch(() => {
+          if (mounted.current && revision.current === currentRevision)
+            setSaveError(true);
+        });
+    },
+    [storage],
+  );
 
   const setVisited = useCallback(
     (id: CountryId, visited: boolean) => {
@@ -83,27 +87,29 @@ export function useVisitedCountries() {
 
   const retry = useCallback(() => {
     if (status === 'load-error') {
-      setStatus('loading');
+      setLoadState({ status: 'loading', error: null });
       setAttempt((value) => value + 1);
     } else if (status === 'ready') persist(latestIds.current);
   }, [persist, status]);
 
   const resetUnreadableVisits = useCallback(async () => {
     if (!loadError?.canReset || status !== 'load-error') return;
-    setStatus('loading');
+    setLoadState({ status: 'loading', error: null });
     try {
       await storage.save(new Set());
       if (mounted.current) setAttempt((value) => value + 1);
     } catch {
       if (mounted.current) {
-        setLoadError({
-          message: 'Could not reset saved visits. Try again.',
-          canReset: true,
+        setLoadState({
+          status: 'load-error',
+          error: {
+            message: 'Could not reset saved visits. Try again.',
+            canReset: true,
+          },
         });
-        setStatus('load-error');
       }
     }
-  }, [loadError, status]);
+  }, [loadError, status, storage]);
 
   return {
     visitedIds,

@@ -1,13 +1,13 @@
 import {
-  Pressable,
   StyleSheet,
   TextInput,
   View,
   type TextInputProps,
 } from 'react-native';
 
-import { theme } from '../../theme';
+import { theme } from '../theme';
 import { Icon } from './Icon';
+import { IconButton } from './IconButton';
 
 export function SearchField({
   value,
@@ -36,14 +36,12 @@ export function SearchField({
         style={[styles.input, style]}
       />
       {value.length > 0 && (
-        <Pressable
-          accessibilityRole="button"
+        <IconButton
+          name="close"
+          size={18}
           accessibilityLabel="Clear search"
           onPress={() => onChangeText('')}
-          style={({ pressed }) => [styles.clear, pressed && styles.pressed]}
-        >
-          <Icon name="close" size={18} />
-        </Pressable>
+        />
       )}
     </View>
   );
@@ -66,11 +64,4 @@ const styles = StyleSheet.create({
     minHeight: theme.size.touch + theme.space.xs,
     paddingVertical: theme.space.md,
   },
-  clear: {
-    minHeight: theme.size.touch,
-    minWidth: theme.size.touch,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { opacity: theme.opacity.pressed },
 });

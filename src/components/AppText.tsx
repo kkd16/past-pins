@@ -1,6 +1,6 @@
 import { Text, type TextProps } from 'react-native';
 
-import { theme, type TextVariant } from '../../theme';
+import { theme, type TextVariant } from '../theme';
 
 export type AppTextProps = TextProps & {
   variant?: TextVariant;

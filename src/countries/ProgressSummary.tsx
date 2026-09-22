@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
-import { AppText } from '../../components/ui/AppText';
-import { theme } from '../../theme';
+import { AppText } from '../components/AppText';
+import { theme } from '../theme';
 
 export function ProgressSummary({
   visited,

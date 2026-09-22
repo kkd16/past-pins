@@ -1,6 +1,5 @@
 import type { TextStyle } from 'react-native';
 
-// Permanent dark appearance. Shared visual decisions live here, not in screens.
 const palette = {
   forest: '#101B18',
   canopy: '#192823',

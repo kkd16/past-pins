@@ -1,8 +1,10 @@
-import type { CountryId } from './types';
+import {
+  InvalidVisitsError,
+  type VisitStorage,
+} from '../countries/visit-storage';
+import type { CountryId } from '../countries/types';
 
 export const visitsKey = 'past-pins.visits.v1';
-
-export class InvalidVisitsError extends Error {}
 
 type KeyValueStorage = {
   getItem: (key: string) => Promise<string | null>;
@@ -46,22 +48,21 @@ export function decodeVisits(
   return new Set(ids as CountryId[]);
 }
 
-export function createVisitStorage(
+export function createLocalVisitStorage(
   storage: KeyValueStorage,
   knownIds: ReadonlySet<CountryId>,
-) {
+): VisitStorage {
   let queue = Promise.resolve();
   return {
     async load() {
       return decodeVisits(await storage.getItem(visitsKey), knownIds);
     },
-    save(visitedIds: ReadonlySet<CountryId>) {
+    async save(visitedIds: ReadonlySet<CountryId>) {
       const ids = [...visitedIds].sort();
       if (ids.some((id) => !knownIds.has(id)))
         throw new Error('Cannot save an unknown country ID.');
       const value = JSON.stringify({ version: 1, visitedIds: ids });
       const write = () => storage.setItem(visitsKey, value);
-      // Each caller receives its write failure. A failed write doesn't block the next snapshot.
       queue = queue.then(write, write);
       return queue;
     },
