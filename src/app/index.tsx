@@ -1,5 +1,5 @@
-import { View } from 'react-native';
+import { CountriesScreen } from '../features/countries/CountriesScreen';
 
 export default function HomeScreen() {
-  return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
+  return <CountriesScreen />;
 }

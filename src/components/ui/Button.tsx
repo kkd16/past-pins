@@ -1,0 +1,63 @@
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, type PressableProps } from 'react-native';
+
+import { theme } from '../../theme';
+import { AppText } from './AppText';
+
+export type ButtonProps = Omit<PressableProps, 'children'> & {
+  label: string;
+  variant?: 'primary' | 'quiet';
+  leading?: ReactNode;
+};
+
+export function Button({
+  label,
+  variant = 'primary',
+  leading,
+  disabled,
+  style,
+  ...props
+}: ButtonProps) {
+  return (
+    <Pressable
+      {...props}
+      accessibilityRole="button"
+      accessibilityState={{ ...props.accessibilityState, disabled: !!disabled }}
+      disabled={disabled}
+      style={(state) => [
+        styles.base,
+        variant === 'primary' && styles.primary,
+        state.pressed && styles.pressed,
+        disabled && styles.disabled,
+        typeof style === 'function' ? style(state) : style,
+      ]}
+    >
+      {leading}
+      <AppText
+        variant="label"
+        style={variant === 'primary' ? styles.primaryLabel : styles.quietLabel}
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  base: {
+    minHeight: theme.size.touch,
+    minWidth: theme.size.touch,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.sm,
+    borderRadius: theme.radius.pill,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.space.sm,
+  },
+  primary: { backgroundColor: theme.color.accent },
+  primaryLabel: { color: theme.color.onAccent },
+  quietLabel: { color: theme.color.textMuted },
+  pressed: { opacity: theme.opacity.pressed },
+  disabled: { opacity: theme.opacity.disabled },
+});
