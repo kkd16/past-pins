@@ -23,6 +23,9 @@ const color = {
   visitedEmphasis: palette.fern,
   visitedSurface: '#20382C',
   selectedSurface: '#20382C',
+  wishlist: '#E5C783',
+  lived: '#8ED5C0',
+  destructive: '#F2A79B',
 } as const;
 
 const radius = { sm: 12, lg: 20, pill: 999 } as const;
@@ -51,6 +54,9 @@ export const theme = {
     ocean: palette.canopy,
     land: '#587568',
     visited: palette.fern,
+    wishlist: color.wishlist,
+    lived: color.lived,
+    selected: palette.stone,
     border: palette.forest,
     lightDirection: [-0.6, 0.65, 1] as [number, number, number],
     ambient: 0.8,

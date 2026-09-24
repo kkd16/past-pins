@@ -11,6 +11,7 @@ import { vec3 } from 'gl-matrix';
 import { countryFeatures, countryPolygons } from '../src/countries/geography';
 import { toCartesian } from '../src/globe/coordinates';
 import type { GlobeGeometry } from '../src/globe/geometry';
+import { countryAnchor } from './country-anchors';
 import { subdivideSphere, type Point } from './subdivide-sphere';
 
 export function generateGlobe(): GlobeGeometry {
@@ -90,6 +91,7 @@ export function generateGlobe(): GlobeGeometry {
     }
     result.countries.push({
       id,
+      ...countryAnchor(shape),
       firstVertex,
       vertexCount: result.positions.length / 3 - firstVertex,
     });

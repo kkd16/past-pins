@@ -1,77 +1,64 @@
-import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, AppState, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-screens/experimental';
 
+import { AtlasAnnotations } from '../atlas/AtlasAnnotations';
+import { countryAnchors } from '../atlas/geography';
+import type { AtlasViewportProps } from '../atlas/types';
+import { useViewportLifecycle } from '../atlas/useViewportLifecycle';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
-import { IconButton } from '../components/IconButton';
-import type { CountryId } from '../countries/types';
 import { theme } from '../theme';
+import type { GlobeCamera } from './camera';
 import { GlobeController } from './controller';
+import { toCartesian } from './coordinates';
 import { globeGestures } from './gestures';
 import { GlobeSurface } from './GlobeSurface';
 
 export function GlobeViewport({
-  visitedIds,
-  onSelect,
-}: {
-  visitedIds: ReadonlySet<CountryId>;
-  onSelect: (id: CountryId) => void;
-}) {
+  camera,
+  ...props
+}: AtlasViewportProps & { camera: GlobeCamera }) {
   const [failed, setFailed] = useState(false);
+  const [, update] = useState(0);
+  const [sized, setSized] = useState(false);
   const fail = useCallback((error: unknown) => {
     console.warn('Globe rendering failed', error);
     setFailed(true);
   }, []);
-  const [controller] = useState(() => new GlobeController(fail));
-
-  useFocusEffect(
-    useCallback(() => {
-      controller.setActive(AppState.currentState === 'active');
-      const subscription = AppState.addEventListener('change', (state) =>
-        controller.setActive(state === 'active'),
-      );
-      return () => {
-        subscription.remove();
-        controller.setActive(false);
-      };
-    }, [controller]),
+  const [controller] = useState(
+    () => new GlobeController(fail, camera, () => update((value) => value + 1)),
   );
-
+  useViewportLifecycle(controller);
+  useEffect(
+    () => controller.setColors(props.places, props.selectedId),
+    [controller, props.places, props.selectedId],
+  );
+  const { command, onCommandApplied } = props;
   useEffect(() => {
-    let mounted = true;
-    const motion = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      (enabled) => controller.setReduceMotion(enabled),
-    );
-    void AccessibilityInfo.isReduceMotionEnabled()
-      .then((enabled) => {
-        if (mounted) controller.setReduceMotion(enabled);
-      })
-      .catch(() => undefined);
-    return () => {
-      mounted = false;
-      motion.remove();
-    };
-  }, [controller]);
-
-  useEffect(() => {
-    controller.setColors(visitedIds);
-  }, [controller, visitedIds]);
-
+    if (!sized || !command) return;
+    if (command.type === 'focus') {
+      const country = countryAnchors.get(command.id);
+      if (country)
+        controller.move(() =>
+          camera.focus(country.anchor, country.angularRadius),
+        );
+    } else if (command.type === 'north') controller.northUp();
+    else controller.reset();
+    onCommandApplied(command.key);
+  }, [camera, command, controller, sized, onCommandApplied]);
   const gesture = useMemo(
-    () => globeGestures(controller, onSelect),
-    [controller, onSelect],
+    () => globeGestures(controller, props.onSelect),
+    [controller, props.onSelect],
   );
-
   return (
     <View
       style={styles.fill}
-      onLayout={({ nativeEvent: { layout } }) =>
-        controller.resize(layout.width, layout.height)
-      }
+      onLayout={({ nativeEvent: { layout } }) => {
+        controller.resize(layout.width, layout.height);
+        setSized(layout.width > 0 && layout.height > 0);
+        update((value) => value + 1);
+      }}
     >
       {!failed && (
         <GestureDetector gesture={gesture}>
@@ -84,45 +71,33 @@ export function GlobeViewport({
           </View>
         </GestureDetector>
       )}
-      <SafeAreaView
-        style={styles.controls}
-        pointerEvents="box-none"
-        edges={{ top: true, bottom: true, left: true, right: true }}
-      >
-        {failed ? (
-          <View style={styles.error}>
-            <AppText variant="heading">The globe couldn’t load.</AppText>
-            <AppText tone="muted">
-              Your places are still available in Countries.
-            </AppText>
-            <Button label="Try again" onPress={() => setFailed(false)} />
-          </View>
-        ) : (
-          <IconButton
-            name="reset"
-            accessibilityLabel="Reset globe"
-            onPress={() => controller.reset()}
-            style={styles.reset}
-          />
-        )}
-      </SafeAreaView>
+      {failed ? (
+        <View style={styles.error}>
+          <AppText variant="heading">The globe couldn’t load.</AppText>
+          <AppText tone="muted">
+            Try the world map, or browse your places in Countries.
+          </AppText>
+          <Button label="Try again" onPress={() => setFailed(false)} />
+        </View>
+      ) : (
+        <AtlasAnnotations
+          {...props}
+          width={camera.width}
+          height={camera.height}
+          zoom={camera.zoom}
+          project={(point) => camera.project(toCartesian(point))}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  controls: { ...StyleSheet.absoluteFill, alignItems: 'flex-end' },
-  reset: {
-    ...theme.surface.floating,
-    margin: theme.space.lg,
-    borderRadius: theme.radius.pill,
-  },
   error: {
-    margin: theme.space.xl,
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    padding: theme.space.xl,
     gap: theme.space.md,
-    alignSelf: 'center',
-    marginVertical: 'auto',
-    maxWidth: theme.size.contentMax,
   },
 });

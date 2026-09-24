@@ -1,0 +1,198 @@
+import { countryIds } from '../countries/catalog';
+import type { AppStorage } from '../storage/snapshot-storage';
+import { validateAppData } from './backup';
+import {
+  changeHome,
+  changePlaceStatus,
+  defaultAppData,
+  defaultPreferences,
+  type AppData,
+  type PlaceStatus,
+  type Preferences,
+  type TravelData,
+} from './model';
+
+export type DataSnapshot = {
+  data: AppData;
+  status: 'loading' | 'ready' | 'load-error';
+  saveError: boolean;
+  busy: boolean;
+  undoLabel: string | null;
+};
+
+export function createAppDataStore(
+  storage: AppStorage,
+  effects: {
+    confirmHomeChange: (id: string) => Promise<boolean>;
+    feedback?: (enabled: boolean) => void;
+  },
+) {
+  let snapshot: DataSnapshot = {
+    data: defaultAppData(),
+    status: 'loading',
+    saveError: false,
+    busy: false,
+    undoLabel: null,
+  };
+  const listeners = new Set<() => void>();
+  let undoTravel: TravelData | null = null;
+  let revision = 0;
+  let loading: Promise<void> | null = null;
+  let lastWrite = Promise.resolve();
+
+  function publish(patch: Partial<DataSnapshot>) {
+    snapshot = { ...snapshot, ...patch };
+    listeners.forEach((listener) => listener());
+  }
+
+  function editable() {
+    return snapshot.status === 'ready' && !snapshot.busy;
+  }
+
+  function persist(data: AppData) {
+    const ownRevision = ++revision;
+    lastWrite = storage.save(data).then(
+      () => {
+        if (ownRevision === revision) publish({ saveError: false });
+      },
+      () => {
+        if (ownRevision === revision) publish({ saveError: true });
+      },
+    );
+  }
+
+  function changeTravel(data: AppData, label: string) {
+    if (data === snapshot.data) return;
+    undoTravel = {
+      places: snapshot.data.places,
+      homeCountryId: snapshot.data.homeCountryId,
+    };
+    publish({ data, undoLabel: label });
+    persist(data);
+    effects.feedback?.(data.preferences.haptics);
+  }
+
+  function load(): Promise<void> {
+    if (loading) return loading;
+    if (snapshot.status === 'ready') return Promise.resolve();
+    publish({ status: 'loading' });
+    loading = storage
+      .load()
+      .then(
+        (data) => publish({ data, status: 'ready', saveError: false }),
+        () => publish({ status: 'load-error' }),
+      )
+      .finally(() => {
+        loading = null;
+      });
+    return loading;
+  }
+
+  async function replace(data: AppData) {
+    if (snapshot.status === 'loading' || snapshot.busy)
+      throw new Error('Your data is not ready. Try again in a moment.');
+    const next = validateAppData(data);
+    publish({ busy: true });
+    try {
+      await lastWrite;
+      await storage.save(next);
+      undoTravel = null;
+      publish({
+        data: next,
+        status: 'ready',
+        undoLabel: null,
+        saveError: false,
+      });
+    } finally {
+      publish({ busy: false });
+    }
+  }
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    load,
+    async setStatus(
+      ids: readonly string[],
+      status: PlaceStatus,
+      options?: { preserveLived?: boolean },
+    ): Promise<boolean> {
+      if (!editable()) return false;
+      if (ids.some((id) => !countryIds.has(id)))
+        throw new Error('Unknown country.');
+      const next = changePlaceStatus(
+        snapshot.data,
+        ids,
+        status,
+        options?.preserveLived ?? true,
+      );
+      if (snapshot.data.homeCountryId && !next.homeCountryId) {
+        publish({ busy: true });
+        try {
+          if (!(await effects.confirmHomeChange(snapshot.data.homeCountryId)))
+            return false;
+        } finally {
+          publish({ busy: false });
+        }
+      }
+      changeTravel(next, ids.length === 1 ? 'Place updated' : 'Places updated');
+      return true;
+    },
+    setHome(id: string | null) {
+      if (!editable()) return;
+      if (id !== null && !countryIds.has(id))
+        throw new Error('Unknown country.');
+      changeTravel(
+        changeHome(snapshot.data, id),
+        id ? 'Home updated' : 'Home cleared',
+      );
+    },
+    updatePreferences(patch: Partial<Preferences>) {
+      if (!editable()) return;
+      const data = {
+        ...snapshot.data,
+        preferences: { ...snapshot.data.preferences, ...patch },
+      };
+      if (
+        Object.keys(patch).every(
+          (key) =>
+            data.preferences[key as keyof Preferences] ===
+            snapshot.data.preferences[key as keyof Preferences],
+        )
+      )
+        return;
+      publish({ data });
+      persist(data);
+    },
+    undo() {
+      if (!editable() || !undoTravel) return;
+      const data = { ...snapshot.data, ...undoTravel };
+      undoTravel = null;
+      publish({ data, undoLabel: null });
+      persist(data);
+      effects.feedback?.(data.preferences.haptics);
+    },
+    retry() {
+      if (snapshot.status === 'load-error') void load();
+      else if (editable()) persist(snapshot.data);
+    },
+    restore: replace,
+    async clearTravel() {
+      if (!editable())
+        throw new Error('Your data is not ready. Try again in a moment.');
+      await replace({ ...snapshot.data, places: {}, homeCountryId: null });
+    },
+    resetPreferences() {
+      if (!editable()) return;
+      const data = { ...snapshot.data, preferences: { ...defaultPreferences } };
+      undoTravel = null;
+      publish({ data, undoLabel: null });
+      persist(data);
+    },
+  };
+}

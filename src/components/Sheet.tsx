@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { theme } from '../theme';
 import { Button } from './Button';
@@ -9,11 +9,15 @@ export function Sheet({
   title,
   subtitle,
   onDone,
+  onCancel,
+  doneLabel = 'Done',
   children,
 }: {
   title: string;
   subtitle?: string;
   onDone: () => void;
+  onCancel?: () => void;
+  doneLabel?: string;
   children: ReactNode;
 }) {
   return (
@@ -23,15 +27,26 @@ export function Sheet({
       contentContainerStyle={styles.content}
       bounces={false}
     >
-      <ScreenHeader title={title} subtitle={subtitle} compact>
-        <Button label="Done" variant="quiet" onPress={onDone} />
-      </ScreenHeader>
+      {onCancel ? (
+        <>
+          <View style={styles.actions}>
+            <Button label="Cancel" variant="quiet" onPress={onCancel} />
+            <Button label={doneLabel} variant="quiet" onPress={onDone} />
+          </View>
+          <ScreenHeader title={title} subtitle={subtitle} compact />
+        </>
+      ) : (
+        <ScreenHeader title={title} subtitle={subtitle} compact>
+          <Button label={doneLabel} variant="quiet" onPress={onDone} />
+        </ScreenHeader>
+      )}
       {children}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  actions: { flexDirection: 'row', justifyContent: 'space-between' },
   scroll: { flexGrow: 0 },
   content: {
     width: '100%',

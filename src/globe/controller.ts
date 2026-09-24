@@ -1,18 +1,34 @@
+import { quat } from 'gl-matrix';
+
+import type { AppData } from '../data/model';
 import { GlobeCamera } from './camera';
 import type { GlobeRenderer } from './renderer';
 
+type Transition = {
+  start: number | null;
+  from: quat;
+  to: quat;
+  fromZoom: number;
+  toZoom: number;
+};
+
 export class GlobeController {
-  readonly camera = new GlobeCamera();
   private renderer: GlobeRenderer | null = null;
   private frame: number | null = null;
   private lastTime: number | null = null;
   private velocity = { x: 0, y: 0 };
   private active = false;
   private reduceMotion = true;
-  private visitedIds: ReadonlySet<string> = new Set();
+  private places: AppData['places'] = {};
+  private selectedId: string | null = null;
   private colorsDirty = true;
+  private transition: Transition | null = null;
 
-  constructor(private readonly onError: (error: unknown) => void) {}
+  constructor(
+    private readonly onError: (error: unknown) => void,
+    readonly camera = new GlobeCamera(),
+    private readonly onFrame: () => void = () => undefined,
+  ) {}
 
   get ready() {
     return this.renderer !== null;
@@ -42,8 +58,9 @@ export class GlobeController {
     if (enabled) this.stop();
   }
 
-  setColors(visitedIds: ReadonlySet<string>) {
-    this.visitedIds = visitedIds;
+  setColors(places: AppData['places'], selectedId: string | null = null) {
+    this.places = places;
+    this.selectedId = selectedId;
     this.colorsDirty = true;
     this.invalidate();
   }
@@ -53,9 +70,30 @@ export class GlobeController {
     this.invalidate();
   }
 
-  reset() {
-    this.camera.reset();
+  move(change: () => void) {
     this.stop();
+    const from = quat.clone(this.camera.rotation);
+    const fromZoom = this.camera.zoom;
+    change();
+    if (!this.reduceMotion && this.active && this.renderer) {
+      this.transition = {
+        start: null,
+        from,
+        fromZoom,
+        to: quat.clone(this.camera.rotation),
+        toZoom: this.camera.zoom,
+      };
+      quat.copy(this.camera.rotation, from);
+      this.camera.zoom = fromZoom;
+    }
+    this.invalidate();
+  }
+
+  reset() {
+    this.move(() => this.camera.reset());
+  }
+  northUp() {
+    this.move(() => this.camera.northUp());
   }
 
   drag(dx: number, dy: number) {
@@ -63,8 +101,14 @@ export class GlobeController {
     this.invalidate();
   }
 
-  zoom(zoom: number) {
-    this.camera.setZoom(zoom);
+  zoom(
+    zoom: number,
+    x = this.camera.width / 2,
+    y = this.camera.height / 2,
+    previousX = x,
+    previousY = y,
+  ) {
+    this.camera.zoomAt(zoom, x, y, previousX, previousY);
     this.invalidate();
   }
 
@@ -86,13 +130,13 @@ export class GlobeController {
     this.frame = null;
     this.lastTime = null;
     this.velocity = { x: 0, y: 0 };
+    this.transition = null;
     this.invalidate();
   }
 
   private invalidate() {
-    if (this.frame === null && this.active && this.renderer) {
+    if (this.frame === null && this.active && this.renderer)
       this.frame = requestAnimationFrame(this.draw);
-    }
   }
 
   private draw = (time: number) => {
@@ -103,22 +147,36 @@ export class GlobeController {
         ? 0
         : Math.min((time - this.lastTime) / 1000, 0.05);
     this.lastTime = time;
-    this.camera.drag(this.velocity.x * dt, this.velocity.y * dt);
-    const decay = Math.exp(-5 * dt);
-    this.velocity.x *= decay;
-    this.velocity.y *= decay;
+    if (this.transition) {
+      const move = this.transition;
+      move.start ??= time;
+      const progress = Math.min(1, (time - move.start) / 420);
+      const eased = 1 - (1 - progress) ** 3;
+      quat.slerp(this.camera.rotation, move.from, move.to, eased);
+      this.camera.setZoom(
+        move.fromZoom + (move.toZoom - move.fromZoom) * eased,
+      );
+      if (progress === 1) this.transition = null;
+    } else {
+      this.camera.drag(this.velocity.x * dt, this.velocity.y * dt);
+      const decay = Math.exp(-5 * dt);
+      this.velocity.x *= decay;
+      this.velocity.y *= decay;
+    }
     try {
       if (this.colorsDirty) {
-        this.renderer.setColors(this.visitedIds);
+        this.renderer.setColors(this.places, this.selectedId);
         this.colorsDirty = false;
       }
       this.renderer.draw(this.camera);
+      this.onFrame();
     } catch (error) {
       this.detach();
       this.onError(error);
       return;
     }
-    if (Math.hypot(this.velocity.x, this.velocity.y) > 5) this.invalidate();
+    if (this.transition || Math.hypot(this.velocity.x, this.velocity.y) > 5)
+      this.invalidate();
     else {
       this.lastTime = null;
       this.velocity = { x: 0, y: 0 };

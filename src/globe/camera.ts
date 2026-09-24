@@ -1,6 +1,6 @@
 import { mat3, quat, vec3 } from 'gl-matrix';
 
-import { toGeographic } from './coordinates';
+import { toCartesian, toGeographic } from './coordinates';
 
 export class GlobeCamera {
   readonly rotation = quat.create();
@@ -29,6 +29,42 @@ export class GlobeCamera {
 
   setZoom(zoom: number) {
     this.zoom = Math.max(0.9, Math.min(8, zoom));
+  }
+
+  focus(anchor: readonly number[], angularRadius: number) {
+    this.orient(anchor);
+    this.setZoom(
+      Math.max(1.2, 0.68 / Math.sin(Math.min(Math.PI / 2, angularRadius))),
+    );
+  }
+
+  northUp() {
+    const center = this.geographicPoint(this.width / 2, this.height / 2);
+    if (center) this.orient(center);
+  }
+
+  zoomAt(zoom: number, x: number, y: number, previousX = x, previousY = y) {
+    const anchor = this.geographicPoint(previousX, previousY);
+    this.setZoom(zoom);
+    if (!anchor) return;
+    const px = (x - this.width / 2) / this.radius;
+    const py = (this.height / 2 - y) / this.radius;
+    if (px * px + py * py >= 1) return;
+    const current = vec3.transformQuat(
+      vec3.create(),
+      toCartesian(anchor),
+      this.rotation,
+    );
+    const desired = vec3.fromValues(px, py, Math.sqrt(1 - px * px - py * py));
+    const delta = quat.rotationTo(quat.create(), current, desired);
+    quat.multiply(this.rotation, delta, this.rotation);
+    quat.normalize(this.rotation, this.rotation);
+  }
+
+  private orient([longitude, latitude]: readonly number[]) {
+    quat.identity(this.rotation);
+    quat.rotateX(this.rotation, this.rotation, (latitude * Math.PI) / 180);
+    quat.rotateY(this.rotation, this.rotation, (-longitude * Math.PI) / 180);
   }
 
   drag(dx: number, dy: number) {

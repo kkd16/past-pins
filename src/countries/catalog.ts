@@ -1,6 +1,7 @@
 import {
   continents as continentNames,
   countries as metadata,
+  languages,
 } from 'countries-list';
 import { countryFeatures } from './geography';
 import type { Continent, Country, CountryId } from './types';
@@ -21,6 +22,9 @@ const locations: Country[] = countryFeatures.map((shape) => {
     id: code.toLowerCase(),
     name,
     continent: continentById.get(continentId)!,
+    capital: details.capital,
+    languages: details.languages.map((code) => languages[code].name),
+    currencies: details.currency,
   };
 });
 

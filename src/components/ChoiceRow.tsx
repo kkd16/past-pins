@@ -8,20 +8,24 @@ export function ChoiceRow({
   label,
   selected,
   onPress,
+  disabled = false,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         selected && styles.selected,
         pressed && styles.pressed,
+        disabled && styles.disabled,
       ]}
     >
       <AppText tone={selected ? 'accent' : 'default'} style={styles.label}>
@@ -46,4 +50,5 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color.selectedSurface,
   },
   pressed: { opacity: theme.opacity.pressed },
+  disabled: { opacity: theme.opacity.disabled },
 });

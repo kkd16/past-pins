@@ -3,56 +3,79 @@ import { SectionList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import type { AppData } from '../data/model';
 import { theme } from '../theme';
 import { CountryRow } from './CountryRow';
-import type { CountrySection } from './filters';
+import {
+  getEmptyCountriesMessage,
+  type CountryScope,
+  type CountrySection,
+} from './filters';
 import type { Country, CountryId } from './types';
 
 export function CountryList({
   header,
   sections,
-  resultCount,
-  visitedIds,
+  places,
+  homeCountryId,
   ready,
-  onVisitedChange,
+  disabled,
+  onChangeStatus,
   onSelect,
   onReset,
   scrollResetKey,
+  scope,
+  narrowed,
+  selecting,
+  selectedIds,
 }: {
   header: ReactNode;
   sections: CountrySection[];
-  resultCount: number;
-  visitedIds: ReadonlySet<CountryId>;
+  places: AppData['places'];
+  homeCountryId: string | null;
   ready: boolean;
-  onVisitedChange: (id: CountryId, visited: boolean) => void;
+  disabled: boolean;
+  onChangeStatus: (id: CountryId) => void;
   onSelect: (id: CountryId) => void;
   onReset: () => void;
   scrollResetKey: string;
+  scope: CountryScope;
+  narrowed: boolean;
+  selecting: boolean;
+  selectedIds: ReadonlySet<CountryId>;
 }) {
   const list = useRef<SectionList<Country, CountrySection>>(null);
-  // Reset for filter changes, but keep position while typing or editing visits.
   useLayoutEffect(() => {
     list.current?.getScrollResponder()?.scrollTo({ y: 0, animated: false });
   }, [scrollResetKey]);
+  const empty = getEmptyCountriesMessage(scope, narrowed);
+  const resultCount = sections.reduce(
+    (count, section) => count + section.data.length,
+    0,
+  );
   return (
     <SectionList<Country, CountrySection>
       ref={list}
       style={styles.list}
       sections={ready ? sections : []}
-      extraData={visitedIds}
+      extraData={{ places, homeCountryId, disabled, selecting, selectedIds }}
       keyExtractor={(country) => country.id}
       stickySectionHeadersEnabled
       contentInsetAdjustmentBehavior="never"
+      automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       contentContainerStyle={styles.content}
       renderItem={({ item }) => (
         <CountryRow
           country={item}
-          visited={visitedIds.has(item.id)}
-          disabled={!ready}
-          onVisitedChange={onVisitedChange}
+          status={places[item.id] ?? 'unvisited'}
+          home={homeCountryId === item.id}
+          disabled={disabled}
+          onChangeStatus={onChangeStatus}
           onSelect={onSelect}
+          selecting={selecting}
+          selected={selectedIds.has(item.id)}
         />
       )}
       renderSectionHeader={({ section }) => (
@@ -74,7 +97,7 @@ export function CountryList({
           {header}
           {ready && (
             <AppText variant="caption" tone="muted" style={styles.count}>
-              {resultCount} places
+              {resultCount} {resultCount === 1 ? 'place' : 'places'}
             </AppText>
           )}
         </>
@@ -83,12 +106,16 @@ export function CountryList({
       ListEmptyComponent={
         ready ? (
           <View style={styles.empty}>
-            <AppText variant="heading">No places found</AppText>
+            <AppText variant="heading" style={styles.emptyText}>
+              {empty.title}
+            </AppText>
             <AppText tone="muted" style={styles.emptyText}>
-              Try another name or change your filters.
+              {empty.message}
             </AppText>
             <Button
-              label="Reset search and filters"
+              label={
+                narrowed ? 'Reset search and filters' : 'Browse all places'
+              }
               variant="quiet"
               onPress={onReset}
             />

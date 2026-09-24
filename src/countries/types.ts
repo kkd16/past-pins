@@ -6,4 +6,7 @@ export type Country = {
   id: CountryId;
   name: string;
   continent: Continent;
+  capital: string;
+  languages: string[];
+  currencies: string[];
 };

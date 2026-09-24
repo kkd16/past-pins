@@ -1,111 +1,324 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-screens/experimental';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FlatCamera } from '../atlas/FlatCamera';
+import type { AtlasCommand } from '../atlas/types';
+import { WorldMapViewport } from '../atlas/WorldMapViewport';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { DataFeedback } from '../components/DataFeedback';
+import { Icon } from '../components/Icon';
+import { IconButton } from '../components/IconButton';
 import { Surface } from '../components/Surface';
-import type { CountryId } from '../countries/types';
-import { VisitsFeedback } from '../countries/VisitsFeedback';
-import { useVisits } from '../countries/VisitsProvider';
+import { UndoNotice } from '../components/UndoNotice';
+import { countryById } from '../countries/catalog';
+import { getStatusPresentation } from '../countries/status';
+import { useAppData } from '../data/AppDataProvider';
+import { isVisited } from '../data/model';
+import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
 
 export function MapScreen({
   onSelect,
   onOpenCountries,
+  onSearch,
+  focus,
+  focusRequest,
+  onFocusConsumed,
 }: {
-  onSelect: (id: CountryId) => void;
+  onSelect: (id: string) => void;
   onOpenCountries: () => void;
+  onSearch: () => void;
+  focus?: string;
+  focusRequest?: string;
+  onFocusConsumed: () => void;
 }) {
-  const visits = useVisits();
-  const ready = visits.status === 'ready';
-  const scrollable = !ready || visits.saveError || visits.visitedIds.size === 0;
-  const footer = (
-    <View style={styles.footer} pointerEvents="box-none">
-      <VisitsFeedback {...visits} />
-      {ready &&
-        (visits.visitedIds.size === 0 ? (
-          <Surface variant="floating" style={styles.invitation}>
-            <AppText variant="heading" style={styles.invitationText}>
-              Your world starts here.
-            </AppText>
-            <AppText
-              variant="caption"
-              tone="muted"
-              style={styles.invitationText}
-            >
-              Drag to explore. Tap a place you’ve been.
-            </AppText>
-            <Button label="Mark your first visit" onPress={onOpenCountries} />
-          </Surface>
-        ) : (
-          <Surface
-            variant="floating"
-            style={styles.summary}
-            pointerEvents="none"
-            accessible
-            accessibilityLabel={`World globe. ${visits.visitedIds.size} places visited. Use the Countries tab to browse and edit visits.`}
-          >
-            <AppText variant="number" tone="visited">
-              {visits.visitedIds.size}
-            </AppText>
-            <View style={styles.summaryText}>
-              <AppText variant="label">Places visited</AppText>
-              <AppText variant="caption" tone="muted">
-                Drag to spin · Pinch & twist to explore
-              </AppText>
-            </View>
-          </Surface>
-        ))}
-    </View>
+  const app = useAppData();
+  const { data } = app;
+  const ready = app.status === 'ready';
+  const mode = data.preferences.mapView;
+  const [globe] = useState(() => new GlobeCamera());
+  const [flat] = useState(() => new FlatCamera());
+  const [selection, setSelection] = useState<{
+    id: string;
+    anchor: readonly number[] | null;
+  } | null>(null);
+  const [localCommand, setCommand] = useState<AtlasCommand | null>(null);
+  const sequence = useRef(0);
+  const [topHeight, setTopHeight] = useState(108);
+  const [bottomHeight, setBottomHeight] = useState(120);
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const largeText = fontScale > theme.accessibility.largeTextScale;
+  const visited = Object.values(data.places).filter(isVisited).length;
+  const focusCountry = useCallback((id: string) => {
+    setSelection({ id, anchor: null });
+    const key = ++sequence.current;
+    setCommand({ type: 'focus', id, key });
+    return key;
+  }, []);
+  const incomingFocus = useMemo<AtlasCommand | null>(
+    () =>
+      focus && ready && countryById.has(focus)
+        ? {
+            type: 'focus',
+            id: focus,
+            key: `navigation:${focusRequest ?? focus}`,
+          }
+        : null,
+    [focus, focusRequest, ready],
   );
+  const command = incomingFocus ?? localCommand;
+  const selectedId =
+    incomingFocus?.type === 'focus'
+      ? incomingFocus.id
+      : (selection?.id ?? null);
+  const commandApplied = useCallback(
+    (key: string | number) => {
+      if (incomingFocus?.key === key && incomingFocus.type === 'focus') {
+        setSelection({ id: incomingFocus.id, anchor: null });
+        onFocusConsumed();
+      } else setCommand((current) => (current?.key === key ? null : current));
+    },
+    [incomingFocus, onFocusConsumed],
+  );
+  const selectCountry = useCallback(
+    (id: string | null, anchor?: readonly number[]) =>
+      setSelection(id ? { id, anchor: anchor ?? null } : null),
+    [],
+  );
+  const changeMode = (next: 'globe' | 'map') => {
+    if (ready && next !== mode) app.updatePreferences({ mapView: next });
+  };
+  const viewport = {
+    places: data.places,
+    homeCountryId: data.homeCountryId,
+    selectedId,
+    selectedAnchor: incomingFocus ? null : (selection?.anchor ?? null),
+    labels: data.preferences.countryLabels,
+    command,
+    topInset: insets.top + topHeight + theme.space.md,
+    bottomInset: insets.bottom + bottomHeight + theme.space.md,
+    onSelect: selectCountry,
+    onDetails: onSelect,
+    onCommandApplied: commandApplied,
+  };
 
   return (
     <View style={styles.screen}>
-      <GlobeViewport visitedIds={visits.visitedIds} onSelect={onSelect} />
-      <SafeAreaView
-        style={styles.overlay}
-        pointerEvents="box-none"
-        edges={{ top: true, bottom: true, left: true, right: true }}
-      >
-        {scrollable ? (
-          <ScrollView
-            style={styles.scroll}
-            contentInsetAdjustmentBehavior="never"
-            bounces={false}
-          >
-            {footer}
-          </ScrollView>
+      {ready &&
+        (mode === 'globe' ? (
+          <GlobeViewport {...viewport} camera={globe} />
         ) : (
-          footer
-        )}
-      </SafeAreaView>
+          <WorldMapViewport {...viewport} camera={flat} />
+        ))}
+      <View
+        pointerEvents="box-none"
+        style={[styles.top, { paddingTop: insets.top + theme.space.sm }]}
+      >
+        <View
+          pointerEvents="box-none"
+          onLayout={({ nativeEvent: { layout } }) =>
+            setTopHeight(layout.height + theme.space.sm)
+          }
+          style={styles.topContent}
+        >
+          <View style={styles.toolbar}>
+            <Surface variant="floating" style={styles.mode}>
+              {largeText ? (
+                <View style={styles.modeStack}>
+                  {(['globe', 'map'] as const).map((value) => (
+                    <Button
+                      key={value}
+                      label={value === 'globe' ? 'Globe' : 'World map'}
+                      onPress={() => changeMode(value)}
+                      accessibilityState={{ selected: mode === value }}
+                      disabled={!ready || app.busy}
+                      variant={mode === value ? 'primary' : 'quiet'}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <SegmentedControl
+                  values={['Globe', 'World map']}
+                  selectedIndex={mode === 'globe' ? 0 : 1}
+                  enabled={ready && !app.busy}
+                  appearance={theme.appearance.colorScheme}
+                  tintColor={theme.color.accent}
+                  backgroundColor={theme.color.surface}
+                  fontStyle={{ color: theme.color.textMuted }}
+                  activeFontStyle={{ color: theme.color.onAccent }}
+                  onChange={({ nativeEvent }) =>
+                    changeMode(
+                      nativeEvent.selectedSegmentIndex === 0 ? 'globe' : 'map',
+                    )
+                  }
+                />
+              )}
+            </Surface>
+            <IconButton
+              name="search"
+              accessibilityLabel="Find a country on the map"
+              onPress={onSearch}
+              style={styles.control}
+            />
+          </View>
+          <View style={styles.actions}>
+            {data.homeCountryId && (
+              <IconButton
+                name="home"
+                accessibilityLabel="Go to current home"
+                onPress={() => focusCountry(data.homeCountryId!)}
+                style={styles.control}
+              />
+            )}
+            {mode === 'globe' && (
+              <IconButton
+                name="north"
+                accessibilityLabel="Turn globe north up"
+                onPress={() =>
+                  setCommand({ type: 'north', key: ++sequence.current })
+                }
+                style={styles.control}
+              />
+            )}
+            <IconButton
+              name="reset"
+              accessibilityLabel={
+                mode === 'globe' ? 'Reset globe' : 'Fit entire world map'
+              }
+              onPress={() =>
+                setCommand({ type: 'reset', key: ++sequence.current })
+              }
+              style={styles.control}
+            />
+          </View>
+        </View>
+      </View>
+      <View
+        pointerEvents="box-none"
+        style={[
+          styles.bottom,
+          { paddingBottom: insets.bottom + theme.space.sm },
+        ]}
+      >
+        <ScrollView
+          style={styles.footerScroll}
+          contentInsetAdjustmentBehavior="never"
+          bounces={false}
+          onLayout={({ nativeEvent: { layout } }) =>
+            setBottomHeight(layout.height + theme.space.sm)
+          }
+        >
+          <View style={styles.footer}>
+            <DataFeedback />
+            <UndoNotice />
+            {ready && data.preferences.mapSummary && (
+              <Surface variant="floating" style={styles.summary}>
+                <View style={styles.summaryHeading}>
+                  <AppText variant="number" tone="visited">
+                    {visited}
+                  </AppText>
+                  <View style={styles.summaryText}>
+                    <AppText variant="label">Places visited</AppText>
+                    <AppText variant="caption" tone="muted">
+                      {mode === 'globe'
+                        ? 'Drag, pinch & twist to explore'
+                        : 'Drag & pinch to explore'}
+                    </AppText>
+                  </View>
+                </View>
+                <View style={styles.legend}>
+                  {(['visited', 'wishlist', 'lived'] as const).map((status) => {
+                    const presentation = getStatusPresentation(status);
+                    return (
+                      <View key={status} style={styles.legendItem}>
+                        <Icon
+                          name={presentation.icon}
+                          color={presentation.color}
+                          size={theme.size.iconSmall}
+                        />
+                        <AppText
+                          variant="caption"
+                          style={{ color: presentation.color }}
+                        >
+                          {presentation.label}
+                        </AppText>
+                      </View>
+                    );
+                  })}
+                </View>
+                {!Object.keys(data.places).length && (
+                  <Button
+                    label="Mark your first place"
+                    onPress={onOpenCountries}
+                    variant="quiet"
+                  />
+                )}
+              </Surface>
+            )}
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.color.background },
-  overlay: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
-  scroll: { flexGrow: 0, flexShrink: 1 },
-  footer: {
-    margin: theme.space.lg,
+  top: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: theme.space.lg,
+  },
+  topContent: {
+    gap: theme.space.sm,
     maxWidth: theme.size.contentMax,
+    width: '100%',
     alignSelf: 'center',
   },
-  invitation: {
-    padding: theme.space.lg,
-    gap: theme.space.md,
-    alignItems: 'center',
+  toolbar: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
+  mode: { flex: 1, padding: theme.space.xs },
+  modeStack: { gap: theme.space.xs },
+  actions: { flexDirection: 'row', gap: theme.space.sm, alignSelf: 'flex-end' },
+  control: { ...theme.surface.floating, borderRadius: theme.radius.pill },
+  bottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    maxHeight: '40%',
+    paddingHorizontal: theme.space.lg,
   },
-  invitationText: { textAlign: 'center' },
-  summary: {
-    paddingHorizontal: theme.space.xl,
-    paddingVertical: theme.space.md,
+  footerScroll: { flexGrow: 0 },
+  footer: {
+    gap: theme.space.sm,
+    maxWidth: theme.size.contentMax,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  summary: { padding: theme.space.md, gap: theme.space.md },
+  summaryHeading: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: theme.space.lg,
+    gap: theme.space.md,
   },
-  summaryText: { flexBasis: 180, flexGrow: 1, gap: theme.space.xs },
+  summaryText: { flex: 1, minWidth: 150, gap: theme.space.xs },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.md },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.xs,
+  },
 });

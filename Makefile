@@ -23,6 +23,7 @@ update:
 	@bunx expo install --fix --bun
 	@echo "   ✓ Expo packages aligned"
 	@bun run globe:generate
+	@bun run licenses:generate
 	@echo "3) Checking project health"
 	@bunx expo-doctor
 	@echo "✓ Dependencies updated"

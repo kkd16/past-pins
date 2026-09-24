@@ -8,11 +8,15 @@
     "countries-list": "^3.4.1",
     "d3-geo": "^3.1.1",
     "expo": "~57.0.25",
+    "expo-application": "~57.0.3",
     "expo-constants": "~57.0.19",
+    "expo-document-picker": "~57.0.2",
+    "expo-file-system": "~57.0.7",
     "expo-gl": "~57.0.2",
     "expo-haptics": "~57.0.3",
     "expo-linking": "~57.0.11",
     "expo-router": "~57.0.23",
+    "expo-sharing": "~57.0.22",
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "gl-matrix": "^3.4.4",
@@ -43,7 +47,9 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "globe:generate": "bun scripts/generate-globe.ts",
-    "globe:check": "bun scripts/generate-globe.ts --check"
+    "globe:check": "bun scripts/generate-globe.ts --check",
+    "licenses:generate": "bun scripts/generate-licenses.ts",
+    "licenses:check": "bun scripts/generate-licenses.ts --check"
   },
   "private": true,
   "overrides": {

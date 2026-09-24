@@ -1,76 +1,78 @@
 # PastPins
 
-An offline, dark-only iOS travel atlas for iPhone and iPad. It opens on the map, with Countries on the left and Stats on the right.
+An offline travel atlas for iPhone and iPad, with one dark green theme. It opens on the center Map tab; Countries and Stats connect the same collection of places.
 
 ## Develop
 
 ```sh
 bun install
 bunx expo start --ios
-# On a Linux host, use make dev and open the tunnel on an iPhone or iPad.
+# On Linux, use make dev and open the tunnel in Expo Go on an iPhone or iPad.
+```
+
+The app targets Expo SDK 57 and uses its bundled native modules. Start Expo once after adding routes to regenerate Router’s types. Rebuild an existing development client after changing native dependencies.
+
+`make update` updates packages within compatible ranges, aligns Expo dependencies, regenerates globe geometry and license notices, and runs Expo Doctor. The `react-native-screens` override matches the native version included in Expo Go; align it when changing SDKs. Install app dependencies with `bunx expo install`.
+
+## Product flows
+
+- **Map:** switch between the native GL globe and an Equal Earth world map. Each keeps its own camera during the session. Drag, pinch, and—with the globe—twist two fingers. Search or Go home focuses a country; North up straightens the globe; Fit world restores the flat overview.
+- **Country selection:** tap a place for a small anchored name/status callout, then tap the callout for details. Closing details preserves selection and camera. Tap ocean to dismiss selection. Labels are sparse and automatically placed.
+- **Countries:** search, group by continent or alphabetically, and choose All, Visited, Wishlist, Lived, or Not visited. Continent filters use Cancel/Apply. Select mode updates multiple results together; changing the search or result set clears selection.
+- **Details:** edit status and current home, read available capital/language/currency facts, or Show on map. Changes save immediately. There are no dates, notes, or timelines.
+- **Stats:** visited, wishlist, lived, remaining, and continent summaries open matching country lists. Percentages count catalog places rather than land area. The gear opens Settings.
+- **Settings:** choose map preferences, labels, summary, home, list organization, and haptics. Export or restore a backup, clear travel data, reset preferences, and read help, version/build details, credits, and offline licenses.
+
+A place is unmarked, Wishlist, Visited, or Lived. Lived always counts as Visited; Not visited includes Wishlist. Setting current home marks that country Lived. Moving or clearing home keeps former homes in Lived. Bulk Mark visited preserves existing Lived status; a single-country status menu or details can explicitly downgrade it. Changing the current home’s status away from Lived asks to clear home too.
+
+Undo restores the last individual, bulk, or home edit without reverting preferences. Another travel edit replaces it. Restore and reset actions clear Undo.
+
+## Architecture and data
+
+- `src/app/`: thin Expo Router routes, native tabs, form sheets, and Settings navigation.
+- `src/screens/`: page composition and connected navigation flows. Query, scope, and continent live in route parameters; grouping is a persisted preference.
+- `src/countries/`: authoritative catalog joins, country facts, pure search/filter/statistics functions, and country controls.
+- `src/data/`: the app snapshot, pure status/home transitions, current-format backup validation, and one shared store/provider with Undo.
+- `src/storage/`: serialized snapshot persistence through Expo SQLite key-value storage.
+- `src/atlas/`: shared map selection, colors, label/callout placement, and the flat camera/renderer. `src/globe/` owns spherical camera math, GPU geometry, picking, gestures, and rendering. Only the active view mounts.
+- `src/settings/`: small settings layouts and native backup file operations. `src/components/` and `src/theme.ts` centralize reusable controls, typography, spacing, surfaces, state colors, and appearance.
+- `scripts/`: deterministic geography and license generation; these tools are not bundled into the app.
+
+One `AppDataProvider` owns statuses, current home, and preferences. Rows receive data and callbacks; derived filters and totals remain ordinary functions. Persistence writes one complete JSON snapshot under `app-data` in `past-pins-app.db`. Writes are ordered and atomic at the key-value boundary. Edits publish immediately; failed writes offer Retry save. Initial loading gates editing.
+
+The store is new and app-owned. There are no migrations or legacy readers. Backups contain the full persistent snapshot and accept only the current format. Import validates before offering a count preview, then replaces the stored snapshot before publishing it. A failed restore preserves current state. Clearing travel data keeps preferences; resetting preferences keeps places and home.
+
+Map mode, labels, summary, haptics, and list organization persist across launches. Cameras, selections, search/filter state, and Undo are session-only. No accounts, location permission, remote tiles, or cloud sync are required. Expo Go still needs Metro to load a fresh development bundle.
+
+## Geography and notices
+
+`@rembish/iso-topojson/iso-a2.json` supplies names and polygons; `countries-list` supplies primary continents and available country facts. The catalog includes countries, territories, Antarctica, and Kosovo. It is not a count of sovereign states. Geography is bundled and contains no hand-maintained country coordinates or overrides.
+
+`bun run globe:generate` derives globe triangles and country anchors from the installed source, including tiny-place markers. GL renders cached geometry; the flat view uses SVG paths from D3’s Equal Earth projection. Label candidates and focus anchors come from source polygons, with the main landmass used for country focus. Rendering stops while hidden or backgrounded; animation respects Reduce Motion.
+
+Map data © Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on [Natural Earth](https://www.naturalearthdata.com/) public-domain data. PastPins transforms geometry, projection, labeling, and styling. Country facts come from [Countries by Annexare](https://github.com/annexare/Countries).
+
+`bun run licenses:generate` rebuilds bundled third-party notices from installed package metadata and license files. Settings contains map credits and searchable offline notices.
+
+## Validation
+
+```sh
 bun test
 bun run globe:check
+bun run licenses:check
 bunx expo lint
 bunx tsc --noEmit
 bunx expo-doctor
 bunx expo export --platform ios
 ```
 
-Expo generates typed routes when the development server starts. Start it once after adding routes before running TypeScript. Native modules used here are included in SDK 57 Expo Go. Rebuild an existing development client after adding native dependencies.
+Tests cover travel/home invariants, bulk changes, Undo, persistence ordering and failure recovery, atomic restore, backup validation, catalog filtering/counts, geometry, cameras, picking, annotations, frame lifecycle, and theme contrast.
 
-`make update` updates the dependency tree within compatible ranges, aligns native packages with Expo, regenerates the globe, and runs Expo Doctor. The `react-native-screens` override keeps Router's wider dependency range on the same native version included in Expo Go; align that override when changing SDKs.
+Before shipping, verify on physical iPhone and iPad:
 
-## App structure
-
-- `src/app/`: thin Expo Router routes, native tabs, and native form sheets. The map is the index route and default tab.
-- `src/screens/`: screen composition and interactions. Countries keeps its search and visit-status selection while mounted; continent and grouping choices travel through Router parameters.
-- `src/countries/`: the app-owned catalog and types, pure search/filter/statistics functions, country UI, and the shared visits provider.
-- `src/globe/`: the native graphics surface, GPU renderer/shaders, camera math, country picking, gestures, and frame lifecycle. The controller retains the camera across sheets and tab switches.
-- `scripts/`: deterministic globe generation from the installed geographic data. These tools are not bundled into the application.
-- `src/components/`: reusable controls and layouts. `Screen` applies native safe-area insets, including the tab bar. Its scrollable children use no automatic insets. Sheets scroll their full contents for large text.
-- `src/hooks/`: the visits lifecycle and persistence hook.
-- `src/storage/`: the SQLite adapter and application storage wiring.
-- `src/theme.ts`: shared colors, native appearance, typography, surfaces, spacing, sizing, globe lighting, and motion.
-
-The root mounts one `VisitsProvider` with an injected `VisitStorage`. All tabs and sheets consume that same state. Presentational country rows receive data and callbacks; filtering and statistics are ordinary functions with no UI or storage dependencies. Screens never import upstream geographic data directly.
-
-## Map and catalog
-
-`catalog.ts` joins polygon data from `@rembish/iso-topojson/iso-a2.json` to `countries-list` continent metadata by ISO alpha-2 code. The current map contains 250 places, including countries, dependent territories, Antarctica, and Kosovo. This is the map's catalog, not a count of sovereign states. Names and boundaries follow the map package; primary continent assignments follow the metadata package.
-
-`geography.ts` converts the published topology to features. The catalog joins them to country metadata independently of rendering. Picking checks the front of the sphere against the original polygons; small places can also be selected through Countries. All geographic data is bundled, with no place-specific overrides.
-
-`bun run globe:generate` builds `src/globe/world.json` using gnomonic projection, Earcut, and shared spherical edge subdivision. Zero-area features get a marker at their source centroid. Generation checks coverage and projection bounds. `bun run globe:check` detects stale assets; tests compare country areas and triangle interiors against the source.
-
-Expo GL draws cached geometry in four batches. Gestures update the camera without React renders. Frames run on changes and during inertia, stop while hidden or backgrounded, and honor Reduce Motion. The renderer works in Expo Go without a mapping service or account.
-
-The globe starts facing the Atlantic at 120% of the shorter viewport dimension. Pinch to zoom out for the whole sphere or in for detail, twist with two fingers to rotate, or reset the original view.
-
-## Visits
-
-Visits are binary and stored locally in `past-pins-visits.db`. The `visited_countries` table contains a primary-key `country_id` for each visited place. This implementation uses its own database directly; there are no migrations or legacy storage readers.
-
-Reads finish before editing is enabled. Writes are serialized and transactional; each saves a snapshot. Edits appear immediately across the app, while failures display retry controls and are announced once to VoiceOver when the error appears. Statistics remain unavailable until saved visits have loaded.
-
-Country details save immediately. List filters apply with Done; swiping their sheet away discards the draft. Search, filters, and map zoom survive tab switches but are not persisted across a fresh launch.
-
-## Validation
-
-Bun tests cover theme contrast, catalog joins, geometry coverage and winding, camera/picking, frame scheduling and cleanup, search, combined filtering, grouping, statistics, and SQLite ordering/rollback/retry behavior. Before shipping, check on physical iPhone and iPad through Expo Go:
-
-- Cold launch selects the center Map tab; tab switches preserve map zoom and list state.
-- Drag freely over the poles and across the antimeridian; pinch to both zoom limits; reset restores the launch view. Rotation should remain smooth at 60 Hz, with no continuous frames while idle. Linux shader/geometry checks do not establish native performance.
-- Selecting a country or country name opens the same detail sheet; dragging, pinching, and two-finger taps must never open it. Both the sheet's switch and list checkmarks update every tab and persist after relaunch.
-- Background/resume, tab changes, sheet dismissal, and iPad window resizing preserve orientation and zoom, redraw correctly, and leave all controls inside safe areas. Check the largest Dynamic Type sizes on a short iPad window.
-- Filters intersect with search and visit status; Done applies and swipe dismissal cancels.
-- Insets, native tabs, sheet expansion, keyboards, and text remain usable at large Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.
-- At the largest text size, Countries controls and results scroll together; typing retains focus and does not reset scroll. Test on a small iPhone and a short iPad window with the keyboard open.
-- In a short iPad window at large text sizes, the map welcome and retry panels scroll within the safe area. With saved visits and no error, dragging through the visit summary still rotates the globe.
-- Simulate a storage failure: VoiceOver announces it once across mounted tabs, retry remains available, and a new failure after successful recovery is announced again.
-- After loading the development bundle, all globe data and visit editing work offline. Expo Go still needs its normal Metro connection to load a fresh development session.
-
-## Attribution
-
-Map data © 2026 Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on [Natural Earth](https://www.naturalearthdata.com/) public-domain data. PastPins projects the supplied geometry and changes its styling and visit colors.
-
-Continent metadata comes from [Countries by Annexare](https://github.com/annexare/Countries), MIT licensed. Geometry generation uses [Earcut](https://github.com/mapbox/earcut), ISC licensed. Attribution and bundled notices for the map, metadata, geometry, graphics, gestures, and segmented-control dependencies are accessible in Stats. `licenses/map-and-controls.json` contains the installed packages’ license text; refresh it from their `LICENSE` files when updating those dependencies.
+- Globe/world-map switching preserves each camera. Drag, focal pinch, twist, north-up, search focus, and fit controls work across zoom limits, poles, and the antimeridian. Idle/background views stop rendering.
+- Callouts remain readable inside safe areas, follow selection, hide behind the globe or outside the viewport, and return after details. Small islands, polygon holes, and overseas territories remain selectable.
+- Country edits, bulk actions, home changes, Undo, Stats drilldowns, filter cancellation, and Show on map agree across tabs and survive relaunch where appropriate.
+- Backup export/import cancellation, invalid files, failed saves, and failed restores recover without partial data. Retry remains available and storage errors are announced once when they appear.
+- Native tabs, sheets, search keyboards, and Settings remain usable on short/resizable iPad windows, at the largest Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.
+- After loading the bundle, all geography, facts, editing, help, and license notices work offline. Check smooth native rendering on-device; passing JavaScript tests or an export does not establish iOS visual quality or frame rate.

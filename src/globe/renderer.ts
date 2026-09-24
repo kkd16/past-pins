@@ -1,5 +1,7 @@
 import type { ExpoWebGLRenderingContext } from 'expo-gl';
 
+import { countryColor } from '../atlas/colors';
+import type { AppData } from '../data/model';
 import { theme } from '../theme';
 import type { GlobeCamera } from './camera';
 import {
@@ -101,8 +103,6 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
     const appearance = theme.globe;
     const water = rgb(appearance.ocean);
     const border = rgb(appearance.border);
-    const unvisited = rgb(appearance.land);
-    const visited = rgb(appearance.visited);
 
     for (const target of [ocean, surface]) {
       gl.useProgram(target);
@@ -119,9 +119,9 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
 
     return {
       dispose,
-      setColors(visitedIds: ReadonlySet<string>) {
+      setColors(places: AppData['places'], selectedId: string | null) {
         const color = (id: string) =>
-          visitedIds.has(id) ? visited : unvisited;
+          rgb(countryColor(places[id], selectedId === id));
         for (const { id, firstVertex, vertexCount } of world.countries) {
           const tint = color(id);
           for (let i = firstVertex; i < firstVertex + vertexCount; i++)

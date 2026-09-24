@@ -16,13 +16,20 @@ import { theme } from '../theme';
 export function CountryFiltersScreen({
   initialFilters,
   onApply,
+  onCancel,
 }: {
   initialFilters: CountryFilters;
   onApply: (filters: CountryFilters) => void;
+  onCancel: () => void;
 }) {
   const [filters, setFilters] = useState(initialFilters);
   return (
-    <Sheet title="Filters" onDone={() => onApply(filters)}>
+    <Sheet
+      title="Filters"
+      doneLabel="Apply"
+      onCancel={onCancel}
+      onDone={() => onApply(filters)}
+    >
       <Surface
         style={styles.section}
         accessibilityRole="radiogroup"

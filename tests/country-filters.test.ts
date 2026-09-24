@@ -4,11 +4,18 @@ import { countries } from '../src/countries/catalog';
 import {
   defaultCountryFilters,
   readCountryFilters,
+  readCountryScope,
   selectCountrySections,
   type CountrySection,
 } from '../src/countries/filters';
+import type { AppData } from '../src/data/model';
 
-const visited = new Set(['ca', 'fr', 'jp', 'ci']);
+const places: AppData['places'] = {
+  ca: 'lived',
+  fr: 'visited',
+  jp: 'wishlist',
+  ci: 'visited',
+};
 const ids = (sections: CountrySection[]) =>
   sections.flatMap(({ data }) => data.map(({ id }) => id));
 
@@ -18,7 +25,7 @@ describe('country list filters', () => {
       '',
       'all',
       defaultCountryFilters,
-      visited,
+      places,
     );
     expect(new Set(ids(sections)).size).toBe(countries.length);
     expect(ids(sections)).toHaveLength(countries.length);
@@ -39,36 +46,56 @@ describe('country list filters', () => {
     }
   });
 
-  test('visited and not visited are complementary and never produce empty headings', () => {
+  test('visited includes lived; not visited includes wishlist and complements visited', () => {
     const yes = selectCountrySections(
       '',
       'visited',
       defaultCountryFilters,
-      visited,
+      places,
     );
     const no = selectCountrySections(
       '',
       'not-visited',
       defaultCountryFilters,
-      visited,
+      places,
     );
-    expect(ids(yes).sort()).toEqual([...visited].sort());
+    expect(ids(yes).sort()).toEqual(['ca', 'ci', 'fr']);
+    expect(ids(no)).toContain('jp');
     expect(ids(no).length + ids(yes).length).toBe(countries.length);
-    expect(ids(no).some((id) => visited.has(id))).toBe(false);
+    expect(ids(no).some((id) => ids(yes).includes(id))).toBe(false);
     expect([...yes, ...no].every(({ data }) => data.length > 0)).toBe(true);
   });
 
-  test('search, continent, and visit status intersect', () => {
+  test('wishlist and lived scopes only include their own saved statuses', () => {
+    expect(
+      ids(selectCountrySections('', 'wishlist', defaultCountryFilters, places)),
+    ).toEqual(['jp']);
+    expect(
+      ids(selectCountrySections('', 'lived', defaultCountryFilters, places)),
+    ).toEqual(['ca']);
+  });
+
+  test('search, continent, and scope intersect', () => {
     const africa = { continent: 'AF', grouping: 'continent' } as const;
     expect(
-      ids(selectCountrySections('  COTE ', 'visited', africa, visited)),
+      ids(selectCountrySections('  COTE ', 'visited', africa, places)),
     ).toEqual(['ci']);
     expect(
-      ids(selectCountrySections('COTE', 'not-visited', africa, visited)),
+      ids(selectCountrySections('COTE', 'not-visited', africa, places)),
     ).toEqual([]);
+    expect(ids(selectCountrySections('Canada', 'all', africa, places))).toEqual(
+      [],
+    );
     expect(
-      ids(selectCountrySections('Canada', 'all', africa, visited)),
-    ).toEqual([]);
+      ids(
+        selectCountrySections(
+          'japan',
+          'wishlist',
+          { ...africa, continent: 'AS' },
+          places,
+        ),
+      ),
+    ).toEqual(['jp']);
   });
 
   test('alphabetical mode is one globally sorted list', () => {
@@ -76,15 +103,15 @@ describe('country list filters', () => {
       '',
       'all',
       { continent: 'all', grouping: 'alphabetical' },
-      visited,
+      places,
     );
     expect(sections).toHaveLength(1);
     expect(sections[0].data).toEqual([...countries]);
   });
 
-  test('a toggled visit immediately leaves a filtered list and enters its complement', () => {
-    const next = new Set(visited);
-    next.delete('ca');
+  test('removing a lived place immediately leaves visited and enters not visited', () => {
+    const next = { ...places };
+    delete next.ca;
     expect(
       ids(selectCountrySections('', 'visited', defaultCountryFilters, next)),
     ).not.toContain('ca');
@@ -95,29 +122,32 @@ describe('country list filters', () => {
     ).toContain('ca');
   });
 
-  test('empty searches and empty visit sets produce no empty sections', () => {
+  test('empty searches and empty scopes produce no empty sections', () => {
     expect(
       selectCountrySections(
         'no-such-place',
         'all',
         defaultCountryFilters,
-        visited,
+        places,
       ),
     ).toEqual([]);
     expect(
-      selectCountrySections('', 'visited', defaultCountryFilters, new Set()),
+      selectCountrySections('', 'visited', defaultCountryFilters, {}),
     ).toEqual([]);
+    const allVisited = Object.fromEntries(
+      countries.map(({ id }) => [id, 'visited' as const]),
+    );
     expect(
       selectCountrySections(
         '',
         'not-visited',
         defaultCountryFilters,
-        new Set(countries.map(({ id }) => id)),
+        allVisited,
       ),
     ).toEqual([]);
   });
 
-  test('current route parameters support valid options and default invalid inputs', () => {
+  test('route parameters support valid options and default invalid inputs', () => {
     expect(readCountryFilters({})).toEqual(defaultCountryFilters);
     expect(
       readCountryFilters({ continent: 'EU', grouping: 'alphabetical' }),
@@ -125,5 +155,9 @@ describe('country list filters', () => {
     expect(
       readCountryFilters({ continent: 'invalid', grouping: ['continent'] }),
     ).toEqual(defaultCountryFilters);
+    expect(readCountryScope('wishlist')).toBe('wishlist');
+    expect(readCountryScope('lived')).toBe('lived');
+    expect(readCountryScope(['visited'])).toBe('all');
+    expect(readCountryScope('invalid')).toBe('all');
   });
 });

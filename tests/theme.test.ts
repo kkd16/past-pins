@@ -30,6 +30,9 @@ describe('travel theme accessibility', () => {
         theme.color.textMuted,
         theme.color.accent,
         theme.color.visitedEmphasis,
+        theme.color.wishlist,
+        theme.color.lived,
+        theme.color.destructive,
       ])
         expect(contrast(text, background)).toBeGreaterThanOrEqual(4.5);
     }
