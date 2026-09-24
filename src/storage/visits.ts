@@ -4,6 +4,6 @@ import { countryIds } from '../countries/catalog';
 import { createSQLiteVisitStorage } from './sqlite-visit-storage';
 
 export const visitStorage = createSQLiteVisitStorage(
-  () => openDatabaseAsync('past-pins.db'),
+  () => openDatabaseAsync('past-pins-visits.db'),
   countryIds,
 );

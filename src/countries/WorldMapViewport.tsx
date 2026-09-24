@@ -7,8 +7,6 @@ import { theme } from '../theme';
 import { worldMap } from './catalog';
 import type { Country, CountryId } from './types';
 
-const [, , mapWidth, mapHeight] = worldMap.viewBox.split(' ').map(Number);
-
 const CountryShape = memo(function CountryShape({
   country,
   visited,
@@ -36,40 +34,51 @@ export function WorldMapViewport({
   visitedIds,
   selectedId,
   onSelect,
-  compact,
 }: {
   visitedIds: ReadonlySet<CountryId>;
   selectedId: CountryId | null;
   onSelect: (id: CountryId) => void;
-  compact: boolean;
 }) {
-  const [width, setWidth] = useState(0);
+  const [size, setSize] = useState({ width: 0, height: 0 });
   const scroll = useRef<ScrollView>(null);
-  const height = compact ? 108 : Math.min((width * mapHeight) / mapWidth, 300);
-  const artWidth = Math.min(width, (height * mapWidth) / mapHeight);
+  const { width, height } = size;
+  const artWidth = Math.min(width, (height * worldMap.width) / worldMap.height);
+  const artHeight = (artWidth * worldMap.height) / worldMap.width;
 
   return (
     <View
-      onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}
-      style={[styles.viewport, { height }]}
+      onLayout={({ nativeEvent: { layout } }) =>
+        setSize((previous) =>
+          previous.width === layout.width && previous.height === layout.height
+            ? previous
+            : { width: layout.width, height: layout.height },
+        )
+      }
+      style={styles.viewport}
     >
-      {width > 0 && (
+      {width > 0 && height > 0 && (
         <ScrollView
           key={`${width}-${height}`}
           ref={scroll}
+          style={styles.viewport}
           minimumZoomScale={1}
           maximumZoomScale={12}
           bouncesZoom={false}
           centerContent
+          contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustContentInsets={false}
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
           scrollsToTop={false}
           accessibilityElementsHidden
         >
-          <View style={[styles.art, { width, height }]}>
+          <View
+            style={{ width: artWidth, height: artHeight }}
+            collapsable={false}
+          >
             <Svg
               width={artWidth}
-              height={(artWidth * mapHeight) / mapWidth}
+              height={artHeight}
               viewBox={worldMap.viewBox}
               accessible={false}
             >
@@ -86,34 +95,31 @@ export function WorldMapViewport({
           </View>
         </ScrollView>
       )}
-      {!compact && (
-        <IconButton
-          name="reset"
-          size={17}
-          accessibilityLabel="Reset map zoom"
-          onPress={() =>
+      <IconButton
+        name="reset"
+        accessibilityLabel="Show whole world"
+        onPress={() => {
+          if (artWidth > 0)
             scroll.current?.scrollResponderZoomTo({
               x: 0,
               y: 0,
-              width,
-              height,
-              animated: true,
-            })
-          }
-          style={styles.reset}
-        />
-      )}
+              width: artWidth,
+              height: artHeight,
+              animated: false,
+            });
+        }}
+        style={styles.reset}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  viewport: { overflow: 'hidden' },
-  art: { justifyContent: 'center', alignItems: 'center' },
+  viewport: { flex: 1, overflow: 'hidden' },
   reset: {
     position: 'absolute',
-    right: theme.space.xs,
-    top: theme.space.xs,
+    right: theme.space.lg,
+    top: theme.space.sm,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.color.surface,
   },

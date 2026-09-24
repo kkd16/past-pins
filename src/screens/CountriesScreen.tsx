@@ -1,82 +1,117 @@
-import * as Haptics from 'expo-haptics';
-import { useCallback, useState } from 'react';
-import { Keyboard, StyleSheet } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Keyboard, StyleSheet, View } from 'react-native';
 
-import { AppText } from '../components/AppText';
+import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { countries } from '../countries/catalog';
-import { CountriesHeader } from '../countries/CountriesHeader';
-import { CountryChecklist } from '../countries/CountryChecklist';
-import { ProgressSummary } from '../countries/ProgressSummary';
+import { continents } from '../countries/catalog';
+import { CountryList } from '../countries/CountryList';
+import {
+  defaultCountryFilters,
+  selectCountrySections,
+  type CountryFilters,
+  type VisitFilter,
+} from '../countries/filters';
 import type { CountryId } from '../countries/types';
-import type { VisitStorage } from '../countries/visit-storage';
 import { VisitsFeedback } from '../countries/VisitsFeedback';
-import { WorldMap } from '../countries/WorldMap';
-import { useKeyboardVisible } from '../hooks/useKeyboardVisible';
-import { useVisitedCountries } from '../hooks/useVisitedCountries';
+import { useVisits } from '../countries/VisitsProvider';
+import { VisitStatusControl } from '../countries/VisitStatusControl';
 import { theme } from '../theme';
 
-export function CountriesScreen({ storage }: { storage: VisitStorage }) {
+export function CountriesScreen({
+  filters,
+  onOpenFilters,
+  onResetFilters,
+  onSelect,
+}: {
+  filters: CountryFilters;
+  onOpenFilters: () => void;
+  onResetFilters: () => void;
+  onSelect: (id: CountryId) => void;
+}) {
   const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<CountryId | null>(null);
-  const keyboardVisible = useKeyboardVisible();
-  const visits = useVisitedCountries(storage);
-  const ready = visits.status === 'ready';
-
-  const { setVisited } = visits;
-  const onVisitedChange = useCallback(
-    (id: CountryId, visited: boolean) => {
-      setVisited(id, visited);
-      Haptics.selectionAsync().catch((error: unknown) =>
-        console.warn('Selection haptic unavailable.', error),
-      );
+  const [visitFilter, setVisitFilter] = useState<VisitFilter>('all');
+  const visits = useVisits();
+  const { continent, grouping } = filters;
+  const sections = useMemo(
+    () =>
+      selectCountrySections(
+        query,
+        visitFilter,
+        { continent, grouping },
+        visits.visitedIds,
+      ),
+    [query, visitFilter, continent, grouping, visits.visitedIds],
+  );
+  const hasFilters =
+    continent !== defaultCountryFilters.continent ||
+    grouping !== defaultCountryFilters.grouping;
+  const continentName = continents.find(({ id }) => id === continent)?.name;
+  const resultCount = sections.reduce(
+    (count, section) => count + section.data.length,
+    0,
+  );
+  const select = useCallback(
+    (id: CountryId) => {
+      Keyboard.dismiss();
+      onSelect(id);
     },
-    [setVisited],
+    [onSelect],
   );
 
   return (
     <Screen>
-      {!keyboardVisible && <CountriesHeader />}
-      <WorldMap
-        visitedIds={visits.visitedIds}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-        onVisitedChange={onVisitedChange}
-        disabled={!ready}
-        compact={keyboardVisible}
-      />
-      <ProgressSummary
-        visited={visits.visitedIds.size}
-        total={countries.length}
-        loading={!ready}
-      />
+      <ScreenHeader
+        title="Countries"
+        subtitle={continentName ?? 'Countries & territories'}
+      >
+        <IconButton
+          name="filter"
+          color={hasFilters ? theme.color.accent : theme.color.textMuted}
+          accessibilityLabel={
+            hasFilters ? 'Filters, custom options applied' : 'Filters'
+          }
+          onPress={() => {
+            Keyboard.dismiss();
+            onOpenFilters();
+          }}
+        />
+      </ScreenHeader>
+      <View style={styles.controls}>
+        <SearchField
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Find a country or territory"
+          accessibilityLabel="Search countries and territories"
+          onSubmitEditing={Keyboard.dismiss}
+        />
+        <VisitStatusControl value={visitFilter} onChange={setVisitFilter} />
+      </View>
       <VisitsFeedback {...visits} />
-      {ready && visits.visitedIds.size === 0 && !keyboardVisible && (
-        <AppText variant="caption" tone="muted" style={styles.invitation}>
-          Check a place you’ve been. Make this world yours.
-        </AppText>
-      )}
-      <SearchField
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Find a country or territory"
-        accessibilityLabel="Search countries and territories"
-        onSubmitEditing={Keyboard.dismiss}
-      />
-      <CountryChecklist
-        query={query}
+      <CountryList
+        scrollResetKey={JSON.stringify([
+          query,
+          visitFilter,
+          continent,
+          grouping,
+        ])}
+        sections={sections}
+        resultCount={resultCount}
         visitedIds={visits.visitedIds}
-        disabled={!ready}
-        onVisitedChange={onVisitedChange}
+        ready={visits.status === 'ready'}
+        onVisitedChange={visits.setVisited}
+        onSelect={select}
+        onReset={() => {
+          setQuery('');
+          setVisitFilter('all');
+          onResetFilters();
+        }}
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  invitation: {
-    paddingBottom: theme.space.md,
-    paddingHorizontal: theme.space.xs,
-  },
+  controls: { gap: theme.space.md, paddingBottom: theme.space.md },
 });

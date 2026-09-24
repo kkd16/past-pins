@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@svg-maps/world": "^2.0.0",
+    "@react-native-segmented-control/segmented-control": "2.5.7",
+    "@rembish/iso-topojson": "^1.4.0",
+    "countries-list": "^3.4.1",
+    "d3-geo": "^3.1.1",
     "expo": "~57.0.25",
     "expo-constants": "~57.0.19",
     "expo-haptics": "~57.0.3",
@@ -15,12 +18,16 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.2",
-    "react-native-svg": "15.15.4"
+    "react-native-svg": "15.15.4",
+    "topojson-client": "^3.1.0"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
+    "@types/d3-geo": "^3.1.1",
+    "@types/geojson": "^7946.0.16",
     "@types/react": "~19.2.18",
-    "@types/svg-maps__common": "^0.0.4",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"

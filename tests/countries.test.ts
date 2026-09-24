@@ -1,13 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+  continents,
   countries,
   countryIds,
   worldMap,
 } from '../src/countries/catalog';
 import { searchCountries } from '../src/countries/search';
 
-describe('single-source country catalog', () => {
+describe('published country catalog', () => {
   test('every checklist entry has a unique ID and a map shape', () => {
     expect(countryIds.size).toBe(countries.length);
     expect(countries.length).toBe(worldMap.locations.length);
@@ -17,7 +18,21 @@ describe('single-source country catalog', () => {
       expect(country.name.length).toBeGreaterThan(0);
       expect(country.path.length).toBeGreaterThan(0);
       expect(country.path).not.toMatch(/NaN|Infinity/);
+      expect(continents).toContain(country.continent);
     }
+  });
+
+  test('every upstream polygon is included and joins to a continent without exceptions', async () => {
+    const { default: topology } =
+      await import('@rembish/iso-topojson/iso-a2.json');
+    const upstreamIds = topology.objects.merged.geometries.map(
+      ({ properties }) => properties.iso_a2.toLowerCase(),
+    );
+    expect([...countryIds].sort()).toEqual(upstreamIds.sort());
+    expect(continents).toHaveLength(7);
+    expect(
+      continents.every(({ id, name }) => id.length > 0 && name.length > 0),
+    ).toBe(true);
   });
 
   test('search handles whitespace, case, accents, codes, and empty results', () => {

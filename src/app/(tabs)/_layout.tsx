@@ -1,0 +1,54 @@
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
+
+import { theme } from '../../theme';
+
+export const unstable_settings = { initialRouteName: 'index' };
+
+export default function TabsLayout() {
+  return (
+    <NativeTabs
+      tintColor={theme.color.accent}
+      backgroundColor={theme.color.surface}
+      iconColor={{
+        default: theme.color.textMuted,
+        selected: theme.color.accent,
+      }}
+      labelStyle={{
+        default: { color: theme.color.textMuted },
+        selected: { color: theme.color.accent },
+      }}
+      minimizeBehavior="never"
+      disableTransparentOnScrollEdge
+    >
+      <NativeTabs.Trigger
+        name="countries"
+        disableAutomaticContentInsets
+        contentStyle={{ backgroundColor: theme.color.background }}
+      >
+        <NativeTabs.Trigger.Label>Countries</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="list.bullet" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
+        name="index"
+        disableAutomaticContentInsets
+        disableScrollToTop
+        contentStyle={{ backgroundColor: theme.color.background }}
+      >
+        <NativeTabs.Trigger.Label>Map</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'map', selected: 'map.fill' }}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
+        name="stats"
+        disableAutomaticContentInsets
+        contentStyle={{ backgroundColor: theme.color.background }}
+      >
+        <NativeTabs.Trigger.Label>Stats</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }}
+        />
+      </NativeTabs.Trigger>
+    </NativeTabs>
+  );
+}

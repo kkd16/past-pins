@@ -4,7 +4,8 @@ import {
   View,
   type ViewProps,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-screens/experimental';
 
 import { theme } from '../theme';
 
@@ -12,7 +13,10 @@ export function Screen({ style, ...props }: ViewProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.safe}
+      edges={{ top: true, bottom: true, left: true, right: true }}
+    >
       <KeyboardAvoidingView
         style={styles.flex}
         behavior="padding"

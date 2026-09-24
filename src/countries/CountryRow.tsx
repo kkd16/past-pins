@@ -1,5 +1,8 @@
 import { memo } from 'react';
-import { CheckRow } from '../components/CheckRow';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { AppText } from '../components/AppText';
+import { Checkmark } from '../components/Checkmark';
+import { theme } from '../theme';
 import type { Country, CountryId } from './types';
 
 export const CountryRow = memo(function CountryRow({
@@ -7,18 +10,62 @@ export const CountryRow = memo(function CountryRow({
   visited,
   disabled,
   onVisitedChange,
+  onSelect,
 }: {
   country: Country;
   visited: boolean;
   disabled: boolean;
   onVisitedChange: (id: CountryId, visited: boolean) => void;
+  onSelect: (id: CountryId) => void;
 }) {
   return (
-    <CheckRow
-      label={country.name}
-      checked={visited}
-      disabled={disabled}
-      onCheckedChange={(checked) => onVisitedChange(country.id, checked)}
-    />
+    <View style={[styles.row, visited && styles.visited]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${country.name}, ${visited ? 'visited' : 'not visited'}`}
+        accessibilityHint="Opens place details"
+        onPress={() => onSelect(country.id)}
+        style={({ pressed }) => [styles.details, pressed && styles.pressed]}
+      >
+        <AppText>{country.name}</AppText>
+      </Pressable>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityLabel={`${country.name} visited`}
+        accessibilityState={{ checked: visited, disabled }}
+        disabled={disabled}
+        onPress={() => onVisitedChange(country.id, !visited)}
+        style={({ pressed }) => [
+          styles.toggle,
+          pressed && styles.pressed,
+          disabled && styles.disabled,
+        ]}
+      >
+        <Checkmark checked={visited} />
+      </Pressable>
+    </View>
   );
+});
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: theme.radius.sm,
+  },
+  visited: { backgroundColor: theme.color.selectedSurface },
+  details: {
+    flex: 1,
+    minHeight: theme.size.row,
+    justifyContent: 'center',
+    padding: theme.space.lg,
+  },
+  toggle: {
+    minHeight: theme.size.row,
+    width: theme.size.row,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: theme.opacity.pressed },
+  disabled: { opacity: theme.opacity.disabled },
 });

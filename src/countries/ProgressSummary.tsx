@@ -7,18 +7,19 @@ export function ProgressSummary({
   visited,
   total,
   loading,
+  label = 'Places visited',
 }: {
   visited: number;
   total: number;
   loading: boolean;
+  label?: string;
 }) {
   const percent = total ? (visited / total) * 100 : 0;
   return (
     <View style={styles.container}>
       <View style={styles.labels}>
-        <AppText variant="caption" tone="muted" style={styles.label}>
-          <AppText variant="label">{loading ? '—' : visited}</AppText> of{' '}
-          {total} countries & territories
+        <AppText variant="label" style={styles.label}>
+          {label}
         </AppText>
         <AppText variant="label" tone="accent" style={styles.number}>
           {loading ? '—' : `${percent.toFixed(1)}%`}
@@ -26,7 +27,7 @@ export function ProgressSummary({
       </View>
       <View
         accessibilityRole="progressbar"
-        accessibilityLabel="Places visited"
+        accessibilityLabel={label}
         accessibilityValue={
           loading
             ? { text: 'Loading saved visits' }
@@ -36,6 +37,9 @@ export function ProgressSummary({
       >
         <View style={[styles.fill, { width: `${percent}%` }]} />
       </View>
+      <AppText variant="caption" tone="muted">
+        {loading ? '—' : visited} of {total} places
+      </AppText>
     </View>
   );
 }

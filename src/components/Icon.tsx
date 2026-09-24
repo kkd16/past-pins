@@ -8,6 +8,7 @@ const paths = {
   search: 'm16 16 4 4',
   reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6',
   compass: 'm16 8-3 5-5 3 3-5 5-3Z',
+  filter: 'M4 6h16M7 12h10M10 18h4',
 } as const;
 
 export type IconProps = {

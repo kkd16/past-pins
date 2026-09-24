@@ -1,6 +1,6 @@
 # PastPins
 
-A dark-only, iOS-only Expo app for checking off places and seeing them on a world map.
+An offline, dark-only iOS travel atlas for iPhone and iPad. It opens on the map, with Countries on the left and Stats on the right.
 
 ## Develop
 
@@ -12,40 +12,51 @@ bun test
 bunx expo lint
 bunx tsc --noEmit
 bunx expo-doctor
+bunx expo export --platform ios
 ```
 
-The native dependencies used here are included in Expo Go for SDK 57. A development build is needed if future dependencies introduce native modules that Expo Go does not include.
+Expo generates typed routes when the development server starts. Start it once after adding routes before running TypeScript. Native modules used here are included in SDK 57 Expo Go. Rebuild an existing development client after adding native dependencies.
 
-## Where changes belong
+## App structure
 
-- `src/theme.ts`: shared colors, typography, spacing, and motion.
-- `src/components/`: shared controls and screen layout. Scrollable children own their bottom safe-area inset.
-- `src/hooks/`: visits state and keyboard visibility.
-- `src/screens/`: full screens that compose components and hooks.
-- `src/countries/`: the map, checklist, catalog/search, and storage interface.
-- `src/storage/`: storage implementations; `visits.ts` selects the app's backend.
-- `src/app/`: Expo Router entry points and dependency wiring.
+- `src/app/`: thin Expo Router routes, native tabs, and native form sheets. The map is the index route and default tab.
+- `src/screens/`: screen composition and interactions. Countries keeps its search and visit-status selection while mounted; continent and grouping choices travel through Router parameters.
+- `src/countries/`: the app-owned catalog and types, pure search/filter/statistics functions, country UI, and the shared visits provider.
+- `src/components/`: reusable controls and layouts. `Screen` applies native safe-area insets, including the tab bar. Its scrollable children use no automatic insets. Sheets scroll their full contents for large text.
+- `src/hooks/`: the visits lifecycle and persistence hook.
+- `src/storage/`: the SQLite adapter and application storage wiring.
+- `src/theme.ts`: shared colors, typography, spacing, and sizing.
 
-Prefer existing controls and native props. Keep country-specific code together; extract shared pieces when they have a clear use. There is no light theme or theme provider.
+The root mounts one `VisitsProvider` with an injected `VisitStorage`. All tabs and sheets consume that same state. Presentational country rows receive data and callbacks; filtering and statistics are ordinary functions with no UI or storage dependencies. Screens never import upstream geographic data directly.
 
-## Map and checklist data
+## Map and catalog
 
-Both use `@svg-maps/world` directly. The package's 256 named shapes define this first version's collection; this is a map dataset, not an official count of sovereign countries. Names and IDs stay as supplied upstream. The checklist is A–Z with name/code search, and the displayed total is derived from the data.
+`catalog.ts` joins polygon data from `@rembish/iso-topojson/iso-a2.json` to `countries-list` continent metadata by ISO alpha-2 code. The current map contains 250 places, including countries, dependent territories, Antarctica, and Kosovo. This is the map's catalog, not a count of sovereign states. Names and boundaries follow the map package; primary continent assignments follow the metadata package.
 
-There is no catalog join, custom geographic override, generated map pipeline, or runtime network request. Very small places can be selected through the list or by zooming the map. The dataset omits Antarctica and includes some islands as separate places. Country-name aliases, flags, and continent grouping are deferred to keep this iteration small.
+There are no place-specific overrides, manually maintained geographic tables, runtime downloads, or generated map files. `topojson-client` converts topology to features and `d3-geo` projects them to SVG paths once when the catalog loads. React Native SVG draws those paths, and an iOS ScrollView provides pan and zoom. Small places can also be selected through Countries.
 
-To update data, use `bunx expo install @svg-maps/world --bun` and review the upstream changes. Persisted IDs must remain compatible; changes to IDs need an explicit migration before shipping. Unexpected saved IDs produce an error instead of being silently removed.
+The map, list, filters, and statistics all use the resulting catalog. Missing metadata, duplicate IDs, and invalid paths are errors, not silent omissions. Update dependencies with `bunx expo install`, then run the catalog and filtering tests to check coverage.
 
-## Saved visits
+## Visits
 
-Visits are stored locally in `past-pins.db` using [Expo SQLite for SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/). The `visited_countries` table has one `country_id` primary key per visited place. The connection opens asynchronously on first use, enables WAL, and creates the table if needed.
+Visits are binary and stored locally in `past-pins-visits.db`. The `visited_countries` table contains a primary-key `country_id` for each visited place. This implementation uses its own database directly; there are no migrations or legacy storage readers.
 
-Reads finish before editing is enabled. Reads and snapshot writes are serialized so rapid toggles persist in order. Each save replaces the selection in a transaction; failure preserves the last committed selection. Load and save failures offer retry, and unknown country IDs are rejected without silently changing saved data.
+Reads finish before editing is enabled. Writes are serialized and transactional; each saves a snapshot. Edits appear immediately across the app, while failures display retry controls. Statistics remain unavailable until saved visits have loaded.
 
-This is a hard cutover: previous AsyncStorage data is ignored. There is no JSON parser, migration, fallback backend, or reset flow.
+Country details save immediately. List filters apply with Done; swiping their sheet away discards the draft. Search, filters, and map zoom survive tab switches but are not persisted across a fresh launch.
 
-[VisitStorage](src/countries/visit-storage.ts) exposes `load` and `save`; `src/storage/visits.ts` creates the app's stable adapter, which the route injects into the screen. Tests execute the adapter's SQL against temporary databases using Bun's SQLite support. Native behavior still needs an iPhone/iPad smoke test. Expo SQLite is included in SDK 57 Expo Go; rebuild an existing development client after adding it.
+## Validation
+
+Bun tests cover catalog joins, search, combined filtering, grouping, statistics, and SQLite ordering/rollback/retry behavior. Before shipping, check on iPhone and iPad:
+
+- Cold launch selects the center Map tab; tab switches preserve map zoom and list state.
+- Selecting a map shape or country name opens the same detail sheet; both its switch and list checkmarks update every tab and persist after relaunch.
+- Filters intersect with search and visit status; Done applies and swipe dismissal cancels.
+- Insets, native tabs, sheet expansion, keyboards, and text remain usable at large Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.
+- All map data and visit editing work offline.
 
 ## Attribution
 
-The map is based on [MapSVG's world map](https://mapsvg.com/maps/world), adapted and packaged by [Victor Cazanave / svg-maps](https://github.com/VictorCazanave/svg-maps). It is licensed under [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/). PastPins applies its own colors and visited/selection states; the supplied paths are unchanged. See `licenses/svg-maps-CC-BY-4.0.md` for the license.
+Map data © 2026 Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on [Natural Earth](https://www.naturalearthdata.com/) public-domain data. PastPins projects the supplied geometry and changes its styling and visit/selection colors.
+
+Continent metadata comes from [Countries by Annexare](https://github.com/annexare/Countries), MIT licensed. License notices are retained in `licenses/`; attribution is also accessible in Stats.
