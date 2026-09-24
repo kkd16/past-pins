@@ -6,6 +6,15 @@ export type ViewBounds = {
   bottom: number;
 };
 
+export function annotationTranslation(
+  rect: Rect | null,
+  width: number,
+  rtl: boolean,
+) {
+  // `start: 0` anchors on the right in RTL, but geographic x stays physical.
+  return rect ? [rtl ? rect.x + rect.width - width : rect.x, rect.y] : [0, 0];
+}
+
 export function intersects(a: Rect, b: Rect, gap = 8) {
   return (
     a.x < b.x + b.width + gap &&
@@ -47,20 +56,45 @@ export function calloutRect(
   };
 }
 
+export function labelSize(name: string, fontScale: number) {
+  return {
+    width: Math.min(170 * fontScale, name.length * 6.5 * fontScale + 12),
+    height: 20 * fontScale,
+  };
+}
+
+export function projectLabels(
+  candidates: {
+    id: string;
+    name: string;
+    area: number;
+    anchor: readonly number[];
+  }[],
+  project: (point: readonly number[]) => number[] | null,
+  zoom: number,
+) {
+  return zoom >= 1.6
+    ? candidates
+        .filter(({ area }) => area * zoom * zoom > 0.008)
+        .map(({ id, name, anchor }) => ({ id, name, point: project(anchor) }))
+    : [];
+}
+
 export function placeLabels(
   candidates: { id: string; name: string; point: number[] | null }[],
   bounds: ViewBounds,
   blocked: Rect[],
+  fontScale = 1,
 ) {
   const result: (Rect & { id: string; name: string })[] = [];
   for (const candidate of candidates) {
     if (!inBounds(candidate.point, bounds) || !candidate.point) continue;
-    const width = Math.min(170, candidate.name.length * 6.5 + 12);
+    const { width, height } = labelSize(candidate.name, fontScale);
     const rect = {
       x: candidate.point[0] - width / 2,
-      y: candidate.point[1] - 10,
+      y: candidate.point[1] - height / 2,
       width,
-      height: 20,
+      height,
     };
     if (
       rect.x < 8 ||

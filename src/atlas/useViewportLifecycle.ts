@@ -4,13 +4,17 @@ import { AppState } from 'react-native';
 
 import { useReducedMotion } from '../motion/ReducedMotion';
 
-export function useViewportLifecycle(controller: {
-  setActive: (active: boolean) => void;
-  setReduceMotion: (enabled: boolean) => void;
-}) {
+export function useViewportLifecycle(
+  controller: {
+    setActive: (active: boolean) => void;
+    setReduceMotion: (enabled: boolean) => void;
+  },
+  enabled: boolean,
+) {
   const reducedMotion = useReducedMotion();
   useFocusEffect(
     useCallback(() => {
+      if (!enabled) return;
       controller.setActive(AppState.currentState === 'active');
       const subscription = AppState.addEventListener('change', (state) =>
         controller.setActive(state === 'active'),
@@ -19,7 +23,7 @@ export function useViewportLifecycle(controller: {
         subscription.remove();
         controller.setActive(false);
       };
-    }, [controller]),
+    }, [controller, enabled]),
   );
   useEffect(() => {
     controller.setReduceMotion(reducedMotion);

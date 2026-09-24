@@ -1,72 +1,74 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Circle, G, Path } from 'react-native-svg';
 
-import { toGeographic } from '../globe/coordinates';
-import world from '../globe/world.json';
 import { t } from '../localization';
-import { theme } from '../theme';
-import { AtlasAnnotations } from './AtlasAnnotations';
-import { countryColor } from './colors';
+import {
+  AtlasAnnotations,
+  type AtlasAnnotationsHandle,
+} from './AtlasAnnotations';
 import type { FlatCamera } from './FlatCamera';
 import { FlatController } from './FlatController';
-import { flatGestures } from './flatGestures';
-import { flatCountries, oceanPath, projection } from './geography';
+import { FlatSurface, type FlatSurfaceHandle } from './FlatSurface';
+import { navigationGestures } from './gestures';
 import { mapAccessibility } from './mapAccessibility';
+import { pickFlatCountry } from './picking';
 import type { AtlasViewportProps } from './types';
 import { useViewportLifecycle } from './useViewportLifecycle';
 
-const FlatLand = memo(function FlatLand({
-  places,
-  selectedId,
-}: Pick<AtlasViewportProps, 'places' | 'selectedId'>) {
-  return (
-    <>
-      {flatCountries.map(({ id, path }) => (
-        <Path
-          key={id}
-          d={path}
-          fill={countryColor(places[id], selectedId === id)}
-          stroke={theme.globe.border}
-          strokeWidth={0.4}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-    </>
-  );
-});
-
-const markers = world.markers.map(({ id, position }) => ({
-  id,
-  point: projection(toGeographic(position as [number, number, number]))!,
-}));
-
 export function WorldMapViewport({
   camera,
+  active,
+  command,
+  onCommandApplied,
   ...props
 }: AtlasViewportProps & { camera: FlatCamera }) {
   const [, update] = useState(0);
+  const surface = useRef<FlatSurfaceHandle>(null);
+  const annotations = useRef<AtlasAnnotationsHandle>(null);
   const [sized, setSized] = useState(false);
-  const [controller] = useState(
-    () => new FlatController(camera, () => update((value) => value + 1)),
-  );
-  useViewportLifecycle(controller);
-  const { command, onCommandApplied } = props;
+  const [controller] = useState(() => new FlatController(camera));
+  useLayoutEffect(() => {
+    controller.setFrameHandler((moving) => {
+      surface.current?.draw();
+      annotations.current?.draw();
+      if (!moving) update((value) => value + 1);
+    });
+    return () => controller.setFrameHandler(() => undefined);
+  }, [controller]);
+  useViewportLifecycle(controller, active);
   useEffect(() => {
-    if (!sized || !command) return;
+    if (!active || !sized || !command) return;
     controller.move(() =>
       command.type === 'focus' ? camera.focus(command.id) : camera.fitWorld(),
     );
     onCommandApplied(command.key);
-  }, [camera, command, controller, sized, onCommandApplied]);
+  }, [active, camera, command, controller, sized, onCommandApplied]);
+  const { onSelect } = props;
   const gesture = useMemo(
-    () => flatGestures(controller, props.onSelect),
-    [controller, props.onSelect],
+    () =>
+      navigationGestures(controller, (x, y) =>
+        onSelect(
+          pickFlatCountry(camera, x, y),
+          camera.geographicPoint(x, y) ?? undefined,
+        ),
+      ),
+    [camera, controller, onSelect],
   );
   const accessibility = useMemo(
     () => mapAccessibility(controller, t('atlas.worldMap'), camera.zoom),
     [controller, camera.zoom],
+  );
+  const project = useCallback(
+    (point: readonly number[]) => camera.project(point),
+    [camera],
   );
   return (
     <View
@@ -75,44 +77,26 @@ export function WorldMapViewport({
         controller.resize(layout.width, layout.height);
         camera.start(props.homeCountryId);
         setSized(layout.width > 0 && layout.height > 0);
+        update((value) => value + 1);
       }}
     >
       <GestureDetector gesture={gesture}>
-        <View
-          {...accessibility}
-          style={styles.fill}
-          collapsable={false}
-        >
-          <Svg
-            width="100%"
-            height="100%"
-            accessible={false}
-            accessibilityElementsHidden
-          >
-            <G
-              transform={`translate(${camera.width / 2} ${camera.height / 2}) scale(${camera.scale || 1}) translate(${-camera.center[0]} ${-camera.center[1]})`}
-            >
-              <Path d={oceanPath} fill={theme.globe.ocean} />
-              <FlatLand places={props.places} selectedId={props.selectedId} />
-              {markers.map(({ id, point }) => (
-                <Circle
-                  key={id}
-                  cx={point[0]}
-                  cy={point[1]}
-                  r={3 / (camera.scale || 1)}
-                  fill={countryColor(props.places[id], props.selectedId === id)}
-                />
-              ))}
-            </G>
-          </Svg>
+        <View {...accessibility} style={styles.fill} collapsable={false}>
+          <FlatSurface
+            ref={surface}
+            camera={camera}
+            places={props.places}
+            selectedId={props.selectedId}
+          />
         </View>
       </GestureDetector>
       <AtlasAnnotations
+        ref={annotations}
         {...props}
         width={camera.width}
         height={camera.height}
-        zoom={camera.zoom}
-        project={(point) => camera.project(point)}
+        camera={camera}
+        project={project}
       />
     </View>
   );

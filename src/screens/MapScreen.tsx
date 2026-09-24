@@ -40,6 +40,9 @@ export function MapScreen({
   const { data } = app;
   const ready = app.status === 'ready';
   const mode = data.preferences.mapView;
+  // Reuse each renderer after its first visit; inactive views do no frame work.
+  const [loaded, setLoaded] = useState({ globe: false, map: false });
+  if (ready && !loaded[mode]) setLoaded({ ...loaded, [mode]: true });
   const homeCountryId = data.homeCountryId;
   const [globe] = useState(() => new GlobeCamera());
   const [flat] = useState(() => new FlatCamera());
@@ -105,12 +108,35 @@ export function MapScreen({
 
   return (
     <View style={styles.screen}>
-      {ready &&
-        (mode === 'globe' ? (
-          <GlobeViewport {...viewport} camera={globe} />
-        ) : (
-          <WorldMapViewport {...viewport} camera={flat} />
-        ))}
+      {ready && loaded.globe && (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { opacity: mode === 'globe' ? 1 : 0 },
+          ]}
+          pointerEvents={mode === 'globe' ? 'auto' : 'none'}
+          accessibilityElementsHidden={mode !== 'globe'}
+        >
+          <GlobeViewport
+            {...viewport}
+            camera={globe}
+            active={mode === 'globe'}
+          />
+        </View>
+      )}
+      {ready && loaded.map && (
+        <View
+          style={[StyleSheet.absoluteFill, { opacity: mode === 'map' ? 1 : 0 }]}
+          pointerEvents={mode === 'map' ? 'auto' : 'none'}
+          accessibilityElementsHidden={mode !== 'map'}
+        >
+          <WorldMapViewport
+            {...viewport}
+            camera={flat}
+            active={mode === 'map'}
+          />
+        </View>
+      )}
       <View
         pointerEvents="box-none"
         style={[styles.top, { paddingTop: insets.top + theme.space.sm }]}
@@ -130,9 +156,15 @@ export function MapScreen({
               disabled={!ready || app.busy}
               onChangeMode={(mapView) => app.updatePreferences({ mapView })}
               onSearch={onSearch}
-              onHome={homeCountryId ? () => focusCountry(homeCountryId) : undefined}
-              onNorth={() => setCommand({ type: 'north', key: ++sequence.current })}
-              onReset={() => setCommand({ type: 'reset', key: ++sequence.current })}
+              onHome={
+                homeCountryId ? () => focusCountry(homeCountryId) : undefined
+              }
+              onNorth={() =>
+                setCommand({ type: 'north', key: ++sequence.current })
+              }
+              onReset={() =>
+                setCommand({ type: 'reset', key: ++sequence.current })
+              }
             />
           </View>
         </ScrollView>

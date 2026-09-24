@@ -80,8 +80,14 @@ export class GlobeCamera {
     return mat3.fromQuat(mat3.create(), this.rotation);
   }
 
-  twist(radians: number) {
-    const delta = quat.setAxisAngle(quat.create(), [0, 0, 1], -radians);
+  twist(radians: number, x = this.width / 2, y = this.height / 2) {
+    if (!this.radius) return;
+    // Rotate around the touched surface point, keeping the pinch pivot fixed.
+    const px = (x - this.width / 2) / this.radius;
+    const py = (this.height / 2 - y) / this.radius;
+    const squared = px * px + py * py;
+    const axis = squared < 1 ? [px, py, Math.sqrt(1 - squared)] : [0, 0, 1];
+    const delta = quat.setAxisAngle(quat.create(), axis, -radians);
     quat.multiply(this.rotation, delta, this.rotation);
     quat.normalize(this.rotation, this.rotation);
   }

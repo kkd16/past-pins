@@ -1,12 +1,13 @@
 import { quat } from 'gl-matrix';
 
+import { PanMomentum } from '../atlas/PanMomentum';
 import type { AppData } from '../data/model';
 import { theme } from '../theme';
 import { GlobeCamera } from './camera';
 import type { GlobeRenderer } from './renderer';
 
 type Transition = {
-  start: number | null;
+  start: number;
   from: quat;
   to: quat;
   fromZoom: number;
@@ -17,7 +18,8 @@ export class GlobeController {
   private renderer: GlobeRenderer | null = null;
   private frame: number | null = null;
   private lastTime: number | null = null;
-  private velocity = { x: 0, y: 0 };
+  private readonly momentum = new PanMomentum();
+  private interacting = false;
   private active = false;
   private reduceMotion = true;
   private places: AppData['places'] = {};
@@ -28,8 +30,12 @@ export class GlobeController {
   constructor(
     private readonly onError: (error: unknown) => void,
     readonly camera = new GlobeCamera(),
-    private readonly onFrame: () => void = () => undefined,
+    private onFrame: (moving: boolean) => void = () => undefined,
   ) {}
+
+  setFrameHandler(onFrame: (moving: boolean) => void) {
+    this.onFrame = onFrame;
+  }
 
   get ready() {
     return this.renderer !== null;
@@ -51,7 +57,10 @@ export class GlobeController {
   setActive(active: boolean) {
     this.active = active;
     if (active) this.invalidate();
-    else this.stop();
+    else {
+      this.interacting = false;
+      this.stop();
+    }
   }
 
   setReduceMotion(enabled: boolean) {
@@ -73,6 +82,8 @@ export class GlobeController {
   }
 
   resize(width: number, height: number) {
+    if (width <= 0 || height <= 0) return;
+    this.stop();
     this.camera.resize(width, height);
     this.invalidate();
   }
@@ -86,10 +97,11 @@ export class GlobeController {
       !this.reduceMotion &&
       this.active &&
       this.renderer &&
-      (fromZoom !== this.camera.zoom || !quat.equals(from, this.camera.rotation))
+      (fromZoom !== this.camera.zoom ||
+        !quat.equals(from, this.camera.rotation))
     ) {
       this.transition = {
-        start: null,
+        start: performance.now(),
         from,
         fromZoom,
         to: quat.clone(this.camera.rotation),
@@ -124,16 +136,25 @@ export class GlobeController {
     this.invalidate();
   }
 
-  twist(radians: number) {
-    this.camera.twist(radians);
+  twist(radians: number, x?: number, y?: number) {
+    this.camera.twist(radians, x, y);
     this.invalidate();
   }
 
   coast(x: number, y: number) {
     if (this.reduceMotion || !this.active) return;
-    const scale = Math.min(1, 1600 / Math.max(1, Math.hypot(x, y)));
-    this.velocity = { x: x * scale, y: y * scale };
-    this.lastTime = null;
+    this.momentum.start(x, y);
+    this.lastTime = performance.now();
+    this.invalidate();
+  }
+
+  beginInteraction() {
+    this.interacting = true;
+    this.stop();
+  }
+
+  endInteraction() {
+    this.interacting = false;
     this.invalidate();
   }
 
@@ -141,7 +162,7 @@ export class GlobeController {
     if (this.frame !== null) cancelAnimationFrame(this.frame);
     this.frame = null;
     this.lastTime = null;
-    this.velocity = { x: 0, y: 0 };
+    this.momentum.stop();
     this.transition = null;
     this.invalidate();
   }
@@ -161,7 +182,6 @@ export class GlobeController {
     this.lastTime = time;
     if (this.transition) {
       const move = this.transition;
-      move.start ??= time;
       const progress = Math.min(
         1,
         (time - move.start) / theme.motion.cameraDuration,
@@ -172,11 +192,9 @@ export class GlobeController {
         move.fromZoom + (move.toZoom - move.fromZoom) * eased,
       );
       if (progress === 1) this.transition = null;
-    } else if (this.velocity.x || this.velocity.y) {
-      this.camera.drag(this.velocity.x * dt, this.velocity.y * dt);
-      const decay = Math.exp(-5 * dt);
-      this.velocity.x *= decay;
-      this.velocity.y *= decay;
+    } else if (this.momentum.moving) {
+      const delta = this.momentum.step(dt);
+      this.camera.drag(delta.x, delta.y);
     }
     try {
       if (this.colorsDirty) {
@@ -184,17 +202,18 @@ export class GlobeController {
         this.colorsDirty = false;
       }
       this.renderer.draw(this.camera);
-      this.onFrame();
+      this.onFrame(
+        this.interacting || !!this.transition || this.momentum.moving,
+      );
     } catch (error) {
       this.detach();
       this.onError(error);
       return;
     }
-    if (this.transition || Math.hypot(this.velocity.x, this.velocity.y) > 5)
-      this.invalidate();
+    if (this.transition || this.momentum.moving) this.invalidate();
     else {
       this.lastTime = null;
-      this.velocity = { x: 0, y: 0 };
+      this.momentum.stop();
     }
   };
 }

@@ -6,15 +6,24 @@ export function mockAnimationFrames() {
   let time = 0;
   let request: PropertyDescriptor | undefined;
   let cancel: PropertyDescriptor | undefined;
+  let now: PropertyDescriptor | undefined;
 
   beforeEach(() => {
     request = Object.getOwnPropertyDescriptor(
       globalThis,
       'requestAnimationFrame',
     );
-    cancel = Object.getOwnPropertyDescriptor(globalThis, 'cancelAnimationFrame');
+    cancel = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'cancelAnimationFrame',
+    );
+    now = Object.getOwnPropertyDescriptor(performance, 'now');
     nextId = 0;
     time = 0;
+    Object.defineProperty(performance, 'now', {
+      configurable: true,
+      value: () => time,
+    });
     pending.clear();
     globalThis.requestAnimationFrame = (callback) => {
       pending.set(++nextId, callback);
@@ -27,6 +36,8 @@ export function mockAnimationFrames() {
 
   afterEach(() => {
     pending.clear();
+    if (now) Object.defineProperty(performance, 'now', now);
+    else Reflect.deleteProperty(performance, 'now');
     for (const [key, descriptor] of [
       ['requestAnimationFrame', request],
       ['cancelAnimationFrame', cancel],
@@ -40,9 +51,9 @@ export function mockAnimationFrames() {
     get pendingCount() {
       return pending.size;
     },
-    advance(count = 1) {
+    advance(count = 1, interval = 1000 / 60) {
       for (let index = 0; index < count; index++) {
-        time += 1000 / 60;
+        time += interval;
         const callbacks = [...pending.values()];
         pending.clear();
         callbacks.forEach((callback) => callback(time));

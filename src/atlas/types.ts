@@ -5,6 +5,7 @@ export type AtlasCommand =
   | { key: string | number; type: 'reset' | 'north' };
 
 export type AtlasViewportProps = {
+  active: boolean;
   places: AppData['places'];
   homeCountryId: string | null;
   selectedId: string | null;

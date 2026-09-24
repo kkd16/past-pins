@@ -26,7 +26,7 @@ export class FlatCamera {
   }
 
   start(home: string | null) {
-    if (this.initialized) return;
+    if (this.initialized || !this.width || !this.height) return;
     this.initialized = true;
     const fitScale = Math.min(
       this.width / mapSize.width,

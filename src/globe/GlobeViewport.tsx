@@ -1,9 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 
-import { AtlasAnnotations } from '../atlas/AtlasAnnotations';
+import {
+  AtlasAnnotations,
+  type AtlasAnnotationsHandle,
+} from '../atlas/AtlasAnnotations';
 import { countryAnchors } from '../atlas/geography';
+import { navigationGestures } from '../atlas/gestures';
 import { mapAccessibility } from '../atlas/mapAccessibility';
 import type { AtlasViewportProps } from '../atlas/types';
 import { useViewportLifecycle } from '../atlas/useViewportLifecycle';
@@ -14,31 +25,39 @@ import { theme } from '../theme';
 import type { GlobeCamera } from './camera';
 import { GlobeController } from './controller';
 import { toCartesian } from './coordinates';
-import { globeGestures } from './gestures';
 import { GlobeSurface } from './GlobeSurface';
+import { pickCountry } from './picking';
 
 export function GlobeViewport({
   camera,
+  active,
+  command,
+  onCommandApplied,
   ...props
 }: AtlasViewportProps & { camera: GlobeCamera }) {
   const [failed, setFailed] = useState(false);
+  const annotations = useRef<AtlasAnnotationsHandle>(null);
   const [, update] = useState(0);
   const [sized, setSized] = useState(false);
   const fail = useCallback((error: unknown) => {
     console.warn('Globe rendering failed', error);
     setFailed(true);
   }, []);
-  const [controller] = useState(
-    () => new GlobeController(fail, camera, () => update((value) => value + 1)),
-  );
-  useViewportLifecycle(controller);
+  const [controller] = useState(() => new GlobeController(fail, camera));
+  useLayoutEffect(() => {
+    controller.setFrameHandler((moving) => {
+      annotations.current?.draw();
+      if (!moving) update((value) => value + 1);
+    });
+    return () => controller.setFrameHandler(() => undefined);
+  }, [controller]);
+  useViewportLifecycle(controller, active);
   useEffect(
     () => controller.setColors(props.places, props.selectedId),
     [controller, props.places, props.selectedId],
   );
-  const { command, onCommandApplied } = props;
   useEffect(() => {
-    if (!sized || !command) return;
+    if (!active || !sized || !command) return;
     if (command.type === 'focus') {
       const country = countryAnchors.get(command.id);
       if (country)
@@ -48,14 +67,26 @@ export function GlobeViewport({
     } else if (command.type === 'north') controller.northUp();
     else controller.reset();
     onCommandApplied(command.key);
-  }, [camera, command, controller, sized, onCommandApplied]);
+  }, [active, camera, command, controller, sized, onCommandApplied]);
+  const { onSelect } = props;
   const gesture = useMemo(
-    () => globeGestures(controller, props.onSelect),
-    [controller, props.onSelect],
+    () =>
+      navigationGestures(controller, (x, y) => {
+        if (controller.ready)
+          onSelect(
+            pickCountry(camera, x, y),
+            camera.geographicPoint(x, y) ?? undefined,
+          );
+      }),
+    [camera, controller, onSelect],
   );
   const accessibility = useMemo(
     () => mapAccessibility(controller, t('atlas.globe'), camera.zoom),
     [controller, camera.zoom],
+  );
+  const project = useCallback(
+    (point: readonly number[]) => camera.project(toCartesian(point)),
+    [camera],
   );
   return (
     <View
@@ -68,11 +99,7 @@ export function GlobeViewport({
     >
       {!failed && (
         <GestureDetector gesture={gesture}>
-          <View
-            {...accessibility}
-            style={styles.fill}
-            collapsable={false}
-          >
+          <View {...accessibility} style={styles.fill} collapsable={false}>
             <GlobeSurface controller={controller} onError={fail} />
           </View>
         </GestureDetector>
@@ -92,11 +119,12 @@ export function GlobeViewport({
         </ScrollView>
       ) : (
         <AtlasAnnotations
+          ref={annotations}
           {...props}
           width={camera.width}
           height={camera.height}
-          zoom={camera.zoom}
-          project={(point) => camera.project(toCartesian(point))}
+          camera={camera}
+          project={project}
         />
       )}
     </View>

@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { geoArea, geoContains } from 'd3-geo';
 
-import { calloutRect, placeLabels, type Rect } from '../src/atlas/annotations';
+import {
+  annotationTranslation,
+  calloutRect,
+  placeLabels,
+  projectLabels,
+  type Rect,
+} from '../src/atlas/annotations';
 import { FlatCamera } from '../src/atlas/FlatCamera';
 import {
   countryAnchors,
@@ -67,6 +73,32 @@ describe('source-derived atlas', () => {
 });
 
 describe('camera navigation', () => {
+  test('globe rotation keeps an off-center pinch anchor under the fingers', () => {
+    const camera = new GlobeCamera();
+    camera.resize(390, 844);
+    const anchor = camera.geographicPoint(270, 390)!;
+    for (let index = 0; index < 20; index++) {
+      camera.zoomAt(camera.zoom * 1.02, 270, 390);
+      camera.twist(0.03, 270, 390);
+      const point = camera.project(toCartesian(anchor))!;
+      expect(point[0]).toBeCloseTo(270, 3);
+      expect(point[1]).toBeCloseTo(390, 3);
+    }
+  });
+
+  test('a zero-size layout does not consume flat-map initialization', () => {
+    const camera = new FlatCamera();
+    camera.start('fr');
+    expect(camera.initialized).toBe(false);
+    expect(Number.isFinite(camera.zoom)).toBe(true);
+    camera.resize(390, 844);
+    camera.start('fr');
+    expect(camera.initialized).toBe(true);
+    expect(camera.project(countryAnchors.get('fr')!.anchor)![0]).toBeCloseTo(
+      195,
+    );
+  });
+
   test('globe pinch follows an off-center moving focal point', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);
@@ -185,6 +217,61 @@ describe('camera navigation', () => {
 
 describe('map callouts and sparse labels', () => {
   const bounds = { width: 390, height: 844, top: 130, bottom: 140 };
+  test('mounted labels follow the current camera throughout a drag and pinch', () => {
+    const camera = new GlobeCamera();
+    camera.resize(bounds.width, bounds.height);
+    const candidates = ['fr', 'ca'].map((id) => ({
+      ...countryAnchors.get(id)!,
+      name: id,
+    }));
+    const project = (point: readonly number[]) =>
+      camera.project(toCartesian(point));
+    const frame = () =>
+      placeLabels(
+        projectLabels(candidates, project, camera.zoom),
+        bounds,
+        [],
+      ).map(({ id }) => id);
+    camera.focus(countryAnchors.get('fr')!.anchor, 0.1);
+    expect(frame()).toContain('fr');
+    expect(frame()).not.toContain('ca');
+    camera.focus(countryAnchors.get('ca')!.anchor, 0.1);
+    expect(frame()).toContain('ca');
+    expect(frame()).not.toContain('fr');
+    camera.setZoom(1.2);
+    expect(frame()).toEqual([]);
+    camera.setZoom(4);
+    expect(frame()).toContain('ca');
+  });
+
+  test('native annotation transforms keep the same geographic position in RTL', () => {
+    const rect = { x: 70, y: 200, width: 240, height: 80 };
+    const ltr = annotationTranslation(rect, 390, false);
+    const rtl = annotationTranslation(rect, 390, true);
+    expect(ltr[0]).toBe(70);
+    expect(390 - rect.width + rtl[0]).toBe(70);
+    expect(ltr[1]).toBe(rtl[1]);
+  });
+
+  test('label collision bounds grow with Dynamic Type and long translations', () => {
+    const [label] = placeLabels(
+      [
+        {
+          id: 'long',
+          name: 'A long translated country name',
+          point: [195, 400],
+        },
+      ],
+      bounds,
+      [],
+      1.4,
+    );
+    expect(label.width).toBeCloseTo(238);
+    expect(label.height).toBeCloseTo(28);
+    expect(label.x).toBeGreaterThanOrEqual(8);
+    expect(label.x + label.width).toBeLessThanOrEqual(bounds.width - 8);
+  });
+
   test('callouts flip and clamp within usable bounds, hiding offscreen anchors', () => {
     const size = { width: 240, height: 80 };
     expect(calloutRect([195, 150], size, bounds)!.y).toBe(164);

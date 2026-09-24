@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import { GlobeController } from '../src/globe/controller';
+import { GlobeCamera } from '../src/globe/camera';
 import { mockAnimationFrames } from './helpers/animation-frames';
 
 describe('globe frame lifecycle', () => {
@@ -14,6 +15,32 @@ describe('globe frame lifecycle', () => {
     controller.attach(renderer);
     return { controller, renderer, error };
   }
+
+  test('globe gestures draw frames without requesting React updates until settled', () => {
+    const draw = mock();
+    const controller = new GlobeController(mock(), new GlobeCamera(), draw);
+    controller.resize(390, 844);
+    controller.attach({ draw: mock(), setColors: mock(), dispose: mock() });
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    frames.advance();
+    draw.mockClear();
+    controller.beginInteraction();
+    for (let index = 0; index < 10; index++) {
+      controller.drag(2, 1);
+      frames.advance();
+    }
+    expect(draw.mock.calls.every(([moving]) => moving)).toBe(true);
+    const released = Array.from(controller.camera.rotation);
+    controller.coast(900, 0);
+    controller.endInteraction();
+    frames.advance(1, 1000 / 120);
+    expect(Array.from(controller.camera.rotation)).not.toEqual(released);
+    expect(draw).toHaveBeenLastCalledWith(true);
+    frames.advance(180);
+    expect(draw.mock.calls.filter(([moving]) => !moving)).toHaveLength(1);
+    expect(frames.pendingCount).toBe(0);
+  });
 
   test('renders on demand, coalesces changes, and does no GPU work while hidden', () => {
     const { controller, renderer } = setup();
