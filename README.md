@@ -41,7 +41,7 @@ The map, list, filters, and statistics all use the resulting catalog. Missing me
 
 Visits are binary and stored locally in `past-pins-visits.db`. The `visited_countries` table contains a primary-key `country_id` for each visited place. This implementation uses its own database directly; there are no migrations or legacy storage readers.
 
-Reads finish before editing is enabled. Writes are serialized and transactional; each saves a snapshot. Edits appear immediately across the app, while failures display retry controls. Statistics remain unavailable until saved visits have loaded.
+Reads finish before editing is enabled. Writes are serialized and transactional; each saves a snapshot. Edits appear immediately across the app, while failures display retry controls and are announced once to VoiceOver when the error appears. Statistics remain unavailable until saved visits have loaded.
 
 Country details save immediately. List filters apply with Done; swiping their sheet away discards the draft. Search, filters, and map zoom survive tab switches but are not persisted across a fresh launch.
 
@@ -53,10 +53,12 @@ Bun tests cover catalog joins, search, combined filtering, grouping, statistics,
 - Selecting a map shape or country name opens the same detail sheet; both its switch and list checkmarks update every tab and persist after relaunch.
 - Filters intersect with search and visit status; Done applies and swipe dismissal cancels.
 - Insets, native tabs, sheet expansion, keyboards, and text remain usable at large Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.
+- At the largest text size, Countries controls and results scroll together; typing retains focus and does not reset scroll. Test on a small iPhone and a short iPad window with the keyboard open.
+- Simulate a storage failure: VoiceOver announces it once across mounted tabs, retry remains available, and a new failure after successful recovery is announced again.
 - All map data and visit editing work offline.
 
 ## Attribution
 
 Map data © 2026 Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on [Natural Earth](https://www.naturalearthdata.com/) public-domain data. PastPins projects the supplied geometry and changes its styling and visit/selection colors.
 
-Continent metadata comes from [Countries by Annexare](https://github.com/annexare/Countries), MIT licensed. License notices are retained in `licenses/`; attribution is also accessible in Stats.
+Continent metadata comes from [Countries by Annexare](https://github.com/annexare/Countries), MIT licensed. Attribution and bundled notices for the map, metadata, projection, and segmented-control dependencies are accessible in Stats. `licenses/map-and-controls.json` contains the installed packages’ license text; refresh it from their `LICENSE` files when updating those dependencies.

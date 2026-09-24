@@ -3,9 +3,11 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   type ReactNode,
 } from 'react';
+import { AccessibilityInfo } from 'react-native';
 
 import {
   useVisitedCountries,
@@ -25,6 +27,21 @@ export function VisitsProvider({
 }) {
   const { visitedIds, status, saveError, setVisited, retry } =
     useVisitedCountries(storage);
+  const errorAnnouncement =
+    status === 'load-error'
+      ? 'Could not load your visits. Use Try again to retry.'
+      : saveError
+        ? 'Your latest changes haven’t been saved. Use Retry save to try again.'
+        : null;
+  // Tabs stay mounted: announce errors once here, not from each visible notice.
+  useEffect(() => {
+    if (errorAnnouncement) {
+      AccessibilityInfo.announceForAccessibilityWithOptions(errorAnnouncement, {
+        queue: true,
+      });
+    }
+  }, [errorAnnouncement]);
+
   const changeVisit = useCallback(
     (id: CountryId, visited: boolean) => {
       if (status !== 'ready') return;

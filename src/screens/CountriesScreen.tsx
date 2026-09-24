@@ -62,36 +62,39 @@ export function CountriesScreen({
 
   return (
     <Screen>
-      <ScreenHeader
-        title="Countries"
-        subtitle={continentName ?? 'Countries & territories'}
-      >
-        <IconButton
-          name="filter"
-          color={hasFilters ? theme.color.accent : theme.color.textMuted}
-          accessibilityLabel={
-            hasFilters ? 'Filters, custom options applied' : 'Filters'
-          }
-          onPress={() => {
-            Keyboard.dismiss();
-            onOpenFilters();
-          }}
-        />
-      </ScreenHeader>
-      <View style={styles.controls}>
-        <SearchField
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Find a country or territory"
-          accessibilityLabel="Search countries and territories"
-          onSubmitEditing={Keyboard.dismiss}
-        />
-        <VisitStatusControl value={visitFilter} onChange={setVisitFilter} />
-      </View>
-      <VisitsFeedback {...visits} />
       <CountryList
+        header={
+          <>
+            <ScreenHeader
+              title="Countries"
+              subtitle={continentName ?? 'Countries & territories'}
+            >
+              <IconButton
+                name="filter"
+                color={hasFilters ? theme.color.accent : theme.color.textMuted}
+                accessibilityLabel={
+                  hasFilters ? 'Filters, custom options applied' : 'Filters'
+                }
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onOpenFilters();
+                }}
+              />
+            </ScreenHeader>
+            <View style={styles.controls}>
+              <SearchField
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Find a country or territory"
+                accessibilityLabel="Search countries and territories"
+                onSubmitEditing={Keyboard.dismiss}
+              />
+              <VisitStatusControl value={visitFilter} onChange={setVisitFilter} />
+            </View>
+            <VisitsFeedback {...visits} />
+          </>
+        }
         scrollResetKey={JSON.stringify([
-          query,
           visitFilter,
           continent,
           grouping,

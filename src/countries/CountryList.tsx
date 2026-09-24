@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { SectionList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
@@ -9,6 +9,7 @@ import type { CountrySection } from './filters';
 import type { Country, CountryId } from './types';
 
 export function CountryList({
+  header,
   sections,
   resultCount,
   visitedIds,
@@ -18,6 +19,7 @@ export function CountryList({
   onReset,
   scrollResetKey,
 }: {
+  header: ReactNode;
   sections: CountrySection[];
   resultCount: number;
   visitedIds: ReadonlySet<CountryId>;
@@ -28,7 +30,7 @@ export function CountryList({
   scrollResetKey: string;
 }) {
   const list = useRef<SectionList<Country, CountrySection>>(null);
-  // New search/filter choices start at the first result; editing visits keeps position.
+  // Filter choices start at the top; typing in the header and editing visits keep position.
   useLayoutEffect(() => {
     list.current?.getScrollResponder()?.scrollTo({ y: 0, animated: false });
   }, [scrollResetKey]);
@@ -69,11 +71,14 @@ export function CountryList({
         </View>
       )}
       ListHeaderComponent={
-        ready ? (
-          <AppText variant="caption" tone="muted" style={styles.count}>
-            {resultCount} places
-          </AppText>
-        ) : null
+        <>
+          {header}
+          {ready && (
+            <AppText variant="caption" tone="muted" style={styles.count}>
+              {resultCount} places
+            </AppText>
+          )}
+        </>
       }
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListEmptyComponent={
