@@ -22,6 +22,7 @@ update:
 	@echo "2) Aligning Expo packages with the installed SDK"
 	@bunx expo install --fix --bun
 	@echo "   ✓ Expo packages aligned"
+	@bun run globe:generate
 	@echo "3) Checking project health"
 	@bunx expo-doctor
 	@echo "✓ Dependencies updated"

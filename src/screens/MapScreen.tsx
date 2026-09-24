@@ -8,7 +8,7 @@ import { Button } from '../components/Button';
 import type { CountryId } from '../countries/types';
 import { VisitsFeedback } from '../countries/VisitsFeedback';
 import { useVisits } from '../countries/VisitsProvider';
-import { WorldMapViewport } from '../countries/WorldMapViewport';
+import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
 
 export function MapScreen({
@@ -35,16 +35,17 @@ export function MapScreen({
   const ready = visits.status === 'ready';
 
   return (
-    <SafeAreaView
-      style={styles.screen}
-      edges={{ top: true, bottom: true, left: true, right: true }}
-    >
-      <View style={styles.canvas}>
-        <WorldMapViewport
-          visitedIds={visits.visitedIds}
-          selectedId={selectedId}
-          onSelect={select}
-        />
+    <View style={styles.screen}>
+      <GlobeViewport
+        visitedIds={visits.visitedIds}
+        selectedId={selectedId}
+        onSelect={select}
+      />
+      <SafeAreaView
+        style={styles.overlay}
+        pointerEvents="box-none"
+        edges={{ top: true, bottom: true, left: true, right: true }}
+      >
         <View style={styles.footer} pointerEvents="box-none">
           <VisitsFeedback {...visits} />
           {ready &&
@@ -52,7 +53,7 @@ export function MapScreen({
               <View style={styles.invitation}>
                 <AppText variant="heading">Your world starts here.</AppText>
                 <AppText variant="caption" tone="muted">
-                  Tap a place, or find it in Countries.
+                  Drag to spin, pinch to zoom, and tap a place.
                 </AppText>
                 <Button
                   label="Mark your first visit"
@@ -63,27 +64,28 @@ export function MapScreen({
             ) : (
               <View
                 accessible
-                accessibilityLabel={`World map. ${visits.visitedIds.size} places visited. Use the Countries tab to browse and edit visits.`}
+                accessibilityLabel={`World globe. ${visits.visitedIds.size} places visited. Use the Countries tab to browse and edit visits.`}
               >
                 <AppText variant="caption" tone="muted" style={styles.hint}>
-                  {visits.visitedIds.size} places visited · Pinch to explore
+                  {visits.visitedIds.size} places visited · Drag to spin, pinch
+                  to zoom
                 </AppText>
               </View>
             ))}
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.color.background },
-  canvas: { flex: 1 },
+  overlay: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
   footer: {
-    position: 'absolute',
-    bottom: theme.space.md,
-    left: theme.space.lg,
-    right: theme.space.lg,
+    margin: theme.space.lg,
+    padding: theme.space.md,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.color.background,
   },
   invitation: { gap: theme.space.sm, alignItems: 'center' },
   hint: { textAlign: 'center' },

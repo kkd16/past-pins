@@ -35,9 +35,7 @@ export default function TabsLayout() {
         contentStyle={{ backgroundColor: theme.color.background }}
       >
         <NativeTabs.Trigger.Label>Map</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'map', selected: 'map.fill' }}
-        />
+        <NativeTabs.Trigger.Icon sf="globe" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
         name="stats"

@@ -24,7 +24,7 @@ export function MapAttribution() {
         style={styles.link}
       >
         <AppText variant="caption" tone="muted">
-          CC BY 4.0 · Projected and styled by PastPins
+          CC BY 4.0 · Globe geometry and styling by PastPins
         </AppText>
       </Link>
       <Link href="https://github.com/annexare/Countries" style={styles.link}>

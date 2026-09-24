@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Appearance } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { VisitsProvider } from '../countries/VisitsProvider';
 import { visitStorage } from '../storage/visits';
@@ -15,32 +16,34 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <VisitsProvider storage={visitStorage}>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: theme.color.background },
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="country/[id]"
-          options={{
-            presentation: 'formSheet',
-            sheetAllowedDetents: [0.4, 1],
-            sheetGrabberVisible: true,
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <VisitsProvider storage={visitStorage}>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: theme.color.background },
           }}
-        />
-        <Stack.Screen
-          name="filters"
-          options={{
-            presentation: 'formSheet',
-            sheetAllowedDetents: [0.7, 1],
-            sheetGrabberVisible: true,
-          }}
-        />
-      </Stack>
-    </VisitsProvider>
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="country/[id]"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: [0.4, 1],
+              sheetGrabberVisible: true,
+            }}
+          />
+          <Stack.Screen
+            name="filters"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: [0.7, 1],
+              sheetGrabberVisible: true,
+            }}
+          />
+        </Stack>
+      </VisitsProvider>
+    </GestureHandlerRootView>
   );
 }

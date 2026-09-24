@@ -6,5 +6,4 @@ export type Country = {
   id: CountryId;
   name: string;
   continent: Continent;
-  path: string;
 };
