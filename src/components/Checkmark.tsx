@@ -1,47 +1,38 @@
 import { useEffect, useRef } from 'react';
-import {
-  AccessibilityInfo,
-  Animated,
-  StyleSheet,
-  useAnimatedValue,
-} from 'react-native';
+import { Animated, StyleSheet, useAnimatedValue } from 'react-native';
 
 import { theme } from '../theme';
+import { useReducedMotion } from '../motion/ReducedMotion';
 import { Icon } from './Icon';
 
 export function Checkmark({ checked }: { checked: boolean }) {
+  const reduced = useReducedMotion();
   const scale = useAnimatedValue(1);
   const previous = useRef(checked);
   useEffect(() => {
     const added = checked && !previous.current;
     previous.current = checked;
-    if (!added) return;
-    let cancelled = false;
-    void AccessibilityInfo.isReduceMotionEnabled()
-      .then((reduced) => {
-        if (cancelled || reduced) return;
-        Animated.sequence([
-          Animated.timing(scale, {
-            toValue: theme.motion.checkScale,
-            duration: theme.motion.checkExpand,
-            useNativeDriver: true,
-            isInteraction: false,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: theme.motion.checkSettle,
-            useNativeDriver: true,
-            isInteraction: false,
-          }),
-        ]).start();
-      })
-      .catch(() => undefined);
+    if (!added || reduced) return;
+    const animation = Animated.sequence([
+      Animated.timing(scale, {
+        toValue: theme.motion.checkScale,
+        duration: theme.motion.checkExpand,
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: theme.motion.checkSettle,
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
+    ]);
+    animation.start();
     return () => {
-      cancelled = true;
-      scale.stopAnimation();
+      animation.stop();
       scale.setValue(1);
     };
-  }, [checked, scale]);
+  }, [checked, reduced, scale]);
 
   return (
     <Animated.View

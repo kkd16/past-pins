@@ -10,6 +10,7 @@ import {
 
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
+import { FadeIn } from '../components/FadeIn';
 import { Icon } from '../components/Icon';
 import { countryById } from '../countries/catalog';
 import { getStatusPresentation } from '../countries/status';
@@ -44,43 +45,46 @@ export function CountryCallout({
       AccessibilityInfo.sendAccessibilityEvent(ref.current, 'focus');
   }, [autofocus, countryId]);
   if (!country) return null;
+  const Container = autofocus ? View : FadeIn;
   return (
-    <AppPressable
-      ref={ref}
-      accessibilityLabel={t('atlas.countryStatus', {
-        country: country.name,
-        status: presentation.label,
-      })}
-      accessibilityHint={t('atlas.openDetails')}
-      accessibilityActions={[
-        { name: 'dismiss', label: t('atlas.dismissSelection') },
-      ]}
-      onAccessibilityAction={({ nativeEvent }) => {
-        if (nativeEvent.actionName === 'dismiss') onDismiss();
-      }}
-      onAccessibilityEscape={onDismiss}
-      onPress={() => onDetails(country.id)}
-      onLayout={onLayout}
-      style={[styles.callout, style]}
-    >
-      <View style={styles.content}>
-        <AppText variant="label">{country.name}</AppText>
-        <View style={styles.status}>
-          <Icon
-            name={presentation.icon}
-            color={presentation.color}
-            size={theme.size.iconSmall}
-          />
-          <AppText
-            variant="caption"
-            style={{ color: presentation.color, flexShrink: 1 }}
-          >
-            {presentation.label}
-          </AppText>
+    <Container style={style}>
+      <AppPressable
+        ref={ref}
+        accessibilityLabel={t('atlas.countryStatus', {
+          country: country.name,
+          status: presentation.label,
+        })}
+        accessibilityHint={t('atlas.openDetails')}
+        accessibilityActions={[
+          { name: 'dismiss', label: t('atlas.dismissSelection') },
+        ]}
+        onAccessibilityAction={({ nativeEvent }) => {
+          if (nativeEvent.actionName === 'dismiss') onDismiss();
+        }}
+        onAccessibilityEscape={onDismiss}
+        onPress={() => onDetails(country.id)}
+        onLayout={onLayout}
+        style={styles.callout}
+      >
+        <View style={styles.content}>
+          <AppText variant="label">{country.name}</AppText>
+          <View style={styles.status}>
+            <Icon
+              name={presentation.icon}
+              color={presentation.color}
+              size={theme.size.iconSmall}
+            />
+            <AppText
+              variant="caption"
+              style={{ color: presentation.color, flexShrink: 1 }}
+            >
+              {presentation.label}
+            </AppText>
+          </View>
         </View>
-      </View>
-      <Icon name="chevronRight" />
-    </AppPressable>
+        <Icon name="chevronRight" />
+      </AppPressable>
+    </Container>
   );
 }
 

@@ -156,6 +156,7 @@ export function MapScreen({
           <View style={[styles.overlayContent, styles.footer]}>
             {ready && dockSelection && selectedId && (
               <CountryCallout
+                key={selectedId}
                 countryId={selectedId}
                 status={data.places[selectedId]}
                 home={data.homeCountryId === selectedId}

@@ -1,11 +1,14 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect } from 'react';
-import { AccessibilityInfo, AppState } from 'react-native';
+import { AppState } from 'react-native';
+
+import { useReducedMotion } from '../motion/ReducedMotion';
 
 export function useViewportLifecycle(controller: {
   setActive: (active: boolean) => void;
   setReduceMotion: (enabled: boolean) => void;
 }) {
+  const reducedMotion = useReducedMotion();
   useFocusEffect(
     useCallback(() => {
       controller.setActive(AppState.currentState === 'active');
@@ -19,22 +22,6 @@ export function useViewportLifecycle(controller: {
     }, [controller]),
   );
   useEffect(() => {
-    let pendingInitialRead = true;
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      (enabled) => {
-        pendingInitialRead = false;
-        controller.setReduceMotion(enabled);
-      },
-    );
-    void AccessibilityInfo.isReduceMotionEnabled()
-      .then((enabled) => {
-        if (pendingInitialRead) controller.setReduceMotion(enabled);
-      })
-      .catch(() => undefined);
-    return () => {
-      pendingInitialRead = false;
-      subscription.remove();
-    };
-  }, [controller]);
+    controller.setReduceMotion(reducedMotion);
+  }, [controller, reducedMotion]);
 }

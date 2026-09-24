@@ -106,7 +106,16 @@ export const theme = {
     progress: 6,
     contentMax: 760,
   },
-  motion: { checkScale: 1.16, checkExpand: 90, checkSettle: 140 },
+  motion: {
+    cameraDuration: 420,
+    enter: 220,
+    pressRelease: 180,
+    progress: 280,
+    lift: 8,
+    checkScale: 1.16,
+    checkExpand: 90,
+    checkSettle: 140,
+  },
   accessibility: { largeTextScale: 1.3 },
   opacity: { pressed: 0.72, disabled: 0.45 },
 } as const;

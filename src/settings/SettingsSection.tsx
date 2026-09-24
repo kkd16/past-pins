@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
@@ -38,6 +38,7 @@ export function SettingsRow({
   destructive,
   disclosure = false,
   disabled = false,
+  busy = false,
 }: {
   title: string;
   value?: string;
@@ -45,10 +46,12 @@ export function SettingsRow({
   destructive?: boolean;
   disclosure?: boolean;
   disabled?: boolean;
+  busy?: boolean;
 }) {
   return (
     <AppPressable
-      disabled={disabled}
+      disabled={disabled || busy}
+      accessibilityState={busy ? { busy: true } : undefined}
       onPress={onPress}
       style={styles.row}
     >
@@ -60,7 +63,14 @@ export function SettingsRow({
           </AppText>
         )}
       </View>
-      {disclosure && <Icon name="chevronRight" />}
+      {busy ? (
+        <ActivityIndicator
+          color={theme.color.accent}
+          accessibilityElementsHidden
+        />
+      ) : (
+        disclosure && <Icon name="chevronRight" />
+      )}
     </AppPressable>
   );
 }

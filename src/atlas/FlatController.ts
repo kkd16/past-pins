@@ -1,3 +1,4 @@
+import { theme } from '../theme';
 import type { FlatCamera } from './FlatCamera';
 
 export class FlatController {
@@ -25,7 +26,13 @@ export class FlatController {
 
   setReduceMotion(enabled: boolean) {
     this.reduceMotion = enabled;
-    if (enabled) this.stop();
+    if (enabled) {
+      if (this.transition) {
+        this.camera.center = this.transition.to;
+        this.camera.zoom = this.transition.toZoom;
+      }
+      this.stop();
+    }
   }
 
   resize(width: number, height: number) {
@@ -53,7 +60,12 @@ export class FlatController {
     const from = [...this.camera.center];
     const fromZoom = this.camera.zoom;
     change();
-    if (!this.reduceMotion && this.active) {
+    if (
+      !this.reduceMotion &&
+      this.active &&
+      (fromZoom !== this.camera.zoom ||
+        from.some((value, index) => value !== this.camera.center[index]))
+    ) {
       this.transition = {
         start: null,
         from,
@@ -85,7 +97,10 @@ export class FlatController {
     if (this.transition) {
       const move = this.transition;
       move.start ??= time;
-      const progress = Math.min(1, (time - move.start) / 420);
+      const progress = Math.min(
+        1,
+        (time - move.start) / theme.motion.cameraDuration,
+      );
       const eased = 1 - (1 - progress) ** 3;
       this.camera.center = move.from.map(
         (value, index) => value + (move.to[index] - value) * eased,

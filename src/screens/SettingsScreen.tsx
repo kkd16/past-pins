@@ -15,6 +15,8 @@ import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
 import { theme } from '../theme';
 
+type DataAction = 'export' | 'restore' | 'clear' | 'reset';
+
 function confirm(
   title: string,
   message: string,
@@ -47,14 +49,15 @@ export function SettingsScreen({
     resetPreferences,
   } = useAppData();
   const running = useRef(false);
-  const [working, setWorking] = useState(false);
+  const [operation, setOperation] = useState<DataAction | null>(null);
+  const working = operation !== null;
   const disabled = status !== 'ready' || busy || working;
   const prefs = data.preferences;
 
-  async function run(action: () => Promise<void>) {
+  async function run(name: DataAction, action: () => Promise<void>) {
     if (running.current) return;
     running.current = true;
-    setWorking(true);
+    setOperation(name);
     try {
       await action();
     } catch (error) {
@@ -66,7 +69,7 @@ export function SettingsScreen({
       );
     } finally {
       running.current = false;
-      setWorking(false);
+      setOperation(null);
     }
   }
 
@@ -93,6 +96,10 @@ export function SettingsScreen({
       )
     ) {
       await restore(backup);
+      Alert.alert(
+        t('settings.backupRestored'),
+        t('settings.backupRestoredMessage'),
+      );
     }
   }
 
@@ -179,20 +186,23 @@ export function SettingsScreen({
             title={t('settings.exportBackup')}
             value={t('settings.backupContents')}
             disabled={disabled}
-            onPress={() => void run(() => shareBackup(data))}
+            busy={operation === 'export'}
+            onPress={() => void run('export', () => shareBackup(data))}
           />
           <SettingsRow
             title={t('settings.restoreBackup')}
             value={t('settings.restoreDescription')}
             disabled={busy || working || status === 'loading'}
-            onPress={() => void run(importBackup)}
+            busy={operation === 'restore'}
+            onPress={() => void run('restore', importBackup)}
           />
           <SettingsRow
             title={t('settings.clearTravel')}
             destructive
             disabled={disabled}
+            busy={operation === 'clear'}
             onPress={() =>
-              void run(async () => {
+              void run('clear', async () => {
                 if (
                   await confirm(
                     t('settings.clearTravelTitle'),
@@ -207,8 +217,9 @@ export function SettingsScreen({
           <SettingsRow
             title={t('settings.resetPreferences')}
             disabled={disabled}
+            busy={operation === 'reset'}
             onPress={() =>
-              void run(async () => {
+              void run('reset', async () => {
                 if (
                   await confirm(
                     t('settings.resetTitle'),

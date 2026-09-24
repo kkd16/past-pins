@@ -1,8 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Keyboard, StyleSheet, View } from 'react-native';
+import {
+  Keyboard,
+  LayoutAnimation,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
-import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
 import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
@@ -21,8 +25,9 @@ import {
 import { showStatusPicker } from '../countries/StatusPicker';
 import type { CountryId } from '../countries/types';
 import { useAppData } from '../data/AppDataProvider';
+import { useReducedMotion } from '../motion/ReducedMotion';
 import { theme } from '../theme';
-import { t, formatNumber } from '../localization';
+import { t } from '../localization';
 
 const emptySelection: ReadonlySet<string> = new Set();
 
@@ -48,6 +53,7 @@ export function CountriesScreen({
   onSelect: (id: CountryId) => void;
 }) {
   const app = useAppData();
+  const reducedMotion = useReducedMotion();
   const { setStatus } = app;
   const { continent, grouping } = filters;
   const sections = useMemo(
@@ -60,7 +66,10 @@ export function CountriesScreen({
       ),
     [query, scope, continent, grouping, app.data.places],
   );
-  const resultIds = sections.flatMap(({ data }) => data.map(({ id }) => id));
+  const resultIds = useMemo(
+    () => sections.flatMap(({ data }) => data.map(({ id }) => id)),
+    [sections],
+  );
   const filterKey = JSON.stringify([
     query,
     scope,
@@ -104,9 +113,14 @@ export function CountriesScreen({
     },
     [setStatus],
   );
+  function endSelection() {
+    Keyboard.dismiss();
+    if (!reducedMotion) LayoutAnimation.easeInEaseOut();
+    setSelection(null);
+  }
 
   return (
-    <Screen>
+    <Screen onAccessibilityEscape={selecting ? endSelection : undefined}>
       <CountryList
         header={
           <>
@@ -135,37 +149,10 @@ export function CountriesScreen({
                 onChangeText={onQueryChange}
                 placeholder={t('countries.search')}
                 accessibilityLabel={t('countries.searchLabel')}
-                onSubmitEditing={Keyboard.dismiss}
               />
               <CountryScopeControl value={scope} onChange={onScopeChange} />
-              <View style={styles.selectionActions}>
-                {selecting && (
-                  <AppText
-                    variant="caption"
-                    tone="muted"
-                    style={styles.selectionLabel}
-                  >
-                    {t('countries.selectedCount', {
-                      count: selectedIds.size,
-                      amount: formatNumber(selectedIds.size),
-                    })}
-                  </AppText>
-                )}
-                <Button
-                  label={selecting ? t('common.cancel') : t('countries.select')}
-                  variant="quiet"
-                  disabled={disabled || (!selecting && resultIds.length === 0)}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    setSelection(
-                      selecting ? null : { filterKey, ids: emptySelection },
-                    );
-                  }}
-                />
-              </View>
             </View>
             <DataFeedback />
-            <UndoNotice />
           </>
         }
         scrollResetKey={JSON.stringify([scope, continent, grouping, intent])}
@@ -181,14 +168,31 @@ export function CountriesScreen({
         narrowed={query.trim() !== '' || continent !== 'all'}
         selecting={selecting}
         selectedIds={selectedIds}
+        onStartSelection={() => {
+          Keyboard.dismiss();
+          if (!reducedMotion) LayoutAnimation.easeInEaseOut();
+          setSelection({ filterKey, ids: emptySelection });
+        }}
       />
-      {selecting && (
-        <CountryBulkActions
-          resultIds={resultIds}
-          selectedIds={selectedIds}
-          onSelectionChange={(ids) => setSelection({ filterKey, ids })}
-          onComplete={() => setSelection(null)}
-        />
+      {(selecting || app.undoLabel) && (
+        <ScrollView
+          style={styles.footer}
+          bounces={false}
+          contentInsetAdjustmentBehavior="never"
+          keyboardShouldPersistTaps="handled"
+          scrollsToTop={false}
+        >
+          {selecting ? (
+            <CountryBulkActions
+              resultIds={resultIds}
+              selectedIds={selectedIds}
+              onSelectionChange={(ids) => setSelection({ filterKey, ids })}
+              onEndSelection={endSelection}
+            />
+          ) : (
+            <UndoNotice />
+          )}
+        </ScrollView>
       )}
     </Screen>
   );
@@ -196,11 +200,5 @@ export function CountriesScreen({
 
 const styles = StyleSheet.create({
   controls: { gap: theme.space.md, paddingBottom: theme.space.md },
-  selectionActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    gap: theme.space.md,
-  },
-  selectionLabel: { flex: 1, paddingStart: theme.space.lg },
+  footer: { flexGrow: 0, maxHeight: '40%', marginVertical: theme.space.sm },
 });

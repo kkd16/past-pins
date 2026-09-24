@@ -29,6 +29,7 @@ export function CountryList({
   narrowed,
   selecting,
   selectedIds,
+  onStartSelection,
 }: {
   header: ReactNode;
   sections: CountrySection[];
@@ -44,6 +45,7 @@ export function CountryList({
   narrowed: boolean;
   selecting: boolean;
   selectedIds: ReadonlySet<CountryId>;
+  onStartSelection: () => void;
 }) {
   const list = useRef<SectionList<Country, CountrySection>>(null);
   useLayoutEffect(() => {
@@ -65,7 +67,7 @@ export function CountryList({
       contentInsetAdjustmentBehavior="never"
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
+      keyboardDismissMode="interactive"
       contentContainerStyle={styles.content}
       renderItem={({ item }) => (
         <CountryRow
@@ -105,12 +107,22 @@ export function CountryList({
         <>
           {header}
           {ready && (
-            <AppText variant="caption" tone="muted" style={styles.count}>
-              {t('countries.placeCount', {
-                count: resultCount,
-                amount: formatNumber(resultCount),
-              })}
-            </AppText>
+            <View style={styles.results}>
+              <AppText variant="caption" tone="muted" style={styles.resultCount}>
+                {t('countries.placeCount', {
+                  count: resultCount,
+                  amount: formatNumber(resultCount),
+                })}
+              </AppText>
+              {!selecting && (
+                <Button
+                  label={t('countries.select')}
+                  variant="quiet"
+                  disabled={disabled || resultCount === 0}
+                  onPress={onStartSelection}
+                />
+              )}
+            </View>
           )}
         </>
       }
@@ -143,7 +155,15 @@ export function CountryList({
 const styles = StyleSheet.create({
   list: { flex: 1 },
   content: { paddingBottom: theme.space.xl },
-  count: { paddingHorizontal: theme.space.lg, paddingVertical: theme.space.sm },
+  results: {
+    minHeight: theme.size.touch,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: theme.space.md,
+    paddingStart: theme.space.lg,
+  },
+  resultCount: { flexGrow: 1, flexBasis: 120 },
   section: {
     flexDirection: 'row',
     alignItems: 'center',

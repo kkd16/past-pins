@@ -15,9 +15,9 @@ export function globeGestures(
   let pointers = 0;
   const pan = Gesture.Pan()
     .runOnJS(true)
-    .onBegin(() => {
+    .onBegin((event) => {
       controller.stop();
-      pointers = 0;
+      pointers = event.numberOfPointers;
     })
     .onChange((event) => {
       if (

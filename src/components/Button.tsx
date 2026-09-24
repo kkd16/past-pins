@@ -18,10 +18,10 @@ export function Button({
   return (
     <AppPressable
       {...props}
-      style={(state) => [
+      style={[
         styles.base,
         variant === 'primary' && styles.primary,
-        typeof style === 'function' ? style(state) : style,
+        style,
       ]}
     >
       <AppText

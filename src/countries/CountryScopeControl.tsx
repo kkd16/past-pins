@@ -10,6 +10,7 @@ import {
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { ChoiceRow } from '../components/ChoiceRow';
+import { useReducedMotion } from '../motion/ReducedMotion';
 import { theme } from '../theme';
 import { t } from '../localization';
 import { countryScopes, type CountryScope } from './filters';
@@ -22,14 +23,15 @@ export function CountryScopeControl({
   onChange: (value: CountryScope) => void;
 }) {
   const { fontScale } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
   const scroll = useRef<ScrollView>(null);
   const positions = useRef<Partial<Record<CountryScope, number>>>({});
   useLayoutEffect(() => {
     scroll.current?.scrollTo({
       x: positions.current[value] ?? 0,
-      animated: false,
+      animated: !reducedMotion,
     });
-  }, [value, fontScale]);
+  }, [value, fontScale, reducedMotion]);
   if (I18nManager.isRTL || fontScale > theme.accessibility.largeTextScale) {
     return (
       <View
@@ -51,6 +53,8 @@ export function CountryScopeControl({
     <ScrollView
       ref={scroll}
       horizontal
+      keyboardShouldPersistTaps="handled"
+      scrollsToTop={false}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.options}
       accessibilityRole="tablist"

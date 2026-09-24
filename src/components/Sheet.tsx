@@ -27,25 +27,24 @@ export function Sheet({
       style={styles.scroll}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={styles.content}
-      bounces={false}
+      stickyHeaderIndices={[0]}
     >
-      {onCancel ? (
-        <>
-          <View style={styles.actions}>
-            <Button
-              label={t('common.cancel')}
-              variant="quiet"
-              onPress={onCancel}
-            />
-            <Button label={doneLabel} variant="quiet" onPress={onDone} />
-          </View>
-          <ScreenHeader title={title} subtitle={subtitle} compact />
-        </>
-      ) : (
-        <ScreenHeader title={title} subtitle={subtitle} compact>
-          <Button label={doneLabel} variant="quiet" onPress={onDone} />
-        </ScreenHeader>
-      )}
+      <View style={styles.actions}>
+        {onCancel && (
+          <Button
+            label={t('common.cancel')}
+            variant="quiet"
+            onPress={onCancel}
+          />
+        )}
+        <Button
+          label={doneLabel}
+          variant="quiet"
+          onPress={onDone}
+          style={styles.done}
+        />
+      </View>
+      <ScreenHeader title={title} subtitle={subtitle} compact />
       {children}
     </ScrollView>
   );
@@ -53,18 +52,21 @@ export function Sheet({
 
 const styles = StyleSheet.create({
   actions: {
+    backgroundColor: theme.color.background,
+    paddingVertical: theme.space.sm,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: theme.space.sm,
   },
+  done: { marginStart: 'auto' },
   scroll: { flexGrow: 0 },
   content: {
     width: '100%',
     maxWidth: theme.size.contentMax,
     alignSelf: 'center',
     paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.xl,
+    paddingBottom: theme.space.xl,
     gap: theme.space.lg,
   },
 });

@@ -82,6 +82,36 @@ describe('globe frame lifecycle', () => {
     expect(frames.pendingCount).toBe(0);
   });
 
+  test('enabling Reduce Motion finishes globe focus at its destination', () => {
+    const { controller } = setup();
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    controller.move(() => controller.camera.focus([-105, 55], 0.01));
+    frames.advance(10);
+    expect(controller.camera.zoom).toBeLessThan(8);
+    controller.setReduceMotion(true);
+    const center = controller.camera.geographicPoint(195, 422)!;
+    expect(center[0]).toBeCloseTo(-105, 3);
+    expect(center[1]).toBeCloseTo(55, 3);
+    expect(controller.camera.zoom).toBe(8);
+    frames.advance();
+    expect(frames.pendingCount).toBe(0);
+  });
+
+  test('resetting an unchanged globe does not start an animation loop', () => {
+    const { controller, renderer } = setup();
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    frames.advance();
+    controller.reset();
+    frames.advance();
+    expect(renderer.draw).toHaveBeenCalledTimes(2);
+    expect(frames.pendingCount).toBe(0);
+    controller.northUp();
+    frames.advance();
+    expect(frames.pendingCount).toBe(0);
+  });
+
   test('releases resources, reports rendering failure once, and allows a fresh renderer', () => {
     const { controller, renderer, error } = setup();
     renderer.draw.mockImplementation(() => {

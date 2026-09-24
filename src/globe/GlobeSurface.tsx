@@ -1,10 +1,10 @@
 import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { memo, useCallback, useLayoutEffect, useRef } from 'react';
 
 import type { GlobeController } from './controller';
 import { createGlobeRenderer } from './renderer';
 
-export function GlobeSurface({
+export const GlobeSurface = memo(function GlobeSurface({
   controller,
   onError,
 }: {
@@ -40,4 +40,4 @@ export function GlobeSurface({
       accessibilityElementsHidden
     />
   );
-}
+});

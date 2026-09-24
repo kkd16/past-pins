@@ -51,9 +51,12 @@ function Statistic({
         <AppText variant={largeText ? 'heading' : 'number'} style={{ color }}>
           {value}
         </AppText>
-        <AppText variant="caption" tone="muted">
-          {label}
-        </AppText>
+        <View style={styles.cardHeading}>
+          <AppText variant="caption" tone="muted" style={styles.cardLabel}>
+            {label}
+          </AppText>
+          <Icon name="chevronRight" />
+        </View>
       </Surface>
     </AppPressable>
   );
@@ -81,6 +84,10 @@ export function StatsScreen({
     ? countryById.get(app.data.homeCountryId)
     : undefined;
   const loading = app.status !== 'ready';
+  const loadingMessage =
+    app.status === 'load-error'
+      ? t('countries.loadError')
+      : t('countries.loadingPlaces');
   return (
     <Screen>
       <ScrollView
@@ -99,7 +106,7 @@ export function StatsScreen({
         <AppPressable
           accessibilityLabel={
             loading
-              ? t('countries.loadingPlaces')
+              ? loadingMessage
               : t('countries.stats.visitedCount', {
                   count: stats.visited,
                   amount: formatNumber(stats.visited),
@@ -110,13 +117,18 @@ export function StatsScreen({
           onPress={() => onOpenCountries('visited')}
         >
           <Surface style={styles.journey}>
-            <AppText variant="label">{t('countries.stats.visited')}</AppText>
+            <View style={styles.cardHeading}>
+              <AppText variant="label" style={styles.cardLabel}>
+                {t('countries.stats.visited')}
+              </AppText>
+              <Icon name="chevronRight" />
+            </View>
             <AppText variant={largeText ? 'title' : 'display'} tone="visited">
               {loading ? '—' : formatNumber(stats.visited)}
             </AppText>
             <AppText tone="muted">
               {loading
-                ? t('common.loading')
+                ? loadingMessage
                 : t('countries.stats.percentVisited', {
                     percent: formatPercent(stats.percent / 100),
                   })}
@@ -158,19 +170,29 @@ export function StatsScreen({
         <Surface style={styles.home}>
           <View style={styles.homeLabel}>
             <Icon name="home" color={theme.color.lived} />
-            <AppText variant="label">{t('common.currentHome')}</AppText>
+            <AppText variant="label" style={styles.cardLabel}>
+              {t('common.currentHome')}
+            </AppText>
           </View>
           {home ? (
-            <Button
-              label={home.name}
-              variant="quiet"
-              onPress={() => onOpenCountry(home.id)}
-            />
+            <View style={styles.homeActions}>
+              <Button
+                label={home.name}
+                variant="quiet"
+                onPress={() => onOpenCountry(home.id)}
+              />
+              <Button
+                label={t('settings.changeHome')}
+                variant="quiet"
+                disabled={loading || app.busy}
+                onPress={onChooseHome}
+              />
+            </View>
           ) : (
             <Button
               label={t('countries.stats.chooseHome')}
               variant="quiet"
-              disabled={loading}
+              disabled={loading || app.busy}
               onPress={onChooseHome}
             />
           )}
@@ -191,13 +213,16 @@ export function StatsScreen({
               disabled={loading}
               onPress={() => onOpenCountries('visited', continent.id)}
             >
-              <View accessibilityElementsHidden>
-                <ProgressSummary
-                  label={continent.name}
-                  visited={continent.visited}
-                  total={continent.total}
-                  loading={loading}
-                />
+              <View accessibilityElementsHidden style={styles.cardHeading}>
+                <View style={styles.cardLabel}>
+                  <ProgressSummary
+                    label={continent.name}
+                    visited={continent.visited}
+                    total={continent.total}
+                    loading={loading}
+                  />
+                </View>
+                <Icon name="chevronRight" />
               </View>
             </AppPressable>
           ))}
@@ -213,6 +238,12 @@ export function StatsScreen({
 const styles = StyleSheet.create({
   content: { paddingBottom: theme.space.xl, gap: theme.space.lg },
   journey: { padding: theme.space.xl, gap: theme.space.sm },
+  cardHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.sm,
+  },
+  cardLabel: { flex: 1 },
   totals: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm },
   statistic: { flexGrow: 1, flexBasis: 150 },
   statisticContent: { flex: 1, padding: theme.space.lg, gap: theme.space.sm },
@@ -225,8 +256,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   homeLabel: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.space.sm,
+  },
+  homeActions: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: theme.space.sm,
   },
 });

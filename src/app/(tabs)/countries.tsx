@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 
 import { readCountryFilters, readCountryScope } from '../../countries/filters';
 import { useAppData } from '../../data/AppDataProvider';
@@ -12,6 +13,26 @@ export default function CountriesRoute() {
     intent?: string;
   }>();
   const { data } = useAppData();
+  const requestedQuery =
+    typeof params.query === 'string' ? params.query : undefined;
+  const intent = typeof params.intent === 'string' ? params.intent : undefined;
+  const [search, setSearch] = useState({
+    request: requestedQuery,
+    value: requestedQuery ?? '',
+  });
+  if (search.request !== requestedQuery)
+    setSearch({
+      request: requestedQuery,
+      value: requestedQuery ?? search.value,
+    });
+  // Consume navigation requests so the same search link works again later.
+  useEffect(() => {
+    if (requestedQuery !== undefined) router.setParams({ query: undefined });
+  }, [requestedQuery]);
+  const selectCountry = useCallback(
+    (id: string) => router.push({ pathname: '/country/[id]', params: { id } }),
+    [],
+  );
   const filters = readCountryFilters({
     continent: params.continent,
     grouping: data.preferences.countryGrouping,
@@ -20,9 +41,9 @@ export default function CountriesRoute() {
     <CountriesScreen
       filters={filters}
       scope={readCountryScope(params.scope)}
-      query={typeof params.query === 'string' ? params.query : ''}
-      intent={typeof params.intent === 'string' ? params.intent : undefined}
-      onQueryChange={(query) => router.setParams({ query })}
+      query={search.value}
+      intent={intent}
+      onQueryChange={(value) => setSearch({ request: requestedQuery, value })}
       onScopeChange={(scope) => router.setParams({ scope })}
       onOpenFilters={() =>
         router.push({
@@ -30,16 +51,15 @@ export default function CountriesRoute() {
           params: {
             ...filters,
             scope: readCountryScope(params.scope),
-            query: params.query ?? '',
+            query: search.value,
           },
         })
       }
-      onResetFilters={() =>
-        router.setParams({ continent: 'all', scope: 'all', query: '' })
-      }
-      onSelect={(id) =>
-        router.push({ pathname: '/country/[id]', params: { id } })
-      }
+      onResetFilters={() => {
+        setSearch({ request: requestedQuery, value: '' });
+        router.setParams({ continent: 'all', scope: 'all', query: undefined });
+      }}
+      onSelect={selectCountry}
     />
   );
 }

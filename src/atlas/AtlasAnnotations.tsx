@@ -41,7 +41,7 @@ export function AtlasAnnotations({
   zoom: number;
 }) {
   const { fontScale } = useWindowDimensions();
-  const measurementKey = `${selectedId}:${width}:${height}:${fontScale}:${selectedId ? places[selectedId] : ''}:${homeCountryId}`;
+  const measurementKey = `${selectedId}:${width}:${fontScale}:${selectedId ? places[selectedId] : ''}:${selectedId === homeCountryId}`;
   const [measurement, setMeasurement] = useState<{
     key: string;
     height: number;
@@ -152,6 +152,7 @@ export function AtlasAnnotations({
             ]}
           />
           <CountryCallout
+            key={measurementKey}
             countryId={country.id}
             status={places[country.id]}
             home={country.id === homeCountryId}
@@ -170,6 +171,7 @@ export function AtlasAnnotations({
               start: start(callout.x, size.width),
               top: callout.y,
               width: size.width,
+              ...(measurement.key !== measurementKey && { opacity: 0 }),
             }}
           />
         </>

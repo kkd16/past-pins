@@ -45,12 +45,13 @@ Undo restores the last individual, bulk, or home edit without reverting preferen
 ## Architecture and data
 
 - `src/app/`: thin Expo Router routes, native tabs, and one native stack for detail sheets and Settings.
-- `src/screens/`: page composition and connected navigation flows. Query, scope, and continent live in route parameters; grouping is a persisted preference.
+- `src/screens/`: page composition and connected navigation flows. Search typing stays local; route parameters carry navigation requests, scope, and continent. Grouping is a persisted preference.
 - `src/countries/`: authoritative catalog joins, country facts, pure search/filter/statistics functions, and country controls.
 - `src/data/`: the app snapshot, pure status/home transitions, current-format backup validation, and one shared store/provider with Undo.
 - `src/storage/`: serialized snapshot persistence through Expo SQLite key-value storage.
 - `src/atlas/`: map toolbar and summary, shared selection, colors, label/callout placement, and the flat camera/renderer. `src/globe/` owns spherical camera math, GPU geometry, picking, gestures, and rendering. Only the active view mounts.
 - `src/settings/`: small settings layouts and native backup file operations. `src/components/` and `src/theme.ts` centralize reusable controls, typography, spacing, surfaces, state colors, and appearance. `AppPressable` supplies touch targets and interaction feedback while forwarding native props; `ChoiceSection` and `ToggleRow` keep radio groups and native switches consistent across screens.
+- `src/motion/`: one shared Reduce Motion subscription. Press feedback, callout entrances, checks, and progress use native-driven animation; bulk selection uses native layout animation. Timings live in the theme. Native navigation keeps its standard transitions.
 - `src/localization/`: JSON resources grouped by language code, typed lookups, iOS locale selection, and shared number/list formatting. Domain catalogs keep copy beside its owning feature without spreading strings through UI code.
 - `scripts/`: deterministic geography and license generation; these tools are not bundled into the app.
 
@@ -74,7 +75,7 @@ Map data © Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson
 
 Localization uses [`expo-localization`](https://docs.expo.dev/versions/v57.0.0/sdk/localization/) and [`i18n-js`](https://github.com/fnando/i18n), with English currently shipped and used as fallback. JSON resources live in `src/localization/locales/en/`; a thin TypeScript layer supplies typed keys and native number formatting. The library handles locale fallback, interpolation, plurals, and lists. Country facts use bundled English source names and currency codes. To add a language, supply complete messages, the library’s base formatting translations and plural rules, geographic name data supported by Hermes, and matching native supported locales. Stored IDs and original legal notices stay unchanged. Lint rejects raw JSX text and literal text labels.
 
-Accessibility uses native iOS controls, scalable text, semantic control states, logical spacing, and 44-point targets. VoiceOver and large text get a stable selected-country card; map accessibility actions provide zoom and pan without multi-finger gestures. Reduce Motion disables camera/check animations. Keep manual device checks below part of each platform upgrade.
+Accessibility uses native iOS controls, scalable text, semantic control states, logical spacing, and 44-point targets. VoiceOver and large text get a stable selected-country card; map accessibility actions provide zoom and pan without multi-finger gestures. Reduce Motion skips custom transitions and finishes an active camera move at its destination. Keep manual device checks below part of each platform upgrade.
 
 ```sh
 bun run check

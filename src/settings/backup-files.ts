@@ -20,8 +20,8 @@ export async function shareBackup(data: AppData) {
     Paths.cache,
     `Past-Pins-${new Date().toISOString().slice(0, 10)}.json`,
   );
-  file.write(encodeBackup(data));
   try {
+    file.write(encodeBackup(data));
     await Sharing.shareAsync(file.uri, { UTI: 'public.json' });
   } finally {
     discardCachedFile(file);

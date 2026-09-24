@@ -1,7 +1,16 @@
-import { StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import {
+  Animated,
+  Easing,
+  I18nManager,
+  StyleSheet,
+  useAnimatedValue,
+  View,
+} from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { theme } from '../theme';
+import { useReducedMotion } from '../motion/ReducedMotion';
 import { t, formatNumber, formatPercent, language } from '../localization';
 
 export function ProgressSummary({
@@ -16,6 +25,24 @@ export function ProgressSummary({
   label?: string;
 }) {
   const percent = total ? (visited / total) * 100 : 0;
+  const reduced = useReducedMotion();
+  const fraction = loading ? 0 : percent / 100;
+  const progress = useAnimatedValue(fraction);
+  useEffect(() => {
+    if (reduced) {
+      progress.setValue(fraction);
+      return;
+    }
+    const animation = Animated.timing(progress, {
+      toValue: fraction,
+      duration: theme.motion.progress,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+      isInteraction: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [fraction, progress, reduced]);
   return (
     <View
       accessible
@@ -47,7 +74,9 @@ export function ProgressSummary({
         </AppText>
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${percent}%` }]} />
+        <Animated.View
+          style={[styles.fill, { transform: [{ scaleX: progress }] }]}
+        />
       </View>
       <AppText variant="caption" tone="muted">
         {loading
@@ -84,6 +113,7 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
+    transformOrigin: I18nManager.isRTL ? 'right' : 'left',
     backgroundColor: theme.color.visitedEmphasis,
     borderRadius: theme.radius.pill,
   },

@@ -1,27 +1,60 @@
-import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { useEffect, type ComponentProps } from 'react';
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  useAnimatedValue,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { language } from '../localization';
+import { useReducedMotion } from '../motion/ReducedMotion';
 import { theme } from '../theme';
 
-export type AppPressableProps = ComponentProps<typeof Pressable>;
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export type AppPressableProps = Omit<ComponentProps<typeof Pressable>, 'style'> & {
+  style?: StyleProp<ViewStyle>;
+};
 
 export function AppPressable({
   disabled,
   style,
+  onPressIn,
+  onPressOut,
   ...props
 }: AppPressableProps) {
+  const opacity = useAnimatedValue(1);
+  const reduced = useReducedMotion();
+  useEffect(() => {
+    opacity.setValue(1);
+    return () => opacity.stopAnimation();
+  }, [disabled, opacity, reduced]);
+
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityLanguage={language}
       accessibilityRole="button"
       {...props}
       disabled={disabled}
-      style={(state) => [
+      onPressIn={(event) => {
+        opacity.setValue(theme.opacity.pressed);
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: reduced ? 0 : theme.motion.pressRelease,
+          useNativeDriver: true,
+          isInteraction: false,
+        }).start();
+        onPressOut?.(event);
+      }}
+      style={[
         styles.touchTarget,
-        state.pressed && styles.pressed,
-        disabled && styles.disabled,
-        typeof style === 'function' ? style(state) : style,
+        style,
+        { opacity: disabled ? theme.opacity.disabled : opacity },
       ]}
     />
   );
@@ -29,6 +62,4 @@ export function AppPressable({
 
 const styles = StyleSheet.create({
   touchTarget: { minHeight: theme.size.touch, minWidth: theme.size.touch },
-  pressed: { opacity: theme.opacity.pressed },
-  disabled: { opacity: theme.opacity.disabled },
 });

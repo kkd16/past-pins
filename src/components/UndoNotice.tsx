@@ -5,13 +5,13 @@ import { theme } from '../theme';
 import { t } from '../localization';
 import { AppText } from './AppText';
 import { Button } from './Button';
-import { Surface } from './Surface';
+import { FadeIn } from './FadeIn';
 
 export function UndoNotice() {
   const { undoLabel, undo, busy } = useAppData();
   if (!undoLabel) return null;
   return (
-    <Surface style={styles.notice}>
+    <FadeIn style={styles.notice}>
       <AppText variant="caption" style={styles.label}>
         {undoLabel}
       </AppText>
@@ -21,12 +21,13 @@ export function UndoNotice() {
         onPress={undo}
         disabled={busy}
       />
-    </Surface>
+    </FadeIn>
   );
 }
 
 const styles = StyleSheet.create({
   notice: {
+    ...theme.surface.panel,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.sm,

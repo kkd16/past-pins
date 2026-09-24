@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { useRef, useState } from 'react';
+import { FlatList, Keyboard, StyleSheet } from 'react-native';
 
 import notices from '../../licenses/notices.json';
 import { AppText } from '../components/AppText';
@@ -16,27 +16,35 @@ export function LicensesScreen({
   onSelect: (name: string, version: string) => void;
 }) {
   const [query, setQuery] = useState('');
+  const list = useRef<FlatList<(typeof notices)[number]>>(null);
+  const search = query.trim().toLowerCase();
   const matches = notices.filter((notice) =>
-    notice.name.toLowerCase().includes(query.trim().toLowerCase()),
+    notice.name.toLowerCase().includes(search),
   );
   return (
     <Screen>
       <SearchField
         value={query}
-        onChangeText={setQuery}
+        onChangeText={(value) => {
+          setQuery(value);
+          list.current?.scrollToOffset({ offset: 0, animated: false });
+        }}
         placeholder={t('settings.searchLibraries')}
         accessibilityLabel={t('settings.searchLibraries')}
       />
       <FlatList
+        ref={list}
         data={matches}
         keyExtractor={(item) => `${item.name}@${item.version}`}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+        keyboardDismissMode="interactive"
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <AppText tone="muted">{t('settings.noLibraries')}</AppText>
+          <AppText tone="muted" style={styles.empty}>
+            {t('settings.noLibraries')}
+          </AppText>
         }
         renderItem={({ item }) => (
           <SettingsRow
@@ -46,7 +54,10 @@ export function LicensesScreen({
               version: item.version,
               license: item.license,
             })}
-            onPress={() => onSelect(item.name, item.version)}
+            onPress={() => {
+              Keyboard.dismiss();
+              onSelect(item.name, item.version);
+            }}
           />
         )}
       />
@@ -83,4 +94,7 @@ export function LicenseScreen({
   );
 }
 
-const styles = StyleSheet.create({ list: { paddingVertical: theme.space.lg } });
+const styles = StyleSheet.create({
+  list: { paddingVertical: theme.space.lg },
+  empty: { padding: theme.space.xl, textAlign: 'center' },
+});

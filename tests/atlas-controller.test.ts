@@ -34,8 +34,9 @@ describe('atlas camera transitions', () => {
     controller.move(() => {
       camera.center = [...target];
     });
-    frames.advance(40);
+    frames.advance();
     expect(camera.center).toEqual(target);
+    expect(frames.pendingCount).toBe(0);
     controller.move(() => camera.focus('ca'));
     controller.setActive(false);
     expect(frames.pendingCount).toBe(0);
@@ -46,6 +47,25 @@ describe('atlas camera transitions', () => {
     controller.setReduceMotion(true);
     controller.move(() => camera.fitWorld());
     expect(camera.center).toEqual([500, 250]);
+    frames.advance();
+    expect(frames.pendingCount).toBe(0);
+  });
+
+  test('enabling Reduce Motion finishes flat focus at its destination', () => {
+    const camera = new FlatCamera();
+    const controller = new FlatController(camera, mock());
+    controller.resize(390, 844);
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    controller.move(() => {
+      camera.center = [620, 230];
+      camera.zoom = 4;
+    });
+    frames.advance(10);
+    expect(camera.center).not.toEqual([620, 230]);
+    controller.setReduceMotion(true);
+    expect(camera.center).toEqual([620, 230]);
+    expect(camera.zoom).toBe(4);
     frames.advance();
     expect(frames.pendingCount).toBe(0);
   });

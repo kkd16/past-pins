@@ -14,9 +14,9 @@ export function flatGestures(
   let focal = { x: 0, y: 0 };
   const pan = Gesture.Pan()
     .runOnJS(true)
-    .onBegin(() => {
+    .onBegin((event) => {
       controller.stop();
-      pointers = 0;
+      pointers = event.numberOfPointers;
     })
     .onChange((event) => {
       if (pointers === 1 && event.numberOfPointers === 1 && !pinching)

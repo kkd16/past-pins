@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
@@ -11,6 +11,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
 import { searchCountries } from '../countries/search';
 import { getStatusPresentation } from '../countries/status';
+import type { Country } from '../countries/types';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
 import { t } from '../localization';
@@ -27,39 +28,53 @@ export function CountrySearchScreen({
   onClear?: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const list = useRef<FlatList<Country>>(null);
   const { data, status, busy } = useAppData();
   return (
     <Screen onAccessibilityEscape={onCancel}>
-      {onCancel && (
-        <ScreenHeader title={title} compact>
-          <Button
-            label={t('common.cancel')}
-            variant="quiet"
-            onPress={onCancel}
-          />
-        </ScreenHeader>
-      )}
-      <SearchField
-        value={query}
-        onChangeText={setQuery}
-        placeholder={t('countries.search')}
-        accessibilityLabel={t('countries.searchLabel')}
-      />
-      <DataFeedback />
+      <View style={styles.header}>
+        {onCancel && (
+          <ScreenHeader title={title} compact>
+            <Button
+              label={t('common.cancel')}
+              variant="quiet"
+              onPress={() => {
+                Keyboard.dismiss();
+                onCancel();
+              }}
+            />
+          </ScreenHeader>
+        )}
+        <SearchField
+          autoFocus
+          value={query}
+          onChangeText={(value) => {
+            setQuery(value);
+            list.current?.scrollToOffset({ offset: 0, animated: false });
+          }}
+          placeholder={t('countries.search')}
+          accessibilityLabel={t('countries.searchLabel')}
+        />
+        <DataFeedback />
+      </View>
       <FlatList
+        ref={list}
         data={searchCountries(query)}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+        keyboardDismissMode="interactive"
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           onClear && (
             <Button
               label={t('countries.details.clearHome')}
               variant="quiet"
-              onPress={onClear}
+              onPress={() => {
+                Keyboard.dismiss();
+                onClear();
+              }}
               disabled={busy || status !== 'ready'}
             />
           )
@@ -76,7 +91,10 @@ export function CountrySearchScreen({
           );
           return (
             <AppPressable
-              onPress={() => onSelect(item.id)}
+              onPress={() => {
+                Keyboard.dismiss();
+                onSelect(item.id);
+              }}
               disabled={busy || status !== 'ready'}
               accessibilityLabel={t('countries.countryStatus', {
                 name: item.name,
@@ -103,6 +121,7 @@ export function CountrySearchScreen({
 }
 
 const styles = StyleSheet.create({
+  header: { gap: theme.space.md },
   list: { paddingVertical: theme.space.md },
   row: {
     minHeight: theme.size.row,

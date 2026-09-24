@@ -1,6 +1,7 @@
 import { quat } from 'gl-matrix';
 
 import type { AppData } from '../data/model';
+import { theme } from '../theme';
 import { GlobeCamera } from './camera';
 import type { GlobeRenderer } from './renderer';
 
@@ -55,7 +56,13 @@ export class GlobeController {
 
   setReduceMotion(enabled: boolean) {
     this.reduceMotion = enabled;
-    if (enabled) this.stop();
+    if (enabled) {
+      if (this.transition) {
+        quat.copy(this.camera.rotation, this.transition.to);
+        this.camera.zoom = this.transition.toZoom;
+      }
+      this.stop();
+    }
   }
 
   setColors(places: AppData['places'], selectedId: string | null = null) {
@@ -75,7 +82,12 @@ export class GlobeController {
     const from = quat.clone(this.camera.rotation);
     const fromZoom = this.camera.zoom;
     change();
-    if (!this.reduceMotion && this.active && this.renderer) {
+    if (
+      !this.reduceMotion &&
+      this.active &&
+      this.renderer &&
+      (fromZoom !== this.camera.zoom || !quat.equals(from, this.camera.rotation))
+    ) {
       this.transition = {
         start: null,
         from,
@@ -150,14 +162,17 @@ export class GlobeController {
     if (this.transition) {
       const move = this.transition;
       move.start ??= time;
-      const progress = Math.min(1, (time - move.start) / 420);
+      const progress = Math.min(
+        1,
+        (time - move.start) / theme.motion.cameraDuration,
+      );
       const eased = 1 - (1 - progress) ** 3;
       quat.slerp(this.camera.rotation, move.from, move.to, eased);
       this.camera.setZoom(
         move.fromZoom + (move.toZoom - move.fromZoom) * eased,
       );
       if (progress === 1) this.transition = null;
-    } else {
+    } else if (this.velocity.x || this.velocity.y) {
       this.camera.drag(this.velocity.x * dt, this.velocity.y * dt);
       const decay = Math.exp(-5 * dt);
       this.velocity.x *= decay;

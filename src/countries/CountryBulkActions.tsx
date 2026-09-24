@@ -1,5 +1,6 @@
-import { Keyboard, ScrollView, StyleSheet } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 
+import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Surface } from '../components/Surface';
 import { useAppData } from '../data/AppDataProvider';
@@ -12,12 +13,12 @@ export function CountryBulkActions({
   resultIds,
   selectedIds,
   onSelectionChange,
-  onComplete,
+  onEndSelection,
 }: {
   resultIds: readonly CountryId[];
   selectedIds: ReadonlySet<CountryId>;
   onSelectionChange: (ids: ReadonlySet<CountryId>) => void;
-  onComplete: () => void;
+  onEndSelection: () => void;
 }) {
   const { status, busy, setStatus } = useAppData();
   const disabled = status !== 'ready' || busy;
@@ -28,13 +29,18 @@ export function CountryBulkActions({
   };
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      bounces={false}
-      contentInsetAdjustmentBehavior="never"
-      keyboardShouldPersistTaps="handled"
-    >
-      <Surface style={styles.actions}>
+    <Surface style={styles.surface}>
+      <View style={styles.header}>
+        <AppText variant="label" style={styles.count}>
+          {t('countries.selectedCount', count)}
+        </AppText>
+        <Button
+          label={t('common.cancel')}
+          variant="quiet"
+          onPress={onEndSelection}
+        />
+      </View>
+      <View style={styles.actions}>
         <Button
           label={
             allSelected
@@ -55,22 +61,28 @@ export function CountryBulkActions({
             Keyboard.dismiss();
             showStatusPicker(t('countries.placeCount', count), (nextStatus) => {
               void setStatus([...selectedIds], nextStatus).then((applied) => {
-                if (applied) onComplete();
+                if (applied) onEndSelection();
               });
             });
           }}
         />
-      </Surface>
-    </ScrollView>
+      </View>
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 0, maxHeight: '40%', marginVertical: theme.space.sm },
+  surface: { padding: theme.space.sm, gap: theme.space.xs },
+  header: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: theme.space.md,
+  },
+  count: { flexGrow: 1, flexBasis: 120, paddingStart: theme.space.md },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: theme.space.sm,
-    padding: theme.space.sm,
   },
 });

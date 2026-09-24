@@ -20,10 +20,7 @@ export function IconButton({
   return (
     <AppPressable
       {...props}
-      style={(state) => [
-        styles.base,
-        typeof style === 'function' ? style(state) : style,
-      ]}
+      style={[styles.base, style]}
     >
       <Icon name={name} size={size} color={color} />
     </AppPressable>
