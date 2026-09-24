@@ -68,6 +68,11 @@ export class GlobeController {
     this.invalidate();
   }
 
+  twist(radians: number) {
+    this.camera.twist(radians);
+    this.invalidate();
+  }
+
   coast(x: number, y: number) {
     if (this.reduceMotion || !this.active) return;
     const scale = Math.min(1, 1600 / Math.max(1, Math.hypot(x, y)));

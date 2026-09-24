@@ -155,6 +155,39 @@ describe('bundled globe geometry', () => {
 });
 
 describe('globe camera and country picking', () => {
+  test('launch and reset keep north upright with the equator level', () => {
+    const camera = new GlobeCamera();
+    camera.resize(390, 844);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const north = vec3.transformMat3(vec3.create(), [0, 1, 0], camera.matrix());
+      expect(Array.from(north)).toEqual([0, 1, 0]);
+      for (const longitude of [-40, 0, 40]) {
+        expect(camera.project(toCartesian([longitude, 0]))![1]).toBeCloseTo(422);
+      }
+      camera.drag(250, 300);
+      camera.twist(1);
+      camera.reset();
+    }
+  });
+
+  test('twisting turns clockwise on screen and preserves picking after drag and zoom', () => {
+    const camera = new GlobeCamera();
+    camera.resize(390, 844);
+    camera.drag(30, -20);
+    camera.setZoom(2);
+    const position = toCartesian([0, 30]);
+    const before = camera.project(position)!;
+    camera.twist(Math.PI / 2);
+    const after = camera.project(position)!;
+    expect(after[0] - 195).toBeCloseTo(-(before[1] - 422), 3);
+    expect(after[1] - 422).toBeCloseTo(before[0] - 195, 3);
+    const geographic = camera.geographicPoint(after[0], after[1])!;
+    expect(geographic[0]).toBeCloseTo(0, 3);
+    expect(geographic[1]).toBeCloseTo(30, 3);
+    expect(camera.zoom).toBe(2);
+    expect(Math.hypot(...camera.rotation)).toBeCloseTo(1, 5);
+  });
+
   test('launch is immersive; zoom clamps and reset restores the original view', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);

@@ -49,6 +49,7 @@ describe('globe frame lifecycle', () => {
     expect(renderer.setColors).not.toHaveBeenCalled();
     controller.setActive(true);
     controller.drag(10, 10);
+    controller.twist(0.5);
     controller.zoom(2);
     controller.stop();
     expect(pending.size).toBe(1);
@@ -56,11 +57,18 @@ describe('globe frame lifecycle', () => {
     expect(renderer.draw).toHaveBeenCalledTimes(1);
     expect(renderer.setColors).toHaveBeenCalledTimes(1);
     expect(pending.size).toBe(0);
+    const beforeTwist = Array.from(controller.camera.rotation);
+    controller.twist(-0.5);
+    expect(Array.from(controller.camera.rotation)).not.toEqual(beforeTwist);
+    expect(pending.size).toBe(1);
+    frame();
+    expect(renderer.draw).toHaveBeenCalledTimes(2);
+    expect(pending.size).toBe(0);
     controller.drag(10, 0);
     controller.setActive(false);
     controller.setColors(new Set(['fr']));
     frame();
-    expect(renderer.draw).toHaveBeenCalledTimes(1);
+    expect(renderer.draw).toHaveBeenCalledTimes(2);
     expect(renderer.setColors).toHaveBeenCalledTimes(1);
     const orientation = Array.from(controller.camera.rotation);
     controller.setActive(true);

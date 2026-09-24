@@ -18,7 +18,6 @@ export class GlobeCamera {
 
   reset() {
     quat.identity(this.rotation);
-    quat.rotateX(this.rotation, this.rotation, Math.PI / 9);
     quat.rotateY(this.rotation, this.rotation, Math.PI / 9);
     this.zoom = 1.2;
   }
@@ -43,6 +42,12 @@ export class GlobeCamera {
 
   matrix() {
     return mat3.fromQuat(mat3.create(), this.rotation);
+  }
+
+  twist(radians: number) {
+    const delta = quat.setAxisAngle(quat.create(), [0, 0, 1], -radians);
+    quat.multiply(this.rotation, delta, this.rotation);
+    quat.normalize(this.rotation, this.rotation);
   }
 
   geographicPoint(x: number, y: number) {
