@@ -52,9 +52,12 @@ describe('travel statuses', () => {
     expect(data.places.ca).toBe('lived');
   });
 
-  test('defaults and transitions do not share mutable preference objects', () => {
+  test('fresh app data has independent preferences and places', () => {
     const one = defaultAppData();
+    const two = defaultAppData();
     one.preferences.haptics = false;
-    expect(defaultAppData().preferences.haptics).toBe(true);
+    one.places.ca = 'visited';
+    expect(two.preferences.haptics).toBe(true);
+    expect(two.places).toEqual({});
   });
 });

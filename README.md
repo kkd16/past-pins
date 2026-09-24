@@ -5,14 +5,29 @@ An offline travel atlas for iPhone and iPad, with one dark green theme. It opens
 ## Develop
 
 ```sh
-bun install
-bunx expo start --ios
-# On Linux, use make dev and open the tunnel in Expo Go on an iPhone or iPad.
+bun install --frozen-lockfile
+bun run ios
+# On Linux, use bun run dev and open the tunnel in Expo Go on an iPhone or iPad.
 ```
 
-The app targets Expo SDK 57 and uses its bundled native modules. Start Expo once after adding routes to regenerate Router’s types. Rebuild an existing development client after changing native dependencies.
+The app targets Expo SDK 57 and uses its bundled native modules. Use the Bun version in `package.json` and Node.js 22.13 or newer. `bun run typecheck` refreshes Expo Router's generated types before checking the app, scripts, and tests, including on a fresh checkout. Rebuild an existing development client after changing native dependencies.
 
-`make update` updates packages within compatible ranges, aligns Expo dependencies, regenerates globe geometry and license notices, and runs Expo Doctor. The `react-native-screens` override matches the native version included in Expo Go; align it when changing SDKs. Install app dependencies with `bunx expo install`.
+`bun run` lists the available commands. The Makefile is a short set of aliases for the same Bun scripts.
+
+| Command | Purpose |
+| --- | --- |
+| `bun run check` | Lint all code, typecheck, run tests, and check generated assets |
+| `bun run check:all` | Also run Expo Doctor and export the production iOS bundle |
+| `bun test --watch` | Rerun tests as files change |
+| `bun test backup` | Run tests whose filenames match a pattern |
+| `bun run test:coverage` | Inspect coverage of the code loaded by tests |
+| `bun run lint --fix` | Apply ESLint's available fixes |
+| `bun run start --clear` | Start Expo with its built-in Metro cache reset |
+| `bun run generate` | Regenerate globe geometry and license notices |
+| `bun run deps:update` | Update compatible dependencies, align Expo versions, regenerate assets, and run all checks |
+| `bun run reset` | Reinstall locked dependencies and clear this project's Expo state |
+
+Reset leaves other projects' Metro caches and Watchman watches alone. The `react-native-screens` override matches the native version included in Expo Go; align it when changing SDKs. Install app dependencies with `bunx expo install`, then run `bun run generate` to refresh affected bundled assets.
 
 ## Product flows
 
@@ -62,16 +77,13 @@ Localization uses [`expo-localization`](https://docs.expo.dev/versions/v57.0.0/s
 Accessibility uses native iOS controls, scalable text, semantic control states, logical spacing, and 44-point targets. VoiceOver and large text get a stable selected-country card; map accessibility actions provide zoom and pan without multi-finger gestures. Reduce Motion disables camera/check animations. Keep manual device checks below part of each platform upgrade.
 
 ```sh
-bun test
-bun run globe:check
-bun run licenses:check
-bunx expo lint
-bunx tsc --noEmit
-bunx expo-doctor
-bunx expo export --platform ios
+bun run check
+bun run check:all  # includes network-based Expo diagnostics and the iOS export
 ```
 
-Tests cover locale fallback, interpolation/plurals, regional formatting, native/source-name search, map accessibility actions, travel/home invariants, bulk changes, Undo, persistence ordering and failure recovery, atomic restore, backup validation, catalog filtering/counts, geometry, cameras, picking, annotations, frame lifecycle, and theme contrast.
+GitHub Actions runs the same checks on pull requests, pushes to `main`, and manual runs, with coverage shown in the test log. It uses current stable action releases, the latest stable Node.js, and the project's Bun version. The workflow has read-only repository access and cancels superseded runs. It does not sign, submit, deploy, or publish the app.
+
+Tests cover locale fallback, interpolation/plurals, regional formatting, native/source-name search, map accessibility actions, travel/home invariants, bulk changes, Undo, persistence ordering and failure recovery, atomic restore, backup validation, catalog filtering/counts, geometry, cameras, picking, annotations, frame lifecycle, and theme contrast. Use explicit examples or independent invariants for expected results; avoid checking a function against itself or coupling tests to object identity without a behavioral reason. Coverage is diagnostic, with no percentage gate: it measures loaded JavaScript/TypeScript, not native screens, gestures, or device performance. The test preload only supplies iOS locale information; controller tests use a small manual frame clock rather than elapsed-time sleeps.
 
 Before shipping, verify on physical iPhone and iPad:
 

@@ -7,6 +7,7 @@ import type { AppData } from '../src/data/model';
 describe('travel statistics', () => {
   test('an empty world reports zero progress and every place remaining', () => {
     const result = getTravelStatistics({});
+    expect(result.total).toBe(countries.length);
     expect(result.visited).toBe(0);
     expect(result.lived).toBe(0);
     expect(result.wishlist).toBe(0);
@@ -39,14 +40,15 @@ describe('travel statistics', () => {
     expect(first.lived).toBe(1);
     expect(first.wishlist).toBe(1);
     expect(first.remaining).toBe(countries.length - 3);
-    expect(first.byContinent.find(({ id }) => id === 'NA')?.visited).toBe(2);
+    expect(
+      Object.fromEntries(
+        first.byContinent.map(({ id, visited }) => [id, visited]),
+      ),
+    ).toEqual({ AF: 0, AN: 0, AS: 0, EU: 1, NA: 2, OC: 0, SA: 0 });
     expect(
       first.byContinent.reduce((sum, continent) => sum + continent.total, 0),
     ).toBe(countries.length);
-    expect(
-      first.byContinent.reduce((sum, continent) => sum + continent.visited, 0),
-    ).toBe(first.visited);
-    expect(first.percent).toBe((3 / countries.length) * 100);
+    expect(first.percent).toBeCloseTo((3 / countries.length) * 100);
     delete places.ca;
     const second = getTravelStatistics(places);
     expect(second.visited).toBe(2);
@@ -56,12 +58,11 @@ describe('travel statistics', () => {
 
   test('unknown place keys cannot inflate catalog statistics', () => {
     const result = getTravelStatistics({
+      ca: 'lived',
       unknown: 'visited',
       invalid: 'wishlist',
       fictitious: 'lived',
     });
-    expect(result.visited).toBe(0);
-    expect(result.wishlist).toBe(0);
-    expect(result.lived).toBe(0);
+    expect(result).toEqual(getTravelStatistics({ ca: 'lived' }));
   });
 });

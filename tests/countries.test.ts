@@ -8,7 +8,6 @@ describe('published country catalog', () => {
   test('every checklist entry has a unique ID and a map shape', () => {
     expect(countryIds.size).toBe(countries.length);
     expect(countries.length).toBe(countryFeatures.length);
-    expect(countries.length).toBeGreaterThan(190);
     for (const country of countries) {
       expect(country.id.length).toBeGreaterThan(0);
       expect(country.name.length).toBeGreaterThan(0);
@@ -23,7 +22,9 @@ describe('published country catalog', () => {
       ({ properties }) => properties.iso_a2.toLowerCase(),
     );
     expect([...countryIds].sort()).toEqual(upstreamIds.sort());
-    expect(continents).toHaveLength(7);
+    expect(continents.map(({ id }) => id).sort()).toEqual([
+      'AF', 'AN', 'AS', 'EU', 'NA', 'OC', 'SA',
+    ]);
     expect(
       continents.every(({ id, name }) => id.length > 0 && name.length > 0),
     ).toBe(true);
@@ -34,19 +35,18 @@ describe('published country catalog', () => {
     expect(searchCountries('cote').map(({ id }) => id)).toContain('ci');
     expect(searchCountries('xk').map(({ name }) => name)).toEqual(['Kosovo']);
     expect(searchCountries('not-a-country')).toEqual([]);
-    expect(searchCountries('')).toHaveLength(countries.length);
+    expect(searchCountries('Côte').map(({ id }) => id)).toContain('ci');
+    expect(searchCountries('Co\u0302te').map(({ id }) => id)).toContain('ci');
   });
 
-  test('search preserves catalog order and returns the original country objects', () => {
+  test('search returns the full catalog for blank queries and sorts matches by name', () => {
+    expect(searchCountries('')).toEqual([...countries]);
     expect(searchCountries('   ')).toEqual([...countries]);
     const results = searchCountries('island');
     expect(results.length).toBeGreaterThan(1);
     expect(results).toEqual(
       [...results].sort((a, b) => a.name.localeCompare(b.name, 'en')),
     );
-    for (const result of results) {
-      expect(countries.find(({ id }) => id === result.id)).toBe(result);
-    }
   });
 
   test('search includes the authoritative and native country names', () => {

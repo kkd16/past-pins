@@ -32,7 +32,8 @@ describe('map accessibility actions', () => {
     const center = camera.geographicPoint(195, 422)!;
     perform('left');
     const moved = camera.geographicPoint(195, 422)!;
-    expect(moved).not.toEqual(center);
+    expect(moved[0]).toBeGreaterThan(center[0]);
+    expect(moved[1]).toBeCloseTo(center[1], 4);
     perform('right');
     expect(camera.geographicPoint(195, 422)![0]).toBeCloseTo(center[0], 4);
     for (let index = 0; index < 40; index++) perform('increment');
@@ -62,9 +63,11 @@ describe('map accessibility actions', () => {
     expect(camera.center[1]).toBeCloseTo(before);
     for (let index = 0; index < 40; index++) perform('increment');
     expect(camera.zoom).toBe(20);
+    for (let index = 0; index < 40; index++) perform('left');
+    expect(camera.center[0]).toBe(975);
     for (let index = 0; index < 40; index++) perform('decrement');
     expect(camera.zoom).toBe(1);
     for (let index = 0; index < 40; index++) perform('left');
-    expect(camera.center.every(Number.isFinite)).toBe(true);
+    expect(camera.center).toEqual([500, 250]);
   });
 });

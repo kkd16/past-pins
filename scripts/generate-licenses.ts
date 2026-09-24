@@ -1,6 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 type InventoryPackage = {
   name: string;
@@ -10,6 +11,7 @@ type InventoryPackage = {
 };
 type Notice = { name: string; version: string; license: string; text: string };
 
+const { values } = parseArgs({ options: { check: { type: 'boolean' } } });
 const root = fileURLToPath(new URL('..', import.meta.url));
 const output = join(root, 'licenses/notices.json');
 const result = Bun.spawnSync({
@@ -89,7 +91,7 @@ const generated =
     null,
     2,
   ) + '\n';
-if (process.argv.includes('--check')) {
+if (values.check) {
   if (
     !(await Bun.file(output).exists()) ||
     (await Bun.file(output).text()) !== generated

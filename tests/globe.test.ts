@@ -9,6 +9,39 @@ import { toCartesian, toGeographic } from '../src/globe/coordinates';
 import { pickCountry } from '../src/globe/picking';
 import world from '../src/globe/world.json';
 
+const sourceById = new Map(
+  countryFeatures.map((shape) => [shape.properties.iso_a2.toLowerCase(), shape]),
+);
+
+describe('globe coordinates', () => {
+  test.each([
+    { geographic: [0, 0], cartesian: [0, 0, 1] },
+    { geographic: [90, 0], cartesian: [1, 0, 0] },
+    { geographic: [-90, 0], cartesian: [-1, 0, 0] },
+    { geographic: [180, 0], cartesian: [0, 0, -1] },
+    { geographic: [0, 90], cartesian: [0, 1, 0] },
+    { geographic: [0, -90], cartesian: [0, -1, 0] },
+    {
+      geographic: [45, 30],
+      cartesian: [Math.sqrt(6) / 4, 0.5, Math.sqrt(6) / 4],
+    },
+  ])(
+    'converts known coordinates $geographic independently in both directions',
+    ({ geographic, cartesian }) => {
+      toCartesian(geographic).forEach((value, axis) => {
+        expect(value).toBeCloseTo(cartesian[axis], 10);
+      });
+      for (const scale of [1, 7]) {
+        const actual = toGeographic(
+          cartesian.map((value) => value * scale) as [number, number, number],
+        );
+        expect(actual[0]).toBeCloseTo(geographic[0], 10);
+        expect(actual[1]).toBeCloseTo(geographic[1], 10);
+      }
+    },
+  );
+});
+
 describe('bundled globe geometry', () => {
   test('covers every source feature with finite geometry or a source-derived marker', () => {
     expect(world.countries.map(({ id }) => id).sort()).toEqual(
@@ -32,13 +65,19 @@ describe('bundled globe geometry', () => {
           index < world.positions.length / 3,
       ),
     ).toBe(true);
+    for (let index = 0; index < world.positions.length; index += 3)
+      expect(
+        Math.hypot(...world.positions.slice(index, index + 3)),
+      ).toBeCloseTo(1, 6);
+    let nextVertex = 0;
     for (const country of world.countries) {
-      const shape = countryFeatures.find(
-        ({ properties }) => properties.iso_a2.toLowerCase() === country.id,
-      )!;
+      expect(country.firstVertex).toBe(nextVertex);
+      nextVertex += country.vertexCount;
+      const shape = sourceById.get(country.id)!;
       if (geoArea(shape) > 0) expect(country.vertexCount).toBeGreaterThan(0);
       else expect(world.markers.some(({ id }) => id === country.id)).toBe(true);
     }
+    expect(nextVertex).toBe(world.positions.length / 3);
   });
 
   test('triangles face outward and their centers lie inside their source, including holes and poles', () => {
@@ -50,9 +89,7 @@ describe('bundled globe geometry', () => {
         ({ firstVertex, vertexCount }) =>
           ids[0] >= firstVertex && ids[0] < firstVertex + vertexCount,
       )!;
-      const shape = countryFeatures.find(
-        ({ properties }) => properties.iso_a2.toLowerCase() === country.id,
-      )!;
+      const shape = sourceById.get(country.id)!;
       const [a, b, c] = ids.map((id) =>
         vec3.fromValues(
           ...(vertices.slice(id * 3, id * 3 + 3) as [number, number, number]),
@@ -65,6 +102,11 @@ describe('bundled globe geometry', () => {
       );
       const center = vec3.add(vec3.create(), vec3.add(vec3.create(), a, b), c);
       if (
+        ids.some(
+          (id) =>
+            id < country.firstVertex ||
+            id >= country.firstVertex + country.vertexCount,
+        ) ||
         vec3.dot(normal, center) <= 0 ||
         !geoContains(shape, toGeographic(center))
       )
@@ -251,7 +293,7 @@ describe('globe camera and country picking', () => {
     }
   });
 
-  test('drag follows the finger, remains normalized, and can pass over both poles', () => {
+  test('drag follows the finger and repeated gestures remain normalized', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);
     quat.identity(camera.rotation);
@@ -261,5 +303,24 @@ describe('globe camera and country picking', () => {
     expect(screen[1]).toBeGreaterThan(422);
     for (let i = 0; i < 1000; i++) camera.drag(1, 10);
     expect(Math.hypot(...camera.rotation)).toBeCloseTo(1, 5);
+  });
+
+  test('vertical drags cross both poles and continue around the globe', () => {
+    const camera = new GlobeCamera();
+    camera.resize(390, 844);
+    quat.identity(camera.rotation);
+    const quarterTurn = (camera.radius * Math.PI) / 2;
+    camera.drag(0, quarterTurn);
+    expect(camera.geographicPoint(195, 422)![1]).toBeCloseTo(90, 4);
+    camera.drag(0, quarterTurn);
+    const opposite = camera.geographicPoint(195, 422)!;
+    expect(opposite[1]).toBeCloseTo(0, 4);
+    expect(Math.abs(opposite[0])).toBeCloseTo(180, 4);
+    camera.drag(0, quarterTurn);
+    expect(camera.geographicPoint(195, 422)![1]).toBeCloseTo(-90, 4);
+    camera.drag(0, quarterTurn);
+    const original = camera.geographicPoint(195, 422)!;
+    expect(original[0]).toBeCloseTo(0, 4);
+    expect(original[1]).toBeCloseTo(0, 4);
   });
 });

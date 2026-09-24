@@ -45,16 +45,29 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo start --ios",
-    "lint": "expo lint",
+    "lint": "expo lint . --max-warnings 0",
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "expo customize tsconfig.json && tsc --noEmit",
     "globe:generate": "bun scripts/generate-globe.ts",
     "globe:check": "bun scripts/generate-globe.ts --check",
     "licenses:generate": "bun scripts/generate-licenses.ts",
-    "licenses:check": "bun scripts/generate-licenses.ts --check"
+    "licenses:check": "bun scripts/generate-licenses.ts --check",
+    "dev": "expo start --go --tunnel",
+    "test:coverage": "bun test --coverage",
+    "check": "bun run lint && bun run typecheck && bun run test && bun run globe:check && bun run licenses:check",
+    "check:all": "bun run check && bun run doctor && bun run export:ios",
+    "doctor": "bunx expo-doctor",
+    "export:ios": "expo export --platform ios",
+    "generate": "bun run globe:generate && bun run licenses:generate",
+    "deps:update": "bun update && bunx expo install --fix --bun && bun run generate && bun run check:all",
+    "reset": "rm -rf node_modules .expo && bun install --frozen-lockfile"
   },
   "private": true,
   "overrides": {
     "react-native-screens": "~4.26.2"
+  },
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

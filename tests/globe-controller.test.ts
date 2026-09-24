@@ -1,37 +1,10 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import { GlobeController } from '../src/globe/controller';
+import { mockAnimationFrames } from './helpers/animation-frames';
 
 describe('globe frame lifecycle', () => {
-  const originalRequest = globalThis.requestAnimationFrame;
-  const originalCancel = globalThis.cancelAnimationFrame;
-  let nextId = 0;
-  let time = 0;
-  const pending = new Map<number, FrameRequestCallback>();
-
-  beforeEach(() => {
-    time = 0;
-    pending.clear();
-    globalThis.requestAnimationFrame = (callback) => {
-      pending.set(++nextId, callback);
-      return nextId;
-    };
-    globalThis.cancelAnimationFrame = (id) => {
-      if (id != null) pending.delete(id);
-    };
-  });
-
-  afterEach(() => {
-    globalThis.requestAnimationFrame = originalRequest;
-    globalThis.cancelAnimationFrame = originalCancel;
-  });
-
-  function frame() {
-    time += 1000 / 60;
-    const callbacks = [...pending.values()];
-    pending.clear();
-    callbacks.forEach((callback) => callback(time));
-  }
+  const frames = mockAnimationFrames();
 
   function setup() {
     const error = mock();
@@ -45,34 +18,34 @@ describe('globe frame lifecycle', () => {
   test('renders on demand, coalesces changes, and does no GPU work while hidden', () => {
     const { controller, renderer } = setup();
     controller.setColors({ ca: 'visited' });
-    expect(pending.size).toBe(0);
+    expect(frames.pendingCount).toBe(0);
     expect(renderer.setColors).not.toHaveBeenCalled();
     controller.setActive(true);
     controller.drag(10, 10);
     controller.twist(0.5);
     controller.zoom(2);
     controller.stop();
-    expect(pending.size).toBe(1);
-    frame();
+    expect(frames.pendingCount).toBe(1);
+    frames.advance();
     expect(renderer.draw).toHaveBeenCalledTimes(1);
     expect(renderer.setColors).toHaveBeenCalledTimes(1);
-    expect(pending.size).toBe(0);
+    expect(frames.pendingCount).toBe(0);
     const beforeTwist = Array.from(controller.camera.rotation);
     controller.twist(-0.5);
     expect(Array.from(controller.camera.rotation)).not.toEqual(beforeTwist);
-    expect(pending.size).toBe(1);
-    frame();
+    expect(frames.pendingCount).toBe(1);
+    frames.advance();
     expect(renderer.draw).toHaveBeenCalledTimes(2);
-    expect(pending.size).toBe(0);
+    expect(frames.pendingCount).toBe(0);
     controller.drag(10, 0);
     controller.setActive(false);
     controller.setColors({ fr: 'visited' });
-    frame();
+    frames.advance();
     expect(renderer.draw).toHaveBeenCalledTimes(2);
     expect(renderer.setColors).toHaveBeenCalledTimes(1);
     const orientation = Array.from(controller.camera.rotation);
     controller.setActive(true);
-    frame();
+    frames.advance();
     expect(Array.from(controller.camera.rotation)).toEqual(orientation);
     expect(renderer.setColors).toHaveBeenLastCalledWith(
       { fr: 'visited' },
@@ -84,22 +57,29 @@ describe('globe frame lifecycle', () => {
     const { controller } = setup();
     controller.setActive(true);
     controller.setReduceMotion(false);
+    const initial = Array.from(controller.camera.rotation);
     controller.coast(900, 500);
-    for (let i = 0; i < 180; i++) frame();
-    expect(pending.size).toBe(0);
+    frames.advance(2);
+    expect(Array.from(controller.camera.rotation)).not.toEqual(initial);
+    expect(frames.pendingCount).toBe(1);
+    frames.advance(178);
+    expect(frames.pendingCount).toBe(0);
+    const settled = Array.from(controller.camera.rotation);
+    frames.advance(10);
+    expect(Array.from(controller.camera.rotation)).toEqual(settled);
     controller.coast(900, 500);
-    frame();
+    frames.advance();
     controller.setReduceMotion(true);
-    frame();
-    expect(pending.size).toBe(0);
+    frames.advance();
+    expect(frames.pendingCount).toBe(0);
     const rotation = Array.from(controller.camera.rotation);
     controller.coast(900, 500);
-    frame();
+    frames.advance();
     expect(Array.from(controller.camera.rotation)).toEqual(rotation);
     controller.setReduceMotion(false);
     controller.coast(900, 500);
     controller.setActive(false);
-    expect(pending.size).toBe(0);
+    expect(frames.pendingCount).toBe(0);
   });
 
   test('releases resources, reports rendering failure once, and allows a fresh renderer', () => {
@@ -108,17 +88,17 @@ describe('globe frame lifecycle', () => {
       throw new Error('Lost graphics context');
     });
     controller.setActive(true);
-    frame();
+    frames.advance();
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
     expect(error).toHaveBeenCalledTimes(1);
     expect(controller.ready).toBe(false);
-    expect(pending.size).toBe(0);
+    expect(frames.pendingCount).toBe(0);
     const replacement = { draw: mock(), setColors: mock(), dispose: mock() };
     controller.attach(replacement);
-    frame();
+    frames.advance();
     expect(replacement.draw).toHaveBeenCalledTimes(1);
     controller.detach();
     expect(replacement.dispose).toHaveBeenCalledTimes(1);
-    expect(pending.size).toBe(0);
+    expect(frames.pendingCount).toBe(0);
   });
 });

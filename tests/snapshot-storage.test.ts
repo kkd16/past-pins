@@ -106,10 +106,15 @@ describe('atomic snapshot storage', () => {
 
   test('invalid saves cannot replace existing state and do not poison the queue', async () => {
     const { storage } = fixture();
-    await storage.save(defaultAppData());
+    const initial = defaultAppData();
+    initial.places.fr = 'wishlist';
+    initial.preferences.haptics = false;
+    await storage.save(initial);
     await expect(
       storage.save({ ...defaultAppData(), homeCountryId: 'ca' }),
     ).rejects.toThrow();
+    expect(await storage.load()).toEqual(initial);
+    await storage.save(defaultAppData());
     expect(await storage.load()).toEqual(defaultAppData());
   });
 

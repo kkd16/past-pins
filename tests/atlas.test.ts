@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { geoArea, geoContains } from 'd3-geo';
 
-import { calloutRect, intersects, placeLabels } from '../src/atlas/annotations';
+import { calloutRect, placeLabels, type Rect } from '../src/atlas/annotations';
 import { FlatCamera } from '../src/atlas/FlatCamera';
 import {
   countryAnchors,
@@ -198,11 +198,18 @@ describe('map callouts and sparse labels', () => {
     }));
     const labels = placeLabels(candidates, wide, [blocked]);
     expect(labels.length).toBe(12);
+    // Measure the largest separating axis, independently of the collision helper.
+    const separation = (a: Rect, b: Rect) =>
+      Math.max(
+        b.x - (a.x + a.width),
+        a.x - (b.x + b.width),
+        b.y - (a.y + a.height),
+        a.y - (b.y + b.height),
+      );
     labels.forEach((label, index) => {
-      expect(intersects(label, blocked)).toBe(false);
-      expect(
-        labels.slice(index + 1).some((other) => intersects(label, other)),
-      ).toBe(false);
+      expect(separation(label, blocked)).toBeGreaterThanOrEqual(16);
+      for (const other of labels.slice(index + 1))
+        expect(separation(label, other)).toBeGreaterThanOrEqual(18);
     });
   });
 

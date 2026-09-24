@@ -12,6 +12,8 @@ describe('current backup format', () => {
   test('round trips every catalog place, current home, and all preferences', () => {
     const data = changeHome(defaultAppData(), 'ca');
     for (const id of countryIds) data.places[id] = 'lived';
+    data.places.fr = 'wishlist';
+    data.places.jp = 'visited';
     data.preferences = {
       mapView: 'map',
       countryLabels: false,
@@ -19,15 +21,20 @@ describe('current backup format', () => {
       haptics: false,
       countryGrouping: 'alphabetical',
     };
-    expect(decodeBackup(encodeBackup(data))).toEqual(data);
+    const encoded = encodeBackup(data);
+    expect(JSON.parse(encoded)).toEqual({ app: 'past-pins', version: 1, data });
+    expect(decodeBackup(encoded)).toEqual(data);
   });
 
-  test('returns independent data objects and rejects non-JSON input', () => {
+  test('returns independent data objects', () => {
     const data = defaultAppData();
     const parsed = validateAppData(data);
     parsed.preferences.haptics = false;
     parsed.places.ca = 'wishlist';
     expect(data).toEqual(defaultAppData());
+  });
+
+  test('rejects non-JSON input', () => {
     expect(() => decodeBackup('this is not JSON')).toThrow('valid JSON');
   });
 

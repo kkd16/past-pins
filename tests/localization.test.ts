@@ -18,8 +18,8 @@ describe('localization', () => {
     const plugin = appConfig.expo.plugins.find(
       (plugin) => Array.isArray(plugin) && plugin[0] === 'expo-localization',
     ) as [string, { supportedLocales: { ios: string[] } }];
-    expect(plugin[1].supportedLocales.ios).toEqual(
-      Object.keys(appTranslations),
+    expect([...plugin[1].supportedLocales.ios].sort()).toEqual(
+      Object.keys(appTranslations).sort(),
     );
   });
 
@@ -38,10 +38,13 @@ describe('localization', () => {
 
   test('uses plural messages and localized values independently', () => {
     const { t, formatNumber } = createLocalization(translations, 'en-CA');
-    for (const count of [0, 1, 2, 1200]) {
-      expect(t('count', { count, amount: formatNumber(count) })).toBe(
-        `${formatNumber(count)} ${count === 1 ? 'place' : 'places'}`,
-      );
+    for (const [count, message] of [
+      [0, '0 places'],
+      [1, '1 place'],
+      [2, '2 places'],
+      [1200, '1,200 places'],
+    ] as const) {
+      expect(t('count', { count, amount: formatNumber(count) })).toBe(message);
     }
   });
 
@@ -52,16 +55,12 @@ describe('localization', () => {
     );
     expect(language).toBe('en');
     expect(formatNumber(1234.5)).toBe('1.234,5');
-    expect(formatPercent(0.25)).toBe(
-      new Intl.NumberFormat('de-DE', {
-        style: 'percent',
-        maximumFractionDigits: 1,
-      }).format(0.25),
-    );
+    expect(formatPercent(0.25)).toBe('25\u00a0%');
   });
 
   test('keeps a first visit visible in the formatted percentage', () => {
     const { formatPercent } = createLocalization(translations, 'en');
+    expect(formatPercent(0)).toBe('0%');
     expect(formatPercent(1 / 253)).toBe('0.4%');
     expect(formatPercent(1)).toBe('100%');
   });
@@ -77,7 +76,14 @@ describe('localization', () => {
     expect(formatNumber(1234.5)).toBe('1.234,5');
   });
 
-  test('formats country facts with the library sentence formatter', () => {
+  test('sorts names in the app language even when the device region sorts accents differently', () => {
+    const { compareNames } = createLocalization(translations, 'en', 'sv-SE');
+    expect(['Zambia', 'Öland', 'Austria'].sort(compareNames)).toEqual([
+      'Austria', 'Öland', 'Zambia',
+    ]);
+  });
+
+  test('formats country facts as readable lists', () => {
     const { formatList } = createLocalization(translations, 'en');
     expect(formatList([])).toBe('');
     expect(formatList(['English'])).toBe('English');

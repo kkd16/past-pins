@@ -78,7 +78,7 @@ describe('app data owner', () => {
     expect(store.getSnapshot().status).toBe('ready');
   });
 
-  test('bulk changes create one Undo that preserves subsequent preference edits', async () => {
+  test('bulk changes create a one-shot Undo that preserves subsequent preference edits', async () => {
     const { store, storage, feedback } = fixture();
     await store.load();
     store.setHome('ca');
@@ -90,6 +90,7 @@ describe('app data owner', () => {
     });
     store.updatePreferences({ mapView: 'map', haptics: false });
     store.undo();
+    store.undo();
     expect(store.getSnapshot().data.places).toEqual({ ca: 'lived' });
     expect(store.getSnapshot().data.homeCountryId).toBe('ca');
     expect(store.getSnapshot().data.preferences.mapView).toBe('map');
@@ -99,13 +100,14 @@ describe('app data owner', () => {
     expect(await storage.load()).toEqual(store.getSnapshot().data);
   });
 
-  test('bulk Undo describes changed countries, excluding duplicates and preserved statuses', async () => {
+  test('bulk Undo counts changed countries and survives no-op updates', async () => {
     const { store } = fixture();
     await store.load();
     store.setHome('ca');
     await store.setStatus(['fr'], 'visited');
     await store.setStatus(['ca', 'fr', 'jp', 'jp'], 'visited');
     expect(store.getSnapshot().undoLabel).toBe('Place updated');
+    await store.setStatus(['ca', 'fr', 'jp'], 'visited');
     store.undo();
     expect(store.getSnapshot().data.places).toEqual({
       ca: 'lived',
@@ -187,10 +189,20 @@ describe('app data owner', () => {
     await f.store.setStatus(['ca'], 'visited');
     await settle(f.storage);
     const prior = f.store.getSnapshot();
+    const started = Promise.withResolvers<void>();
+    const gate = Promise.withResolvers<void>();
+    const save = f.storage.save;
+    f.storage.save = async (data) => {
+      started.resolve();
+      await gate.promise;
+      await save(data);
+    };
     f.failWrites(true);
-    await expect(f.store.restore(defaultAppData())).rejects.toThrow(
-      'Write failed',
-    );
+    const restoring = f.store.restore(defaultAppData());
+    await started.promise;
+    expect(f.store.getSnapshot()).toEqual({ ...prior, busy: true });
+    gate.resolve();
+    await expect(restoring).rejects.toThrow('Write failed');
     expect(f.store.getSnapshot()).toEqual(prior);
     expect(await f.storage.load()).toEqual(prior.data);
     f.failWrites(false);
@@ -244,36 +256,42 @@ describe('app data owner', () => {
     expect(await f.storage.load()).toEqual(f.store.getSnapshot().data);
   });
 
-  test('stale save completions cannot replace the latest save result', async () => {
-    const first = Promise.withResolvers<void>();
-    const second = Promise.withResolvers<void>();
-    let writes = 0;
-    const store = createAppDataStore(
-      {
-        async load() {
-          return defaultAppData();
+  test.each(['success', 'failure'])(
+    'stale saves cannot replace the latest %s',
+    async (result) => {
+      const latestFailed = result === 'failure';
+      const first = Promise.withResolvers<void>();
+      const second = Promise.withResolvers<void>();
+      let writes = 0;
+      const store = createAppDataStore(
+        {
+          async load() {
+            return defaultAppData();
+          },
+          save: () => (++writes === 1 ? first.promise : second.promise),
         },
-        save: () => (++writes === 1 ? first.promise : second.promise),
-      },
-      {
-        async confirmHomeChange() {
-          return true;
+        {
+          async confirmHomeChange() {
+            return true;
+          },
         },
-      },
-    );
-    await store.load();
-    await store.setStatus(['ca'], 'visited');
-    await store.setStatus(['fr'], 'wishlist');
-    second.resolve();
-    await second.promise;
-    first.reject(new Error('An earlier save failed'));
-    await first.promise.catch(() => undefined);
-    expect(store.getSnapshot().saveError).toBe(false);
-    expect(store.getSnapshot().data.places).toEqual({
-      ca: 'visited',
-      fr: 'wishlist',
-    });
-  });
+      );
+      await store.load();
+      await store.setStatus(['ca'], 'visited');
+      await store.setStatus(['fr'], 'wishlist');
+      if (latestFailed) second.reject(new Error('The latest save failed'));
+      else second.resolve();
+      await second.promise.catch(() => undefined);
+      if (latestFailed) first.resolve();
+      else first.reject(new Error('An earlier save failed'));
+      await first.promise.catch(() => undefined);
+      expect(store.getSnapshot().saveError).toBe(latestFailed);
+      expect(store.getSnapshot().data.places).toEqual({
+        ca: 'visited',
+        fr: 'wishlist',
+      });
+    },
+  );
 
   test('failed replacement preserves an earlier unsaved-change warning', async () => {
     const f = fixture();

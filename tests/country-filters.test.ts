@@ -27,8 +27,7 @@ describe('country list filters', () => {
       defaultCountryFilters,
       places,
     );
-    expect(new Set(ids(sections)).size).toBe(countries.length);
-    expect(ids(sections)).toHaveLength(countries.length);
+    expect(ids(sections).sort()).toEqual(countries.map(({ id }) => id).sort());
     expect(sections.map(({ title }) => title)).toEqual(
       sections
         .map(({ title }) => title)
@@ -59,10 +58,13 @@ describe('country list filters', () => {
       defaultCountryFilters,
       places,
     );
-    expect(ids(yes).sort()).toEqual(['ca', 'ci', 'fr']);
-    expect(ids(no)).toContain('jp');
-    expect(ids(no).length + ids(yes).length).toBe(countries.length);
-    expect(ids(no).some((id) => ids(yes).includes(id))).toBe(false);
+    const visitedIds = ids(yes);
+    const remainingIds = ids(no);
+    expect(visitedIds.sort()).toEqual(['ca', 'ci', 'fr']);
+    expect(remainingIds).toContain('jp');
+    expect([...visitedIds, ...remainingIds].sort()).toEqual(
+      countries.map(({ id }) => id).sort(),
+    );
     expect([...yes, ...no].every(({ data }) => data.length > 0)).toBe(true);
   });
 
@@ -107,6 +109,16 @@ describe('country list filters', () => {
     );
     expect(sections).toHaveLength(1);
     expect(sections[0].data).toEqual([...countries]);
+    expect(
+      ids(
+        selectCountrySections(
+          '',
+          'visited',
+          { continent: 'all', grouping: 'alphabetical' },
+          places,
+        ),
+      ),
+    ).toEqual(['ca', 'ci', 'fr']);
   });
 
   test('removing a lived place immediately leaves visited and enters not visited', () => {
@@ -134,6 +146,14 @@ describe('country list filters', () => {
     expect(
       selectCountrySections('', 'visited', defaultCountryFilters, {}),
     ).toEqual([]);
+    expect(
+      selectCountrySections(
+        '',
+        'visited',
+        { continent: 'all', grouping: 'alphabetical' },
+        {},
+      ),
+    ).toEqual([]);
     const allVisited = Object.fromEntries(
       countries.map(({ id }) => [id, 'visited' as const]),
     );
@@ -148,15 +168,28 @@ describe('country list filters', () => {
   });
 
   test('route parameters support valid options and default invalid inputs', () => {
-    expect(readCountryFilters({})).toEqual(defaultCountryFilters);
+    expect(readCountryFilters({})).toEqual({
+      continent: 'all',
+      grouping: 'continent',
+    });
     expect(
       readCountryFilters({ continent: 'EU', grouping: 'alphabetical' }),
     ).toEqual({ continent: 'EU', grouping: 'alphabetical' });
     expect(
-      readCountryFilters({ continent: 'invalid', grouping: ['continent'] }),
-    ).toEqual(defaultCountryFilters);
+      readCountryFilters({ continent: 'invalid', grouping: 'alphabetical' }),
+    ).toEqual({ continent: 'all', grouping: 'alphabetical' });
+    expect(
+      readCountryFilters({ continent: 'EU', grouping: ['alphabetical'] }),
+    ).toEqual({ continent: 'EU', grouping: 'continent' });
+    expect(
+      readCountryFilters({ continent: ['EU'], grouping: 'alphabetical' }),
+    ).toEqual({ continent: 'all', grouping: 'alphabetical' });
+    expect(readCountryScope('all')).toBe('all');
+    expect(readCountryScope('visited')).toBe('visited');
     expect(readCountryScope('wishlist')).toBe('wishlist');
     expect(readCountryScope('lived')).toBe('lived');
+    expect(readCountryScope('not-visited')).toBe('not-visited');
+    expect(readCountryScope(undefined)).toBe('all');
     expect(readCountryScope(['visited'])).toBe('all');
     expect(readCountryScope('invalid')).toBe('all');
   });
