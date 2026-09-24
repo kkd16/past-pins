@@ -7,10 +7,12 @@ import { ScreenHeader } from './ScreenHeader';
 
 export function Sheet({
   title,
+  subtitle,
   onDone,
   children,
 }: {
   title: string;
+  subtitle?: string;
   onDone: () => void;
   children: ReactNode;
 }) {
@@ -21,7 +23,7 @@ export function Sheet({
       contentContainerStyle={styles.content}
       bounces={false}
     >
-      <ScreenHeader title={title}>
+      <ScreenHeader title={title} subtitle={subtitle} compact>
         <Button label="Done" variant="quiet" onPress={onDone} />
       </ScreenHeader>
       {children}

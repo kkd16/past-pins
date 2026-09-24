@@ -16,25 +16,31 @@ export function ProgressSummary({
 }) {
   const percent = total ? (visited / total) * 100 : 0;
   return (
-    <View style={styles.container}>
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityValue={
+        loading
+          ? { text: 'Loading saved visits' }
+          : {
+              min: 0,
+              max: total,
+              now: visited,
+              text: `${visited} of ${total} places, ${percent.toFixed(1)} percent`,
+            }
+      }
+      style={styles.container}
+    >
       <View style={styles.labels}>
         <AppText variant="label" style={styles.label}>
           {label}
         </AppText>
-        <AppText variant="label" tone="accent" style={styles.number}>
+        <AppText variant="label" tone="visited" style={styles.number}>
           {loading ? '—' : `${percent.toFixed(1)}%`}
         </AppText>
       </View>
-      <View
-        accessibilityRole="progressbar"
-        accessibilityLabel={label}
-        accessibilityValue={
-          loading
-            ? { text: 'Loading saved visits' }
-            : { min: 0, max: total, now: visited }
-        }
-        style={styles.track}
-      >
+      <View style={styles.track}>
         <View style={[styles.fill, { width: `${percent}%` }]} />
       </View>
       <AppText variant="caption" tone="muted">
@@ -59,14 +65,14 @@ const styles = StyleSheet.create({
   label: { flex: 1 },
   number: { fontVariant: ['tabular-nums'] },
   track: {
-    height: 4,
+    height: theme.size.progress,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.color.border,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    backgroundColor: theme.color.accent,
+    backgroundColor: theme.color.visitedEmphasis,
     borderRadius: theme.radius.pill,
   },
 });

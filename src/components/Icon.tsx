@@ -30,14 +30,14 @@ export function Icon({
           r={6.5}
           fill="none"
           stroke={color}
-          strokeWidth={1.7}
+          strokeWidth={theme.stroke.control}
         />
       )}
       <Path
         d={paths[name]}
         fill="none"
         stroke={color}
-        strokeWidth={1.7}
+        strokeWidth={theme.stroke.control}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

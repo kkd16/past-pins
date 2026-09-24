@@ -2,6 +2,7 @@ import { StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Sheet } from '../components/Sheet';
+import { Surface } from '../components/Surface';
 import { countryById } from '../countries/catalog';
 import { VisitsFeedback } from '../countries/VisitsFeedback';
 import { useVisits } from '../countries/VisitsProvider';
@@ -17,23 +18,31 @@ export function CountryDetailsScreen({
   const visits = useVisits();
   const country = countryById.get(id);
   return (
-    <Sheet title={country?.name ?? 'Place not found'} onDone={onDone}>
+    <Sheet
+      title={country?.name ?? 'Place not found'}
+      subtitle={country?.continent.name}
+      onDone={onDone}
+    >
       {country ? (
         <>
-          <AppText tone="muted">{country.continent.name}</AppText>
-          <View style={styles.visitRow}>
-            <AppText style={styles.label}>Visited</AppText>
+          <Surface style={styles.visitRow}>
+            <View style={styles.label}>
+              <AppText variant="heading">Visited</AppText>
+              <AppText variant="caption" tone="muted">
+                Have you been here?
+              </AppText>
+            </View>
             <Switch
               accessibilityLabel={`${country.name} visited`}
               value={visits.visitedIds.has(id)}
               disabled={visits.status !== 'ready'}
               onValueChange={(visited) => visits.setVisited(id, visited)}
               trackColor={{
-                true: theme.color.accent,
-                false: theme.color.border,
+                true: theme.color.visitedEmphasis,
+                false: theme.color.controlBorder,
               }}
             />
-          </View>
+          </Surface>
           <VisitsFeedback {...visits} />
         </>
       ) : (
@@ -48,10 +57,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.lg,
-    backgroundColor: theme.color.surface,
-    borderRadius: theme.radius.sm,
-    padding: theme.space.lg,
+    padding: theme.space.xl,
     minHeight: theme.size.row,
   },
-  label: { flex: 1 },
+  label: { flex: 1, gap: theme.space.xs },
 });

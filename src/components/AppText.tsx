@@ -4,7 +4,7 @@ import { theme, type TextVariant } from '../theme';
 
 export type AppTextProps = TextProps & {
   variant?: TextVariant;
-  tone?: 'default' | 'muted' | 'accent';
+  tone?: 'default' | 'muted' | 'accent' | 'visited';
 };
 
 export function AppText({
@@ -13,12 +13,12 @@ export function AppText({
   style,
   ...props
 }: AppTextProps) {
-  const color =
-    tone === 'muted'
-      ? theme.color.textMuted
-      : tone === 'accent'
-        ? theme.color.accent
-        : theme.color.text;
+  const color = {
+    default: theme.color.text,
+    muted: theme.color.textMuted,
+    accent: theme.color.accent,
+    visited: theme.color.visitedEmphasis,
+  }[tone];
   return (
     <Text {...props} style={[theme.typography[variant], { color }, style]} />
   );

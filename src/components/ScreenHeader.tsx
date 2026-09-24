@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { theme } from '../theme';
 import { AppText } from './AppText';
@@ -7,16 +7,29 @@ import { AppText } from './AppText';
 export function ScreenHeader({
   title,
   subtitle,
+  compact = false,
   children,
 }: {
   title: string;
   subtitle?: string;
+  compact?: boolean;
   children?: ReactNode;
 }) {
+  const { fontScale } = useWindowDimensions();
+  const stacked = compact && fontScale > theme.accessibility.largeTextScale;
   return (
-    <View style={styles.header}>
-      <View style={styles.text}>
-        <AppText variant="title" accessibilityRole="header">
+    <View
+      style={[
+        styles.header,
+        compact && styles.compact,
+        stacked && styles.stacked,
+      ]}
+    >
+      <View style={[styles.text, stacked && styles.stackedText]}>
+        <AppText
+          variant={compact ? 'heading' : 'title'}
+          accessibilityRole="header"
+        >
           {title}
         </AppText>
         {subtitle && (
@@ -37,5 +50,8 @@ const styles = StyleSheet.create({
     gap: theme.space.md,
     paddingBottom: theme.space.lg,
   },
+  compact: { paddingBottom: 0 },
+  stacked: { flexDirection: 'column', alignItems: 'flex-end' },
+  stackedText: { flex: 0, alignSelf: 'stretch' },
   text: { flex: 1, gap: theme.space.xs },
 });

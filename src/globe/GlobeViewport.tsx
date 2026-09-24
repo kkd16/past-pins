@@ -114,9 +114,9 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   controls: { ...StyleSheet.absoluteFill, alignItems: 'flex-end' },
   reset: {
+    ...theme.surface.floating,
     margin: theme.space.lg,
     borderRadius: theme.radius.pill,
-    backgroundColor: theme.color.surface,
   },
   error: {
     margin: theme.space.xl,

@@ -3,7 +3,10 @@ import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 import { theme } from '../theme';
 import { Icon, type IconProps } from './Icon';
 
-export type IconButtonProps = Omit<PressableProps, 'children' | 'accessibilityLabel'> &
+export type IconButtonProps = Omit<
+  PressableProps,
+  'children' | 'accessibilityLabel'
+> &
   IconProps & { accessibilityLabel: string };
 
 export function IconButton({
@@ -34,6 +37,7 @@ export function IconButton({
 
 const styles = StyleSheet.create({
   base: {
+    borderRadius: theme.radius.pill,
     minHeight: theme.size.touch,
     minWidth: theme.size.touch,
     alignItems: 'center',

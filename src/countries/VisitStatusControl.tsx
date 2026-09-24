@@ -20,7 +20,7 @@ export function VisitStatusControl({
 }) {
   const { fontScale } = useWindowDimensions();
   // UISegmentedControl cannot wrap long labels at accessibility text sizes.
-  if (fontScale > 1.3) {
+  if (fontScale > theme.accessibility.largeTextScale) {
     return (
       <View accessibilityRole="radiogroup" accessibilityLabel="Visit status">
         {options.map((option) => (
@@ -42,14 +42,15 @@ export function VisitStatusControl({
       onChange={({ nativeEvent }) =>
         onChange(options[nativeEvent.selectedSegmentIndex].value)
       }
-      appearance="dark"
+      appearance={theme.appearance.colorScheme}
+      tintColor={theme.color.accent}
       fontStyle={{
         fontSize: theme.typography.caption.fontSize * fontScale,
         color: theme.color.textMuted,
       }}
       activeFontStyle={{
         fontSize: theme.typography.caption.fontSize * fontScale,
-        color: theme.color.text,
+        color: theme.color.onAccent,
       }}
       style={styles.control}
     />

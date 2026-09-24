@@ -31,7 +31,10 @@ export function Button({
     >
       <AppText
         variant="label"
-        style={variant === 'primary' ? styles.primaryLabel : styles.quietLabel}
+        style={[
+          styles.label,
+          variant === 'primary' ? styles.primaryLabel : styles.quietLabel,
+        ]}
       >
         {label}
       </AppText>
@@ -43,15 +46,17 @@ const styles = StyleSheet.create({
   base: {
     minHeight: theme.size.touch,
     minWidth: theme.size.touch,
+    maxWidth: '100%',
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.sm,
     borderRadius: theme.radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  label: { textAlign: 'center' },
   primary: { backgroundColor: theme.color.accent },
   primaryLabel: { color: theme.color.onAccent },
-  quietLabel: { color: theme.color.textMuted },
+  quietLabel: { color: theme.color.accent },
   pressed: { opacity: theme.opacity.pressed },
   disabled: { opacity: theme.opacity.disabled },
 });

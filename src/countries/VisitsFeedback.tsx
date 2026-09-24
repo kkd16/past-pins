@@ -1,7 +1,8 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { Surface } from '../components/Surface';
 import { theme } from '../theme';
 import type { VisitedCountries } from '../hooks/useVisitedCountries';
 
@@ -25,20 +26,20 @@ export function VisitsFeedback({
         />
       )}
       {status === 'load-error' && (
-        <View style={styles.notice} accessibilityRole="alert">
+        <Surface style={styles.notice} accessibilityRole="alert">
           <AppText variant="caption">
             Could not load your visits. Try again.
           </AppText>
           <Button label="Try again" variant="quiet" onPress={retry} />
-        </View>
+        </Surface>
       )}
       {saveError && (
-        <View style={styles.notice} accessibilityRole="alert">
+        <Surface style={styles.notice} accessibilityRole="alert">
           <AppText variant="caption">
             Your latest changes haven’t been saved.
           </AppText>
           <Button label="Retry save" variant="quiet" onPress={retry} />
-        </View>
+        </Surface>
       )}
     </>
   );
@@ -47,8 +48,6 @@ export function VisitsFeedback({
 const styles = StyleSheet.create({
   loading: { paddingBottom: theme.space.md },
   notice: {
-    backgroundColor: theme.color.surface,
-    borderRadius: theme.radius.sm,
     padding: theme.space.md,
     marginBottom: theme.space.md,
     gap: theme.space.xs,

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { ChoiceRow } from '../components/ChoiceRow';
 import { Sheet } from '../components/Sheet';
+import { Surface } from '../components/Surface';
 import { continents } from '../countries/catalog';
 import {
   defaultCountryFilters,
@@ -22,7 +23,7 @@ export function CountryFiltersScreen({
   const [filters, setFilters] = useState(initialFilters);
   return (
     <Sheet title="Filters" onDone={() => onApply(filters)}>
-      <View
+      <Surface
         style={styles.section}
         accessibilityRole="radiogroup"
         accessibilityLabel="Organization"
@@ -40,8 +41,8 @@ export function CountryFiltersScreen({
           selected={filters.grouping === 'alphabetical'}
           onPress={() => setFilters({ ...filters, grouping: 'alphabetical' })}
         />
-      </View>
-      <View
+      </Surface>
+      <Surface
         style={styles.section}
         accessibilityRole="radiogroup"
         accessibilityLabel="Continent"
@@ -61,7 +62,7 @@ export function CountryFiltersScreen({
             />
           ),
         )}
-      </View>
+      </Surface>
       <Button
         label="Reset filters"
         variant="quiet"
@@ -71,4 +72,6 @@ export function CountryFiltersScreen({
   );
 }
 
-const styles = StyleSheet.create({ section: { gap: theme.space.xs } });
+const styles = StyleSheet.create({
+  section: { padding: theme.space.md, gap: theme.space.sm },
+});

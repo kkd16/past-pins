@@ -30,7 +30,7 @@ Expo generates typed routes when the development server starts. Start it once af
 - `src/components/`: reusable controls and layouts. `Screen` applies native safe-area insets, including the tab bar. Its scrollable children use no automatic insets. Sheets scroll their full contents for large text.
 - `src/hooks/`: the visits lifecycle and persistence hook.
 - `src/storage/`: the SQLite adapter and application storage wiring.
-- `src/theme.ts`: shared colors, typography, spacing, and sizing.
+- `src/theme.ts`: shared colors, native appearance, typography, surfaces, spacing, sizing, globe lighting, and motion.
 
 The root mounts one `VisitsProvider` with an injected `VisitStorage`. All tabs and sheets consume that same state. Presentational country rows receive data and callbacks; filtering and statistics are ordinary functions with no UI or storage dependencies. Screens never import upstream geographic data directly.
 
@@ -44,7 +44,7 @@ The root mounts one `VisitsProvider` with an injected `VisitStorage`. All tabs a
 
 Expo GL draws cached geometry in four batches. Gestures update the camera without React renders. Frames run on changes and during inertia, stop while hidden or backgrounded, and honor Reduce Motion. The renderer works in Expo Go without a mapping service or account.
 
-The globe starts facing the Atlantic at 120% of the shorter viewport dimension. Pinch out for the whole sphere, zoom in for detail, or reset the original view.
+The globe starts facing the Atlantic at 120% of the shorter viewport dimension. Pinch to zoom out for the whole sphere or in for detail, twist with two fingers to rotate, or reset the original view.
 
 ## Visits
 
@@ -56,7 +56,7 @@ Country details save immediately. List filters apply with Done; swiping their sh
 
 ## Validation
 
-Bun tests cover catalog joins, geometry coverage and winding, camera/picking, frame scheduling and cleanup, search, combined filtering, grouping, statistics, and SQLite ordering/rollback/retry behavior. Before shipping, check on physical iPhone and iPad through Expo Go:
+Bun tests cover theme contrast, catalog joins, geometry coverage and winding, camera/picking, frame scheduling and cleanup, search, combined filtering, grouping, statistics, and SQLite ordering/rollback/retry behavior. Before shipping, check on physical iPhone and iPad through Expo Go:
 
 - Cold launch selects the center Map tab; tab switches preserve map zoom and list state.
 - Drag freely over the poles and across the antimeridian; pinch to both zoom limits; reset restores the launch view. Rotation should remain smooth at 60 Hz, with no continuous frames while idle. Linux shader/geometry checks do not establish native performance.

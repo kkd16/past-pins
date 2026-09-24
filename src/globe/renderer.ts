@@ -90,6 +90,7 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
       scale: gl.getUniformLocation(surface, 'scale'),
       marker: gl.getUniformLocation(surface, 'marker'),
       pointSize: gl.getUniformLocation(surface, 'pointSize'),
+      shaded: gl.getUniformLocation(surface, 'shaded'),
     };
     const oceanScale = gl.getUniformLocation(ocean, 'scale');
     const oceanColor = gl.getUniformLocation(ocean, 'color');
@@ -97,10 +98,21 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
     const surfacePosition = gl.getAttribLocation(surface, 'position');
     const surfaceColor = gl.getAttribLocation(surface, 'color');
     const background = rgb(theme.color.background);
-    const water = rgb(theme.color.surface);
-    const border = rgb(theme.color.background);
-    const unvisited = rgb(theme.color.land);
-    const visited = rgb(theme.color.accent);
+    const appearance = theme.globe;
+    const water = rgb(appearance.ocean);
+    const border = rgb(appearance.border);
+    const unvisited = rgb(appearance.land);
+    const visited = rgb(appearance.visited);
+
+    for (const target of [ocean, surface]) {
+      gl.useProgram(target);
+      gl.uniform3f(
+        gl.getUniformLocation(target, 'lightDirection'),
+        ...appearance.lightDirection,
+      );
+      for (const name of ['ambient', 'diffuse'] as const)
+        gl.uniform1f(gl.getUniformLocation(target, name), appearance[name]);
+    }
 
     if (gl.getError() !== gl.NO_ERROR)
       throw new Error('Could not upload globe geometry.');
@@ -147,9 +159,10 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
         );
         gl.uniform2f(surfaceUniform.scale, sx, sy);
         gl.uniform1i(surfaceUniform.marker, 0);
+        gl.uniform1i(surfaceUniform.shaded, 1);
         gl.uniform1f(
           surfaceUniform.pointSize,
-          (6 * gl.drawingBufferWidth) / camera.width,
+          (appearance.markerSize * gl.drawingBufferWidth) / camera.width,
         );
         attribute(surfacePosition, land, 3);
         attribute(surfaceColor, landColors, 3);
@@ -158,6 +171,7 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
 
         // Lines are on the sphere, above the triangulated land chords.
         gl.disable(gl.DEPTH_TEST);
+        gl.uniform1i(surfaceUniform.shaded, 0);
         attribute(surfacePosition, borders, 3);
         gl.disableVertexAttribArray(surfaceColor);
         gl.vertexAttrib3f(surfaceColor, ...border);

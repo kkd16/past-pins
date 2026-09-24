@@ -12,13 +12,13 @@ export const unstable_settings = { anchor: '(tabs)' };
 
 export default function RootLayout() {
   useEffect(() => {
-    Appearance.setColorScheme('dark');
+    Appearance.setColorScheme(theme.appearance.colorScheme);
   }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <VisitsProvider storage={visitStorage}>
-        <StatusBar style="light" />
+        <StatusBar style={theme.appearance.statusBarStyle} />
         <Stack
           screenOptions={{
             headerShown: false,

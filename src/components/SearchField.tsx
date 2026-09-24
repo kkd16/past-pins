@@ -1,9 +1,4 @@
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  type TextInputProps,
-} from 'react-native';
+import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { theme } from '../theme';
 import { Icon } from './Icon';
@@ -22,11 +17,12 @@ export function SearchField({
     <View style={styles.container}>
       <Icon name="search" />
       <TextInput
+        accessibilityRole="search"
         accessibilityLabel="Search"
         placeholder="Search"
         placeholderTextColor={theme.color.textMuted}
         selectionColor={theme.color.accent}
-        keyboardAppearance="dark"
+        keyboardAppearance={theme.appearance.colorScheme}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
@@ -38,7 +34,7 @@ export function SearchField({
       {value.length > 0 && (
         <IconButton
           name="close"
-          size={18}
+          size={theme.size.iconSmall}
           accessibilityLabel="Clear search"
           onPress={() => onChangeText('')}
         />
@@ -54,6 +50,8 @@ const styles = StyleSheet.create({
     paddingLeft: theme.space.lg,
     paddingRight: theme.space.xs,
     backgroundColor: theme.color.surface,
+    borderWidth: theme.stroke.subtle,
+    borderColor: theme.color.controlBorder,
     borderRadius: theme.radius.sm,
     gap: theme.space.sm,
   },

@@ -58,8 +58,7 @@ export function CountryList({
       renderSectionHeader={({ section }) => (
         <View style={styles.section}>
           <AppText
-            variant="label"
-            tone="muted"
+            variant="heading"
             accessibilityRole="header"
             style={styles.label}
           >
@@ -110,11 +109,11 @@ const styles = StyleSheet.create({
     gap: theme.space.sm,
     backgroundColor: theme.color.background,
     paddingHorizontal: theme.space.lg,
-    paddingTop: theme.space.lg,
+    paddingTop: theme.space.xl,
     paddingBottom: theme.space.sm,
   },
   label: { flex: 1 },
-  separator: { height: theme.space.xs },
+  separator: { height: theme.space.sm },
   empty: { alignItems: 'center', padding: theme.space.xl, gap: theme.space.md },
   emptyText: { textAlign: 'center' },
 });
