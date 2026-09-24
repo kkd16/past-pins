@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet } from 'react-native';
 
 import { theme } from '../theme';
 import { Button } from './Button';
-import { Screen } from './Screen';
 import { ScreenHeader } from './ScreenHeader';
 
 export function Sheet({
@@ -16,21 +15,28 @@ export function Sheet({
   children: ReactNode;
 }) {
   return (
-    <Screen style={styles.screen}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={styles.content}
-      >
-        <ScreenHeader title={title}>
-          <Button label="Done" variant="quiet" onPress={onDone} />
-        </ScreenHeader>
-        {children}
-      </ScrollView>
-    </Screen>
+    <ScrollView
+      style={styles.scroll}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.content}
+      bounces={false}
+    >
+      <ScreenHeader title={title}>
+        <Button label="Done" variant="quiet" onPress={onDone} />
+      </ScreenHeader>
+      {children}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingTop: theme.space.xl },
-  content: { paddingBottom: theme.space.xl, gap: theme.space.lg },
+  scroll: { flexGrow: 0 },
+  content: {
+    width: '100%',
+    maxWidth: theme.size.contentMax,
+    alignSelf: 'center',
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.xl,
+    gap: theme.space.lg,
+  },
 });

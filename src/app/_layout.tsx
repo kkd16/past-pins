@@ -30,7 +30,7 @@ export default function RootLayout() {
             name="country/[id]"
             options={{
               presentation: 'formSheet',
-              sheetAllowedDetents: [0.4, 1],
+              sheetAllowedDetents: 'fitToContents',
               sheetGrabberVisible: true,
             }}
           />
@@ -38,7 +38,7 @@ export default function RootLayout() {
             name="filters"
             options={{
               presentation: 'formSheet',
-              sheetAllowedDetents: [0.7, 1],
+              sheetAllowedDetents: [0.7],
               sheetGrabberVisible: true,
             }}
           />
