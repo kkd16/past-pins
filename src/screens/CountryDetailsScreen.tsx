@@ -12,6 +12,7 @@ import { statusOptions } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus } from '../data/model';
 import { theme } from '../theme';
+import { t, formatList, language } from '../localization';
 
 export function CountryDetailsScreen({
   id,
@@ -27,14 +28,20 @@ export function CountryDetailsScreen({
   const disabled = app.status !== 'ready' || app.busy;
   const facts = country
     ? [
-        { label: 'Capital', value: country.capital },
-        { label: 'Languages', value: country.languages.join(', ') },
-        { label: 'Currencies', value: country.currencies.join(', ') },
+        { label: t('countries.details.capital'), value: country.capital },
+        {
+          label: t('countries.details.languages'),
+          value: formatList(country.languages),
+        },
+        {
+          label: t('countries.details.currencies'),
+          value: formatList(country.currencies),
+        },
       ].filter(({ value }) => value)
     : [];
   return (
     <Sheet
-      title={country?.name ?? 'Place not found'}
+      title={country?.name ?? t('countries.details.notFound')}
       subtitle={country?.continent.name}
       onDone={onDone}
     >
@@ -43,7 +50,7 @@ export function CountryDetailsScreen({
           <Surface
             style={styles.section}
             accessibilityRole="radiogroup"
-            accessibilityLabel="Status"
+            accessibilityLabel={t('countries.status.title')}
           >
             <AppText
               variant="label"
@@ -51,7 +58,7 @@ export function CountryDetailsScreen({
               accessibilityRole="header"
               style={styles.sectionLabel}
             >
-              Status
+              {t('countries.status.title')}
             </AppText>
             {statusOptions.map(({ value, label }) => (
               <ChoiceRow
@@ -65,18 +72,23 @@ export function CountryDetailsScreen({
               />
             ))}
             <AppText variant="caption" tone="muted" style={styles.sectionLabel}>
-              Lived counts as Visited.
+              {t('countries.details.livedHint')}
             </AppText>
           </Surface>
           <Surface style={styles.home}>
-            <View style={styles.label}>
-              <AppText variant="label">Current home</AppText>
+            <View style={styles.label} accessibilityElementsHidden>
+              <AppText variant="label">{t('common.currentHome')}</AppText>
               <AppText variant="caption" tone="muted">
-                One current home. Former homes stay Lived.
+                {t('countries.details.homeHint')}
               </AppText>
             </View>
             <Switch
-              accessibilityLabel={country.name + ' is my current home'}
+              hitSlop={theme.space.sm}
+              accessibilityLanguage={language}
+              accessibilityLabel={t('countries.details.homeLabel', {
+                name: country.name,
+              })}
+              accessibilityHint={t('countries.details.homeHint')}
               value={app.data.homeCountryId === id}
               disabled={disabled}
               onValueChange={(home) => app.setHome(home ? id : null)}
@@ -88,14 +100,22 @@ export function CountryDetailsScreen({
           </Surface>
           <DataFeedback />
           <UndoNotice />
-          <Button label="Show on map" onPress={() => onShowMap(id)} />
+          <Button
+            label={t('countries.details.showMap')}
+            onPress={() => onShowMap(id)}
+          />
           {facts.length > 0 && (
             <Surface style={styles.facts}>
               <AppText variant="heading" accessibilityRole="header">
-                At a glance
+                {t('countries.details.facts')}
               </AppText>
               {facts.map(({ label, value }) => (
-                <View key={label} style={styles.fact}>
+                <View
+                  key={label}
+                  accessible
+                  accessibilityLanguage={language}
+                  style={styles.fact}
+                >
                   <AppText variant="caption" tone="muted">
                     {label}
                   </AppText>
@@ -106,7 +126,7 @@ export function CountryDetailsScreen({
           )}
         </>
       ) : (
-        <AppText tone="muted">This place isn’t in the catalog.</AppText>
+        <AppText tone="muted">{t('countries.details.notInCatalog')}</AppText>
       )}
     </Sheet>
   );

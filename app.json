@@ -16,7 +16,13 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": { "ios": ["en"] }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

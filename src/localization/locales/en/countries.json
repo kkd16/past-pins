@@ -1,0 +1,97 @@
+{
+  "title": "Countries",
+  "subtitle": "Countries & territories",
+  "filters": "Filters",
+  "filtersApplied": "Filters, custom options applied",
+  "search": "Search countries",
+  "searchLabel": "Search countries and territories",
+  "placesToShow": "Places to show",
+  "status": {
+    "title": "Status",
+    "unmarked": "Not marked",
+    "notVisited": "Not visited",
+    "wishlist": "Wishlist",
+    "visited": "Visited",
+    "lived": "Lived",
+    "home": "Current home"
+  },
+  "scopes": {
+    "all": "All"
+  },
+  "organization": "Organization",
+  "byContinent": "By continent",
+  "alphabetical": "Alphabetical",
+  "continent": "Continent",
+  "allContinents": "All continents",
+  "resetFilters": "Reset filters",
+  "select": "Select",
+  "selectedCount": {
+    "one": "%{amount} selected",
+    "other": "%{amount} selected"
+  },
+  "placeCount": {
+    "one": "%{amount} place",
+    "other": "%{amount} places"
+  },
+  "updateCount": {
+    "one": "Update %{amount} place",
+    "other": "Update %{amount} places"
+  },
+  "deselectAll": "Deselect all",
+  "selectAll": "Select all results",
+  "sectionLabel": "%{name}, %{places}",
+  "countryStatus": "%{name}, %{status}",
+  "countrySubtitle": "%{continent} · %{status}",
+  "detailsHint": "Opens place details",
+  "changeStatus": "Change status for %{name}, %{status}",
+  "empty": {
+    "title": "No matching places",
+    "message": "Try another search or filter.",
+    "wishlistTitle": "Where to next?",
+    "wishlistMessage": "Choose a place to add to your wishlist.",
+    "visitedTitle": "No visits yet",
+    "visitedMessage": "Mark your first place Visited.",
+    "livedTitle": "No lived places yet",
+    "livedMessage": "Mark a place Lived to add it here.",
+    "completeTitle": "Every place visited",
+    "completeMessage": "You’ve visited every place on the map.",
+    "clearFilters": "Clear search & filters",
+    "browse": "Browse places",
+    "noSearchResults": "No matching countries."
+  },
+  "details": {
+    "notFound": "Place not found",
+    "notInCatalog": "This place isn’t in the catalog.",
+    "livedHint": "Lived counts as Visited.",
+    "homeHint": "Former homes stay Lived.",
+    "homeLabel": "%{name} is my current home",
+    "showMap": "Show on map",
+    "facts": "At a glance",
+    "capital": "Capital",
+    "languages": "Languages",
+    "currencies": "Currencies",
+    "clearHome": "Clear current home"
+  },
+  "stats": {
+    "title": "Your world",
+    "matchingHint": "Opens matching countries",
+    "visitedHint": "Opens visited countries",
+    "continentHint": "Opens visited countries in this continent",
+    "visited": "Places visited",
+    "visitedCount": {
+      "one": "%{amount} place visited",
+      "other": "%{amount} places visited"
+    },
+    "percentVisited": "%{percent} visited",
+    "remaining": "Remaining",
+    "chooseHome": "Choose home",
+    "continentProgress": "%{name}: %{visited} of %{total} places visited",
+    "progress": "%{visited} of %{total} places",
+    "progressValue": "%{visited} of %{total} places, %{percent}",
+    "summary": "%{label}: %{value}",
+    "explanation": "Counts countries and territories, not land area. Lived counts as Visited."
+  },
+  "loadingPlaces": "Loading your places",
+  "loadError": "Couldn’t load your places.",
+  "saveError": "Changes haven’t been saved yet."
+}

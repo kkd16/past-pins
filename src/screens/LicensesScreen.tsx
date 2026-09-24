@@ -5,6 +5,7 @@ import notices from '../../licenses/notices.json';
 import { AppText } from '../components/AppText';
 import { Screen } from '../components/Screen';
 import { SearchField } from '../components/SearchField';
+import { t } from '../localization';
 import { InfoPage, InfoSection } from '../settings/InfoPage';
 import { SettingsRow } from '../settings/SettingsSection';
 import { theme } from '../theme';
@@ -23,8 +24,8 @@ export function LicensesScreen({
       <SearchField
         value={query}
         onChangeText={setQuery}
-        placeholder="Search libraries"
-        accessibilityLabel="Search libraries"
+        placeholder={t('settings.searchLibraries')}
+        accessibilityLabel={t('settings.searchLibraries')}
       />
       <FlatList
         data={matches}
@@ -35,13 +36,16 @@ export function LicensesScreen({
         keyboardDismissMode="on-drag"
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <AppText tone="muted">No matching libraries.</AppText>
+          <AppText tone="muted">{t('settings.noLibraries')}</AppText>
         }
         renderItem={({ item }) => (
           <SettingsRow
             title={item.name}
             disclosure
-            value={`${item.version} · ${item.license}`}
+            value={t('settings.libraryVersion', {
+              version: item.version,
+              license: item.license,
+            })}
             onPress={() => onSelect(item.name, item.version)}
           />
         )}
@@ -62,13 +66,16 @@ export function LicenseScreen({
   );
   return (
     <InfoPage>
-      <InfoSection title={notice?.name ?? 'License not found'}>
+      <InfoSection title={notice?.name ?? t('settings.licenseNotFound')}>
         {notice
-          ? `${notice.version} · ${notice.license}`
-          : 'This library is not in the installed notices.'}
+          ? t('settings.libraryVersion', {
+              version: notice.version,
+              license: notice.license,
+            })
+          : t('settings.missingLicense')}
       </InfoSection>
       {notice && (
-        <AppText variant="caption" selectable>
+        <AppText variant="caption" selectable accessibilityLanguage="en">
           {notice.text}
         </AppText>
       )}

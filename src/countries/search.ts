@@ -1,16 +1,17 @@
 import { countries } from './catalog';
+import { language } from '../localization';
 
-function normalizeSearch(value: string) {
+export function normalizeSearch(value: string, locale = language) {
   return value
+    .toLocaleLowerCase(locale)
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
-    .toLocaleLowerCase('en')
     .trim();
 }
 
 const searchIndex = countries.map((country) => ({
   country,
-  term: normalizeSearch(`${country.name} ${country.id}`),
+  term: normalizeSearch(`${country.name} ${country.nativeName} ${country.id}`),
 }));
 
 export function searchCountries(query: string) {

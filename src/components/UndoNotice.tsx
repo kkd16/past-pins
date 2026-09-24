@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
+import { t } from '../localization';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Surface } from './Surface';
@@ -14,7 +15,12 @@ export function UndoNotice() {
       <AppText variant="caption" style={styles.label}>
         {undoLabel}
       </AppText>
-      <Button label="Undo" variant="quiet" onPress={undo} disabled={busy} />
+      <Button
+        label={t('common.undo')}
+        variant="quiet"
+        onPress={undo}
+        disabled={busy}
+      />
     </Surface>
   );
 }

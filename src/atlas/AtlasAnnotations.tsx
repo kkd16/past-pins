@@ -1,12 +1,19 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  I18nManager,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Icon } from '../components/Icon';
 import { countryById } from '../countries/catalog';
-import { getStatusPresentation } from '../countries/status';
+import { language, t } from '../localization';
 import { theme } from '../theme';
 import { calloutRect, inBounds, placeLabels } from './annotations';
+import { CountryCallout } from './CountryCallout';
 import { countryAnchors, labelCandidates } from './geography';
 import type { AtlasViewportProps } from './types';
 
@@ -18,6 +25,7 @@ export function AtlasAnnotations({
   homeCountryId,
   places,
   labels,
+  dockSelection,
   onSelect: propsSelect,
   onDetails,
   topInset,
@@ -67,10 +75,9 @@ export function AtlasAnnotations({
           height: homeSize,
         }
       : null;
-  const callout = calloutRect(point, size, bounds);
-  const status = country
-    ? getStatusPresentation(places[country.id], country.id === homeCountryId)
-    : null;
+  const callout = dockSelection ? null : calloutRect(point, size, bounds);
+  const start = (x: number, itemWidth: number) =>
+    I18nManager.isRTL ? width - x - itemWidth : x;
   const names =
     labels && zoom >= 1.6 && fontScale <= theme.accessibility.largeTextScale
       ? placeLabels(
@@ -96,10 +103,17 @@ export function AtlasAnnotations({
       {homeCountryId && homeMarker && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Current home: ${countryById.get(homeCountryId)?.name}. Select country.`}
+          accessibilityLanguage={language}
+          accessibilityLabel={t('atlas.homeCountry', {
+            country: countryById.get(homeCountryId)?.name ?? homeCountryId,
+          })}
+          accessibilityHint={t('atlas.selectCountry')}
           hitSlop={8}
           onPress={() => propsSelect(homeCountryId, homeAnchor!)}
-          style={[styles.home, { left: homeMarker.x, top: homeMarker.y }]}
+          style={[
+            styles.home,
+            { start: start(homeMarker.x, homeSize), top: homeMarker.y },
+          ]}
         >
           <Icon
             name="home"
@@ -115,7 +129,11 @@ export function AtlasAnnotations({
           accessibilityElementsHidden
           style={[
             styles.label,
-            { left: label.x, top: label.y, width: label.width },
+            {
+              start: start(label.x, label.width),
+              top: label.y,
+              width: label.width,
+            },
           ]}
         >
           <AppText variant="caption" numberOfLines={1} style={styles.labelText}>
@@ -123,16 +141,22 @@ export function AtlasAnnotations({
           </AppText>
         </View>
       ))}
-      {country && status && callout && point && (
+      {country && callout && point && (
         <>
           <View
             pointerEvents="none"
-            style={[styles.pin, { left: point[0] - 4, top: point[1] - 4 }]}
+            accessibilityElementsHidden
+            style={[
+              styles.pin,
+              { start: start(point[0] - 4, 8), top: point[1] - 4 },
+            ]}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${country.name}. ${status.label}. Open country details.`}
-            onPress={() => onDetails(country.id)}
+          <CountryCallout
+            countryId={country.id}
+            status={places[country.id]}
+            home={country.id === homeCountryId}
+            onDetails={onDetails}
+            onDismiss={() => propsSelect(null)}
             onLayout={({ nativeEvent: { layout } }) =>
               setMeasurement((current) =>
                 current.key === measurementKey &&
@@ -141,30 +165,13 @@ export function AtlasAnnotations({
                   : { key: measurementKey, height: layout.height },
               )
             }
-            style={({ pressed }) => [
-              styles.callout,
-              { left: callout.x, top: callout.y, width: size.width },
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.content}>
-              <AppText variant="label">{country.name}</AppText>
-              <View style={styles.status}>
-                <Icon
-                  name={status.icon}
-                  color={status.color}
-                  size={theme.size.iconSmall}
-                />
-                <AppText
-                  variant="caption"
-                  style={{ color: status.color, flexShrink: 1 }}
-                >
-                  {status.label}
-                </AppText>
-              </View>
-            </View>
-            <Icon name="chevronRight" />
-          </Pressable>
+            style={{
+              position: 'absolute',
+              start: start(callout.x, size.width),
+              top: callout.y,
+              width: size.width,
+            }}
+          />
         </>
       )}
     </View>
@@ -181,18 +188,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     backgroundColor: theme.color.surface,
   },
-  callout: {
-    ...theme.surface.floating,
-    position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.sm,
-    padding: theme.space.md,
-    borderWidth: theme.stroke.subtle,
-    borderColor: theme.color.controlBorder,
-  },
-  content: { flex: 1, gap: theme.space.xs },
-  status: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
   pin: {
     position: 'absolute',
     width: 8,
@@ -208,5 +203,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.space.xs,
   },
   labelText: { fontSize: 11 },
-  pressed: { opacity: theme.opacity.pressed },
 });

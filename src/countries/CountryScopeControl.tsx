@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import {
+  I18nManager,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
 import { AppText } from '../components/AppText';
 import { ChoiceRow } from '../components/ChoiceRow';
 import { theme } from '../theme';
+import { t, language } from '../localization';
 import { countryScopes, type CountryScope } from './filters';
 
 export function CountryScopeControl({
@@ -28,9 +30,12 @@ export function CountryScopeControl({
       animated: false,
     });
   }, [value, fontScale]);
-  if (fontScale > theme.accessibility.largeTextScale) {
+  if (I18nManager.isRTL || fontScale > theme.accessibility.largeTextScale) {
     return (
-      <View accessibilityRole="radiogroup" accessibilityLabel="Places to show">
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={t('countries.placesToShow')}
+      >
         {countryScopes.map((option) => (
           <ChoiceRow
             key={option.value}
@@ -49,7 +54,7 @@ export function CountryScopeControl({
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.options}
       accessibilityRole="tablist"
-      accessibilityLabel="Places to show"
+      accessibilityLabel={t('countries.placesToShow')}
     >
       {countryScopes.map((option) => (
         <Pressable
@@ -60,6 +65,7 @@ export function CountryScopeControl({
               scroll.current?.scrollTo({ x: layout.x, animated: false });
           }}
           accessibilityRole="tab"
+          accessibilityLanguage={language}
           accessibilityState={{ selected: value === option.value }}
           onPress={() => onChange(option.value)}
           style={({ pressed }) => [

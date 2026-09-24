@@ -5,6 +5,7 @@ import Svg, { Circle, G, Path } from 'react-native-svg';
 
 import { toGeographic } from '../globe/coordinates';
 import world from '../globe/world.json';
+import { t } from '../localization';
 import { theme } from '../theme';
 import { AtlasAnnotations } from './AtlasAnnotations';
 import { countryColor } from './colors';
@@ -12,6 +13,7 @@ import type { FlatCamera } from './FlatCamera';
 import { FlatController } from './FlatController';
 import { flatGestures } from './flatGestures';
 import { flatCountries, oceanPath, projection } from './geography';
+import { mapAccessibility } from './mapAccessibility';
 import type { AtlasViewportProps } from './types';
 import { useViewportLifecycle } from './useViewportLifecycle';
 
@@ -73,11 +75,16 @@ export function WorldMapViewport({
     >
       <GestureDetector gesture={gesture}>
         <View
+          {...mapAccessibility(controller, t('atlas.worldMap'))}
           style={styles.fill}
           collapsable={false}
-          accessibilityElementsHidden
         >
-          <Svg width="100%" height="100%">
+          <Svg
+            width="100%"
+            height="100%"
+            accessible={false}
+            accessibilityElementsHidden
+          >
             <G
               transform={`translate(${camera.width / 2} ${camera.height / 2}) scale(${camera.scale || 1}) translate(${-camera.center[0]} ${-camera.center[1]})`}
             >

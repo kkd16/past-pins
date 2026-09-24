@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 
 import { AtlasAnnotations } from '../atlas/AtlasAnnotations';
 import { countryAnchors } from '../atlas/geography';
+import { mapAccessibility } from '../atlas/mapAccessibility';
 import type { AtlasViewportProps } from '../atlas/types';
 import { useViewportLifecycle } from '../atlas/useViewportLifecycle';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { t } from '../localization';
 import { theme } from '../theme';
 import type { GlobeCamera } from './camera';
 import { GlobeController } from './controller';
@@ -63,22 +65,27 @@ export function GlobeViewport({
       {!failed && (
         <GestureDetector gesture={gesture}>
           <View
+            {...mapAccessibility(controller, t('atlas.globe'))}
             style={styles.fill}
             collapsable={false}
-            accessibilityElementsHidden
           >
             <GlobeSurface controller={controller} onError={fail} />
           </View>
         </GestureDetector>
       )}
       {failed ? (
-        <View style={styles.error}>
-          <AppText variant="heading">The globe couldn’t load.</AppText>
-          <AppText tone="muted">
-            Try the world map, or browse your places in Countries.
-          </AppText>
-          <Button label="Try again" onPress={() => setFailed(false)} />
-        </View>
+        <ScrollView
+          style={[
+            styles.error,
+            { top: props.topInset, bottom: props.bottomInset },
+          ]}
+          contentInsetAdjustmentBehavior="never"
+          contentContainerStyle={styles.errorContent}
+        >
+          <AppText variant="heading">{t('atlas.globeError')}</AppText>
+          <AppText tone="muted">{t('atlas.globeErrorHint')}</AppText>
+          <Button label={t('common.retry')} onPress={() => setFailed(false)} />
+        </ScrollView>
       ) : (
         <AtlasAnnotations
           {...props}
@@ -94,8 +101,9 @@ export function GlobeViewport({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  error: {
-    ...StyleSheet.absoluteFill,
+  error: StyleSheet.absoluteFill,
+  errorContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: theme.space.xl,
     gap: theme.space.md,

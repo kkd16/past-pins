@@ -6,6 +6,7 @@ import { Checkmark } from '../components/Checkmark';
 import { Icon } from '../components/Icon';
 import { isVisited, type PlaceStatus } from '../data/model';
 import { theme } from '../theme';
+import { t, language } from '../localization';
 import { getStatusPresentation } from './status';
 import type { Country, CountryId } from './types';
 
@@ -44,8 +45,12 @@ export const CountryRow = memo(function CountryRow({
     return (
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityLabel={country.name}
-        accessibilityState={{ checked: selected, disabled }}
+        accessibilityLanguage={language}
+        accessibilityLabel={t('countries.countryStatus', {
+          name: country.name,
+          status: presentation.label,
+        })}
+        accessibilityState={{ checked: selected }}
         disabled={disabled}
         onPress={() => onSelect(country.id)}
         style={({ pressed }) => [
@@ -64,8 +69,12 @@ export const CountryRow = memo(function CountryRow({
     <View style={[styles.row, isVisited(status) && styles.highlight]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={country.name + ', ' + presentation.label}
-        accessibilityHint="Opens place details"
+        accessibilityLanguage={language}
+        accessibilityLabel={t('countries.countryStatus', {
+          name: country.name,
+          status: presentation.label,
+        })}
+        accessibilityHint={t('countries.detailsHint')}
         onPress={() => onSelect(country.id)}
         style={({ pressed }) => [styles.details, pressed && styles.pressed]}
       >
@@ -73,10 +82,11 @@ export const CountryRow = memo(function CountryRow({
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={
-          'Change status for ' + country.name + ', ' + presentation.label
-        }
-        accessibilityState={{ disabled }}
+        accessibilityLanguage={language}
+        accessibilityLabel={t('countries.changeStatus', {
+          name: country.name,
+          status: presentation.label,
+        })}
         disabled={disabled}
         onPress={() => onChangeStatus(country.id)}
         style={({ pressed }) => [

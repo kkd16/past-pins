@@ -1,3 +1,4 @@
+import { I18nManager } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { theme } from '../theme';
@@ -28,7 +29,17 @@ export function Icon({
   color = theme.color.textMuted,
 }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" accessible={false}>
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      accessibilityElementsHidden
+      style={
+        name === 'chevronRight' && I18nManager.isRTL
+          ? { transform: [{ scaleX: -1 }] }
+          : undefined
+      }
+    >
       {name === 'search' && (
         <Circle
           cx={10.5}

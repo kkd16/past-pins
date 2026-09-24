@@ -1,3 +1,5 @@
+import { t } from '../localization';
+import { UserFacingError } from '../data/errors';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -35,7 +37,7 @@ export async function pickBackup(): Promise<AppData | null> {
   const file = new File(result.assets[0].uri);
   try {
     if (file.size > 1_000_000)
-      throw new Error('This file is too large to be a Past Pins backup.');
+      throw new UserFacingError(t('common.errors.backupTooLarge'));
     return decodeBackup(await file.text());
   } finally {
     discardCachedFile(file);

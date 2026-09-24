@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
+import { language } from '../localization';
 import { theme } from '../theme';
 import { Icon, type IconProps } from './Icon';
 
@@ -19,9 +20,9 @@ export function IconButton({
 }: IconButtonProps) {
   return (
     <Pressable
+      accessibilityLanguage={language}
       {...props}
       accessibilityRole="button"
-      accessibilityState={{ ...props.accessibilityState, disabled: !!disabled }}
       disabled={disabled}
       style={(state) => [
         styles.base,

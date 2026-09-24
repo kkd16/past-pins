@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 
+import { language } from '../localization';
 import { theme } from '../theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
@@ -17,8 +18,9 @@ export function ChoiceRow({
 }) {
   return (
     <Pressable
+      accessibilityLanguage={language}
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected, disabled }}
+      accessibilityState={{ checked: selected }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [

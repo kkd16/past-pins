@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { continents, countries, countryIds } from '../src/countries/catalog';
 import { countryFeatures } from '../src/countries/geography';
-import { searchCountries } from '../src/countries/search';
+import { normalizeSearch, searchCountries } from '../src/countries/search';
 
 describe('published country catalog', () => {
   test('every checklist entry has a unique ID and a map shape', () => {
@@ -47,5 +47,18 @@ describe('published country catalog', () => {
     for (const result of results) {
       expect(countries.find(({ id }) => id === result.id)).toBe(result);
     }
+  });
+
+  test('search includes the authoritative and native country names', () => {
+    expect(searchCountries('Deutschland').map(({ id }) => id)).toContain('de');
+    expect(searchCountries('日本').map(({ id }) => id)).toContain('jp');
+    for (const country of countries) {
+      expect(searchCountries(country.name)).toContain(country);
+    }
+  });
+
+  test('search normalizes case before removing accent marks', () => {
+    expect(normalizeSearch('  İSTANBUL ', 'tr')).toBe('istanbul');
+    expect(normalizeSearch('CÔTE', 'fr')).toBe('cote');
   });
 });

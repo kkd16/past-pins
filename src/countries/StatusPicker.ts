@@ -2,6 +2,7 @@ import { ActionSheetIOS } from 'react-native';
 
 import type { PlaceStatus } from '../data/model';
 import { theme } from '../theme';
+import { t } from '../localization';
 import { statusOptions } from './status';
 
 export function showStatusPicker(
@@ -11,7 +12,7 @@ export function showStatusPicker(
   ActionSheetIOS.showActionSheetWithOptions(
     {
       title,
-      options: [...statusOptions.map(({ label }) => label), 'Cancel'],
+      options: [...statusOptions.map(({ label }) => label), t('common.cancel')],
       cancelButtonIndex: statusOptions.length,
       userInterfaceStyle: theme.appearance.colorScheme,
     },

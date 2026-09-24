@@ -22,6 +22,7 @@ import { ProgressSummary } from '../countries/ProgressSummary';
 import { getTravelStatistics } from '../countries/statistics';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
+import { t, formatNumber, formatPercent, language } from '../localization';
 
 function Statistic({
   value,
@@ -41,8 +42,9 @@ function Statistic({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label + ': ' + value}
-      accessibilityHint="Opens matching countries"
+      accessibilityLabel={t('countries.stats.summary', { label, value })}
+      accessibilityLanguage={language}
+      accessibilityHint={t('countries.stats.matchingHint')}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -91,10 +93,10 @@ export function StatsScreen({
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={styles.content}
       >
-        <ScreenHeader title="Your world">
+        <ScreenHeader title={t('countries.stats.title')}>
           <IconButton
             name="settings"
-            accessibilityLabel="Settings"
+            accessibilityLabel={t('common.settings')}
             onPress={onOpenSettings}
           />
         </ScreenHeader>
@@ -102,23 +104,31 @@ export function StatsScreen({
         <UndoNotice />
         <Pressable
           accessibilityRole="button"
+          accessibilityLanguage={language}
           accessibilityLabel={
             loading
-              ? 'Loading places visited'
-              : stats.visited + ' places visited'
+              ? t('countries.loadingPlaces')
+              : t('countries.stats.visitedCount', {
+                  count: stats.visited,
+                  amount: formatNumber(stats.visited),
+                })
           }
-          accessibilityHint="Opens visited countries"
+          accessibilityHint={t('countries.stats.visitedHint')}
           disabled={loading}
           onPress={() => onOpenCountries('visited')}
           style={({ pressed }) => pressed && styles.pressed}
         >
           <Surface style={styles.journey}>
-            <AppText variant="label">Places visited</AppText>
+            <AppText variant="label">{t('countries.stats.visited')}</AppText>
             <AppText variant={largeText ? 'title' : 'display'} tone="visited">
-              {loading ? '—' : String(stats.visited)}
+              {loading ? '—' : formatNumber(stats.visited)}
             </AppText>
             <AppText tone="muted">
-              {loading ? 'Loading…' : stats.percent.toFixed(1) + '% visited'}
+              {loading
+                ? t('common.loading')
+                : t('countries.stats.percentVisited', {
+                    percent: formatPercent(stats.percent / 100),
+                  })}
             </AppText>
           </Surface>
         </Pressable>
@@ -126,26 +136,26 @@ export function StatsScreen({
           {[
             {
               scope: 'wishlist' as const,
-              label: 'Wishlist',
+              label: t('countries.status.wishlist'),
               value: stats.wishlist,
               color: theme.color.wishlist,
             },
             {
               scope: 'lived' as const,
-              label: 'Lived',
+              label: t('countries.status.lived'),
               value: stats.lived,
               color: theme.color.lived,
             },
             {
               scope: 'not-visited' as const,
-              label: 'Remaining',
+              label: t('countries.stats.remaining'),
               value: stats.remaining,
               color: theme.color.accent,
             },
           ].map(({ scope, label, value, color }) => (
             <Statistic
               key={scope}
-              value={loading ? '—' : String(value)}
+              value={loading ? '—' : formatNumber(value)}
               label={label}
               largeText={largeText}
               color={color}
@@ -157,7 +167,7 @@ export function StatsScreen({
         <Surface style={styles.home}>
           <View style={styles.homeLabel}>
             <Icon name="home" color={theme.color.lived} />
-            <AppText variant="label">Current home</AppText>
+            <AppText variant="label">{t('common.currentHome')}</AppText>
           </View>
           {home ? (
             <Button
@@ -167,7 +177,7 @@ export function StatsScreen({
             />
           ) : (
             <Button
-              label="Choose home"
+              label={t('countries.stats.chooseHome')}
               variant="quiet"
               disabled={loading}
               onPress={onChooseHome}
@@ -175,22 +185,20 @@ export function StatsScreen({
           )}
         </Surface>
         <AppText variant="heading" accessibilityRole="header">
-          By continent
+          {t('countries.byContinent')}
         </AppText>
         <Surface style={styles.continents}>
           {stats.byContinent.map((continent) => (
             <Pressable
               key={continent.id}
               accessibilityRole="button"
-              accessibilityLabel={
-                continent.name +
-                ': ' +
-                continent.visited +
-                ' of ' +
-                continent.total +
-                ' places visited'
-              }
-              accessibilityHint="Opens visited countries in this continent"
+              accessibilityLanguage={language}
+              accessibilityLabel={t('countries.stats.continentProgress', {
+                name: continent.name,
+                visited: formatNumber(continent.visited),
+                total: formatNumber(continent.total),
+              })}
+              accessibilityHint={t('countries.stats.continentHint')}
               disabled={loading}
               onPress={() => onOpenCountries('visited', continent.id)}
               style={({ pressed }) => pressed && styles.pressed}
@@ -207,8 +215,7 @@ export function StatsScreen({
           ))}
         </Surface>
         <AppText variant="caption" tone="muted" style={styles.explanation}>
-          Counts countries and territories, not land area. Lived counts as
-          Visited.
+          {t('countries.stats.explanation')}
         </AppText>
       </ScrollView>
     </Screen>

@@ -1,5 +1,6 @@
 import { Text, type TextProps } from 'react-native';
 
+import { language } from '../localization';
 import { theme, type TextVariant } from '../theme';
 
 export type AppTextProps = TextProps & {
@@ -20,6 +21,10 @@ export function AppText({
     visited: theme.color.visitedEmphasis,
   }[tone];
   return (
-    <Text {...props} style={[theme.typography[variant], { color }, style]} />
+    <Text
+      accessibilityLanguage={language}
+      {...props}
+      style={[theme.typography[variant], { color }, style]}
+    />
   );
 }

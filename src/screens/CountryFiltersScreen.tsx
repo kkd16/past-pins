@@ -12,6 +12,7 @@ import {
   type CountryFilters,
 } from '../countries/filters';
 import { theme } from '../theme';
+import { t } from '../localization';
 
 export function CountryFiltersScreen({
   initialFilters,
@@ -25,26 +26,26 @@ export function CountryFiltersScreen({
   const [filters, setFilters] = useState(initialFilters);
   return (
     <Sheet
-      title="Filters"
-      doneLabel="Apply"
+      title={t('countries.filters')}
+      doneLabel={t('common.apply')}
       onCancel={onCancel}
       onDone={() => onApply(filters)}
     >
       <Surface
         style={styles.section}
         accessibilityRole="radiogroup"
-        accessibilityLabel="Organization"
+        accessibilityLabel={t('countries.organization')}
       >
         <AppText variant="label" tone="muted" accessibilityRole="header">
-          Organization
+          {t('countries.organization')}
         </AppText>
         <ChoiceRow
-          label="By continent"
+          label={t('countries.byContinent')}
           selected={filters.grouping === 'continent'}
           onPress={() => setFilters({ ...filters, grouping: 'continent' })}
         />
         <ChoiceRow
-          label="A–Z"
+          label={t('countries.alphabetical')}
           selected={filters.grouping === 'alphabetical'}
           onPress={() => setFilters({ ...filters, grouping: 'alphabetical' })}
         />
@@ -52,12 +53,12 @@ export function CountryFiltersScreen({
       <Surface
         style={styles.section}
         accessibilityRole="radiogroup"
-        accessibilityLabel="Continent"
+        accessibilityLabel={t('countries.continent')}
       >
         <AppText variant="label" tone="muted" accessibilityRole="header">
-          Continent
+          {t('countries.continent')}
         </AppText>
-        {[{ id: 'all', name: 'All continents' }, ...continents].map(
+        {[{ id: 'all', name: t('countries.allContinents') }, ...continents].map(
           (continent) => (
             <ChoiceRow
               key={continent.id}
@@ -71,7 +72,7 @@ export function CountryFiltersScreen({
         )}
       </Surface>
       <Button
-        label="Reset filters"
+        label={t('countries.resetFilters')}
         variant="quiet"
         onPress={() => setFilters(defaultCountryFilters)}
       />

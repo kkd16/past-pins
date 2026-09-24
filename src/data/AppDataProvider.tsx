@@ -11,6 +11,7 @@ import {
 import { AccessibilityInfo, Alert } from 'react-native';
 
 import { countryById } from '../countries/catalog';
+import { t } from '../localization';
 import { appStorage } from '../storage/app-storage';
 import { createAppDataStore, type DataSnapshot } from './store';
 
@@ -24,11 +25,17 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 function confirmHomeChange(id: string): Promise<boolean> {
   return new Promise((resolve) => {
     Alert.alert(
-      'Clear current home?',
-      `${countryById.get(id)?.name ?? 'This place'} will no longer be your home.`,
+      t('common.clearHomeTitle'),
+      t('common.clearHomeMessage', {
+        country: countryById.get(id)?.name ?? t('common.thisPlace'),
+      }),
       [
-        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-        { text: 'Update place', onPress: () => resolve(true) },
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+          onPress: () => resolve(false),
+        },
+        { text: t('common.updatePlace'), onPress: () => resolve(true) },
       ],
     );
   });
@@ -49,9 +56,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [store]);
   const announcement =
     snapshot.status === 'load-error'
-      ? 'Couldn’t load your places. Select Try again.'
+      ? t('countries.loadError')
       : snapshot.saveError
-        ? 'Changes haven’t been saved. Select Retry save.'
+        ? t('countries.saveError')
         : null;
   useEffect(() => {
     if (announcement)

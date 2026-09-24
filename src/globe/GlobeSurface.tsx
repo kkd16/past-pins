@@ -32,5 +32,12 @@ export function GlobeSurface({
     [controller, onError],
   );
 
-  return <GLView style={{ flex: 1 }} onContextCreate={createContext} />;
+  return (
+    <GLView
+      style={{ flex: 1 }}
+      onContextCreate={createContext}
+      accessible={false}
+      accessibilityElementsHidden
+    />
+  );
 }

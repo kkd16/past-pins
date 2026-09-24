@@ -16,7 +16,7 @@ export function ScreenHeader({
   children?: ReactNode;
 }) {
   const { fontScale } = useWindowDimensions();
-  const stacked = compact && fontScale > theme.accessibility.largeTextScale;
+  const stacked = fontScale > theme.accessibility.largeTextScale;
   return (
     <View
       style={[

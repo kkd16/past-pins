@@ -2,6 +2,7 @@ import { ActivityIndicator, StyleSheet } from 'react-native';
 
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
+import { t, language } from '../localization';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Surface } from './Surface';
@@ -11,8 +12,11 @@ export function DataFeedback() {
   if (status === 'loading')
     return (
       <ActivityIndicator
+        accessible
         color={theme.color.accent}
-        accessibilityLabel="Loading your places"
+        accessibilityLabel={t('countries.loadingPlaces')}
+        accessibilityLanguage={language}
+        accessibilityState={{ busy: true }}
       />
     );
   if (status !== 'load-error' && !saveError) return null;
@@ -20,14 +24,10 @@ export function DataFeedback() {
     <Surface style={styles.notice}>
       <AppText variant="caption">
         {status === 'load-error'
-          ? 'Couldn’t load your places.'
-          : 'Changes haven’t been saved.'}
+          ? t('countries.loadError')
+          : t('countries.saveError')}
       </AppText>
-      <Button
-        label={status === 'load-error' ? 'Try again' : 'Retry save'}
-        variant="quiet"
-        onPress={retry}
-      />
+      <Button label={t('common.retry')} variant="quiet" onPress={retry} />
     </Surface>
   );
 }

@@ -3,6 +3,7 @@ import {
   countries as metadata,
   languages,
 } from 'countries-list';
+import { compareNames } from '../localization';
 import { countryFeatures } from './geography';
 import type { Continent, Country, CountryId } from './types';
 
@@ -16,11 +17,15 @@ const locations: Country[] = countryFeatures.map((shape) => {
   const continentName = continentNames[continentId];
   if (!continentName) throw new Error(`Missing continent: ${code}`);
   if (!continentById.has(continentId)) {
-    continentById.set(continentId, { id: continentId, name: continentName });
+    continentById.set(continentId, {
+      id: continentId,
+      name: continentName,
+    });
   }
   return {
     id: code.toLowerCase(),
     name,
+    nativeName: details.native,
     continent: continentById.get(continentId)!,
     capital: details.capital,
     languages: details.languages.map((code) => languages[code].name),
@@ -29,7 +34,7 @@ const locations: Country[] = countryFeatures.map((shape) => {
 });
 
 export const countries: readonly Country[] = [...locations].sort((a, b) =>
-  a.name.localeCompare(b.name, 'en'),
+  compareNames(a.name, b.name),
 );
 export const countryById = new Map(
   countries.map((country) => [country.id, country]),
@@ -37,7 +42,7 @@ export const countryById = new Map(
 export const countryIds: ReadonlySet<CountryId> = new Set(countryById.keys());
 export const continents: readonly Continent[] = [
   ...continentById.values(),
-].sort((a, b) => a.name.localeCompare(b.name, 'en'));
+].sort((a, b) => compareNames(a.name, b.name));
 
 if (countryIds.size !== countries.length)
   throw new Error('Duplicate country IDs.');

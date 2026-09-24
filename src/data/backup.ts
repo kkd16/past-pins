@@ -1,3 +1,5 @@
+import { t } from '../localization';
+import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
 import { defaultPreferences, type AppData, type SavedStatus } from './model';
 
@@ -17,16 +19,17 @@ export function validateAppData(value: unknown): AppData {
     !object(value) ||
     !exactKeys(value, ['places', 'homeCountryId', 'preferences'])
   ) {
-    throw new Error('This file does not contain valid Past Pins data.');
+    throw new UserFacingError(t('common.errors.invalidData'));
   }
-  if (!object(value.places)) throw new Error('The saved places are invalid.');
+  if (!object(value.places))
+    throw new UserFacingError(t('common.errors.invalidPlaces'));
   const places: AppData['places'] = {};
   for (const [id, status] of Object.entries(value.places)) {
     if (
       !countryIds.has(id) ||
       !['wishlist', 'visited', 'lived'].includes(status as string)
     ) {
-      throw new Error('The file contains an unknown place or status.');
+      throw new UserFacingError(t('common.errors.invalidPlaceStatus'));
     }
     places[id] = status as SavedStatus;
   }
@@ -35,7 +38,7 @@ export function validateAppData(value: unknown): AppData {
     homeCountryId !== null &&
     (typeof homeCountryId !== 'string' || places[homeCountryId] !== 'lived')
   ) {
-    throw new Error('Current home must be one of your lived places.');
+    throw new UserFacingError(t('common.errors.invalidHome'));
   }
   const prefs = value.preferences;
   if (
@@ -47,7 +50,7 @@ export function validateAppData(value: unknown): AppData {
     typeof prefs.mapSummary !== 'boolean' ||
     typeof prefs.haptics !== 'boolean'
   )
-    throw new Error('The saved preferences are invalid.');
+    throw new UserFacingError(t('common.errors.invalidPreferences'));
   return {
     places,
     homeCountryId,
@@ -75,7 +78,7 @@ export function decodeBackup(text: string): AppData {
   try {
     value = JSON.parse(text);
   } catch {
-    throw new Error('This file is not a valid JSON backup.');
+    throw new UserFacingError(t('common.errors.invalidJson'));
   }
   if (
     !object(value) ||
@@ -83,7 +86,7 @@ export function decodeBackup(text: string): AppData {
     value.app !== 'past-pins' ||
     value.version !== 1
   ) {
-    throw new Error('Choose a backup exported by this version of Past Pins.');
+    throw new UserFacingError(t('common.errors.invalidBackup'));
   }
   return validateAppData(value.data);
 }

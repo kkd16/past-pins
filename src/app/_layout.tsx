@@ -1,3 +1,4 @@
+import { t } from '../localization';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -30,21 +31,27 @@ export default function RootLayout() {
         >
           <Stack.Screen
             name="(tabs)"
-            options={{ headerShown: false, title: 'Past Pins' }}
+            options={{ headerShown: false, title: t('common.appName') }}
           />
-          <Stack.Screen name="settings/index" options={{ title: 'Settings' }} />
+          <Stack.Screen
+            name="settings/index"
+            options={{ title: t('common.settings') }}
+          />
           <Stack.Screen
             name="settings/home"
-            options={{ title: 'Current home' }}
+            options={{ title: t('common.currentHome') }}
           />
-          <Stack.Screen name="settings/about" options={{ title: 'About' }} />
+          <Stack.Screen
+            name="settings/about"
+            options={{ title: t('common.about') }}
+          />
           <Stack.Screen
             name="settings/licenses"
-            options={{ title: 'Open-source licenses' }}
+            options={{ title: t('common.licenses') }}
           />
           <Stack.Screen
             name="settings/license"
-            options={{ title: 'License' }}
+            options={{ title: t('common.license') }}
           />
           <Stack.Screen
             name="map-search"
@@ -64,7 +71,7 @@ export default function RootLayout() {
             options={{
               headerShown: false,
               presentation: 'formSheet',
-              sheetAllowedDetents: [0.7],
+              sheetAllowedDetents: [0.7, 1],
               sheetGrabberVisible: true,
             }}
           />

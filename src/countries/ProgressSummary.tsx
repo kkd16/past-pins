@@ -2,12 +2,13 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { theme } from '../theme';
+import { t, formatNumber, formatPercent, language } from '../localization';
 
 export function ProgressSummary({
   visited,
   total,
   loading,
-  label = 'Places visited',
+  label = t('countries.stats.visited'),
 }: {
   visited: number;
   total: number;
@@ -19,15 +20,20 @@ export function ProgressSummary({
     <View
       accessible
       accessibilityRole="progressbar"
+      accessibilityLanguage={language}
       accessibilityLabel={label}
       accessibilityValue={
         loading
-          ? { text: 'Loading saved visits' }
+          ? { text: t('countries.loadingPlaces') }
           : {
               min: 0,
               max: total,
               now: visited,
-              text: `${visited} of ${total} places, ${percent.toFixed(1)} percent`,
+              text: t('countries.stats.progressValue', {
+                visited: formatNumber(visited),
+                total: formatNumber(total),
+                percent: formatPercent(percent / 100),
+              }),
             }
       }
       style={styles.container}
@@ -37,14 +43,19 @@ export function ProgressSummary({
           {label}
         </AppText>
         <AppText variant="label" tone="visited" style={styles.number}>
-          {loading ? '—' : `${percent.toFixed(1)}%`}
+          {loading ? '—' : formatPercent(percent / 100)}
         </AppText>
       </View>
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${percent}%` }]} />
       </View>
       <AppText variant="caption" tone="muted">
-        {loading ? '—' : visited} of {total} places
+        {loading
+          ? '—'
+          : t('countries.stats.progress', {
+              visited: formatNumber(visited),
+              total: formatNumber(total),
+            })}
       </AppText>
     </View>
   );
@@ -58,11 +69,12 @@ const styles = StyleSheet.create({
   },
   labels: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.space.sm,
   },
-  label: { flex: 1 },
+  label: { flexGrow: 1, flexBasis: 150 },
   number: { fontVariant: ['tabular-nums'] },
   track: {
     height: theme.size.progress,

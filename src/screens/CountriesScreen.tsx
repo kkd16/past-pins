@@ -22,6 +22,7 @@ import { showStatusPicker } from '../countries/StatusPicker';
 import type { CountryId } from '../countries/types';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
+import { t, formatNumber } from '../localization';
 
 const emptySelection: ReadonlySet<string> = new Set();
 
@@ -110,14 +111,16 @@ export function CountriesScreen({
         header={
           <>
             <ScreenHeader
-              title="Countries"
-              subtitle={continentName ?? 'Countries & territories'}
+              title={t('countries.title')}
+              subtitle={continentName ?? t('countries.subtitle')}
             >
               <IconButton
                 name="filter"
                 color={hasFilters ? theme.color.accent : theme.color.textMuted}
                 accessibilityLabel={
-                  hasFilters ? 'Filters, custom options applied' : 'Filters'
+                  hasFilters
+                    ? t('countries.filtersApplied')
+                    : t('countries.filters')
                 }
                 disabled={disabled}
                 onPress={() => {
@@ -130,8 +133,8 @@ export function CountriesScreen({
               <SearchField
                 value={query}
                 onChangeText={onQueryChange}
-                placeholder="Search countries"
-                accessibilityLabel="Search countries and territories"
+                placeholder={t('countries.search')}
+                accessibilityLabel={t('countries.searchLabel')}
                 onSubmitEditing={Keyboard.dismiss}
               />
               <CountryScopeControl value={scope} onChange={onScopeChange} />
@@ -142,11 +145,14 @@ export function CountriesScreen({
                     tone="muted"
                     style={styles.selectionLabel}
                   >
-                    {selectedIds.size} selected
+                    {t('countries.selectedCount', {
+                      count: selectedIds.size,
+                      amount: formatNumber(selectedIds.size),
+                    })}
                   </AppText>
                 )}
                 <Button
-                  label={selecting ? 'Cancel' : 'Select'}
+                  label={selecting ? t('common.cancel') : t('countries.select')}
                   variant="quiet"
                   disabled={disabled || (!selecting && resultIds.length === 0)}
                   onPress={() => {
@@ -186,8 +192,8 @@ export function CountriesScreen({
             <Button
               label={
                 selectedIds.size === resultIds.length
-                  ? 'Deselect all'
-                  : 'Select all results'
+                  ? t('countries.deselectAll')
+                  : t('countries.selectAll')
               }
               variant="quiet"
               disabled={disabled}
@@ -202,18 +208,23 @@ export function CountriesScreen({
               }
             />
             <Button
-              label={
-                'Update ' +
-                selectedIds.size +
-                (selectedIds.size === 1 ? ' place' : ' places')
-              }
+              label={t('countries.updateCount', {
+                count: selectedIds.size,
+                amount: formatNumber(selectedIds.size),
+              })}
               disabled={disabled || selectedIds.size === 0}
               onPress={() =>
-                showStatusPicker(selectedIds.size + ' places', (status) => {
-                  void setStatus([...selectedIds], status).then((applied) => {
-                    if (applied) setSelection(null);
-                  });
-                })
+                showStatusPicker(
+                  t('countries.placeCount', {
+                    count: selectedIds.size,
+                    amount: formatNumber(selectedIds.size),
+                  }),
+                  (status) => {
+                    void setStatus([...selectedIds], status).then((applied) => {
+                      if (applied) setSelection(null);
+                    });
+                  },
+                )
               }
             />
           </Surface>
@@ -231,7 +242,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.space.md,
   },
-  selectionLabel: { flex: 1, paddingLeft: theme.space.lg },
+  selectionLabel: { flex: 1, paddingStart: theme.space.lg },
   bulkScroll: { flexGrow: 0, maxHeight: '40%', marginVertical: theme.space.sm },
   bulk: {
     flexDirection: 'row',

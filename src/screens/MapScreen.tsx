@@ -9,7 +9,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FlatCamera } from '../atlas/FlatCamera';
+import { CountryCallout } from '../atlas/CountryCallout';
 import type { AtlasCommand } from '../atlas/types';
+import { useScreenReaderEnabled } from '../atlas/useScreenReaderEnabled';
 import { WorldMapViewport } from '../atlas/WorldMapViewport';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
@@ -24,6 +26,7 @@ import { useAppData } from '../data/AppDataProvider';
 import { isVisited } from '../data/model';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
+import { formatNumber, language, t } from '../localization';
 import { theme } from '../theme';
 
 export function MapScreen({
@@ -58,6 +61,8 @@ export function MapScreen({
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
+  const screenReader = useScreenReaderEnabled();
+  const dockSelection = largeText || screenReader;
   const visited = Object.values(data.places).filter(isVisited).length;
   const focusCountry = useCallback((id: string) => {
     setSelection({ id, anchor: null });
@@ -103,6 +108,7 @@ export function MapScreen({
     selectedId,
     selectedAnchor: incomingFocus ? null : (selection?.anchor ?? null),
     labels: data.preferences.countryLabels,
+    dockSelection,
     command,
     topInset: insets.top + topHeight + theme.space.md,
     bottomInset: insets.bottom + bottomHeight + theme.space.md,
@@ -123,84 +129,96 @@ export function MapScreen({
         pointerEvents="box-none"
         style={[styles.top, { paddingTop: insets.top + theme.space.sm }]}
       >
-        <View
-          pointerEvents="box-none"
+        <ScrollView
+          style={styles.topScroll}
+          contentInsetAdjustmentBehavior="never"
+          bounces={false}
           onLayout={({ nativeEvent: { layout } }) =>
             setTopHeight(layout.height + theme.space.sm)
           }
-          style={styles.topContent}
         >
-          <View style={styles.toolbar}>
-            <Surface variant="floating" style={styles.mode}>
-              {largeText ? (
-                <View style={styles.modeStack}>
-                  {(['globe', 'map'] as const).map((value) => (
-                    <Button
-                      key={value}
-                      label={value === 'globe' ? 'Globe' : 'World map'}
-                      onPress={() => changeMode(value)}
-                      accessibilityState={{ selected: mode === value }}
-                      disabled={!ready || app.busy}
-                      variant={mode === value ? 'primary' : 'quiet'}
-                    />
-                  ))}
-                </View>
-              ) : (
-                <SegmentedControl
-                  values={['Globe', 'World map']}
-                  selectedIndex={mode === 'globe' ? 0 : 1}
-                  enabled={ready && !app.busy}
-                  appearance={theme.appearance.colorScheme}
-                  tintColor={theme.color.accent}
-                  backgroundColor={theme.color.surface}
-                  fontStyle={{ color: theme.color.textMuted }}
-                  activeFontStyle={{ color: theme.color.onAccent }}
-                  onChange={({ nativeEvent }) =>
-                    changeMode(
-                      nativeEvent.selectedSegmentIndex === 0 ? 'globe' : 'map',
-                    )
-                  }
-                />
-              )}
-            </Surface>
-            <IconButton
-              name="search"
-              accessibilityLabel="Find a country on the map"
-              onPress={onSearch}
-              style={styles.control}
-            />
-          </View>
-          <View style={styles.actions}>
-            {data.homeCountryId && (
+          <View style={styles.topContent}>
+            <View style={styles.toolbar}>
+              <Surface variant="floating" style={styles.mode}>
+                {largeText ? (
+                  <View style={styles.modeStack}>
+                    {(['globe', 'map'] as const).map((value) => (
+                      <Button
+                        key={value}
+                        label={
+                          value === 'globe'
+                            ? t('atlas.globe')
+                            : t('atlas.worldMap')
+                        }
+                        onPress={() => changeMode(value)}
+                        accessibilityState={{ selected: mode === value }}
+                        disabled={!ready || app.busy}
+                        variant={mode === value ? 'primary' : 'quiet'}
+                      />
+                    ))}
+                  </View>
+                ) : (
+                  <SegmentedControl
+                    style={{ height: theme.size.touch }}
+                    values={[t('atlas.globe'), t('atlas.worldMap')]}
+                    accessibilityLabel={t('atlas.mapView')}
+                    accessibilityLanguage={language}
+                    selectedIndex={mode === 'globe' ? 0 : 1}
+                    enabled={ready && !app.busy}
+                    appearance={theme.appearance.colorScheme}
+                    tintColor={theme.color.accent}
+                    backgroundColor={theme.color.surface}
+                    fontStyle={{ color: theme.color.textMuted }}
+                    activeFontStyle={{ color: theme.color.onAccent }}
+                    onChange={({ nativeEvent }) =>
+                      changeMode(
+                        nativeEvent.selectedSegmentIndex === 0
+                          ? 'globe'
+                          : 'map',
+                      )
+                    }
+                  />
+                )}
+              </Surface>
               <IconButton
-                name="home"
-                accessibilityLabel="Go to current home"
-                onPress={() => focusCountry(data.homeCountryId!)}
+                name="search"
+                accessibilityLabel={t('atlas.findCountry')}
+                onPress={onSearch}
                 style={styles.control}
               />
-            )}
-            {mode === 'globe' && (
+            </View>
+            <View style={styles.actions}>
+              {data.homeCountryId && (
+                <IconButton
+                  name="home"
+                  accessibilityLabel={t('atlas.goHome')}
+                  onPress={() => focusCountry(data.homeCountryId!)}
+                  style={styles.control}
+                />
+              )}
+              {mode === 'globe' && (
+                <IconButton
+                  name="north"
+                  accessibilityLabel={t('atlas.northUp')}
+                  onPress={() =>
+                    setCommand({ type: 'north', key: ++sequence.current })
+                  }
+                  style={styles.control}
+                />
+              )}
               <IconButton
-                name="north"
-                accessibilityLabel="Turn globe north up"
+                name="reset"
+                accessibilityLabel={
+                  mode === 'globe' ? t('atlas.resetGlobe') : t('atlas.fitWorld')
+                }
                 onPress={() =>
-                  setCommand({ type: 'north', key: ++sequence.current })
+                  setCommand({ type: 'reset', key: ++sequence.current })
                 }
                 style={styles.control}
               />
-            )}
-            <IconButton
-              name="reset"
-              accessibilityLabel={
-                mode === 'globe' ? 'Reset globe' : 'Fit entire world map'
-              }
-              onPress={() =>
-                setCommand({ type: 'reset', key: ++sequence.current })
-              }
-              style={styles.control}
-            />
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </View>
       <View
         pointerEvents="box-none"
@@ -218,21 +236,43 @@ export function MapScreen({
           }
         >
           <View style={styles.footer}>
+            {ready && dockSelection && selectedId && (
+              <CountryCallout
+                countryId={selectedId}
+                status={data.places[selectedId]}
+                home={data.homeCountryId === selectedId}
+                onDetails={onSelect}
+                onDismiss={() => selectCountry(null)}
+                autofocus={screenReader}
+              />
+            )}
             <DataFeedback />
             <UndoNotice />
             {ready && data.preferences.mapSummary && (
               <Surface variant="floating" style={styles.summary}>
-                <View style={styles.summaryHeading}>
+                <View
+                  accessible
+                  accessibilityLanguage={language}
+                  accessibilityLabel={t('atlas.visitedCount', {
+                    count: visited,
+                    total: formatNumber(visited),
+                  })}
+                  style={styles.summaryHeading}
+                >
                   <AppText variant="number" tone="visited">
-                    {visited}
+                    {formatNumber(visited)}
                   </AppText>
                   <View style={styles.summaryText}>
-                    <AppText variant="label">Places visited</AppText>
-                    <AppText variant="caption" tone="muted">
-                      {mode === 'globe'
-                        ? 'Drag, pinch & twist to explore'
-                        : 'Drag & pinch to explore'}
+                    <AppText variant="label">
+                      {t('atlas.placesVisited')}
                     </AppText>
+                    {!screenReader && (
+                      <AppText variant="caption" tone="muted">
+                        {mode === 'globe'
+                          ? t('atlas.globeGestures')
+                          : t('atlas.mapGestures')}
+                      </AppText>
+                    )}
                   </View>
                 </View>
                 <View style={styles.legend}>
@@ -257,7 +297,7 @@ export function MapScreen({
                 </View>
                 {!Object.keys(data.places).length && (
                   <Button
-                    label="Add a place"
+                    label={t('atlas.addPlace')}
                     onPress={onOpenCountries}
                     variant="quiet"
                   />
@@ -278,8 +318,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    maxHeight: '50%',
     paddingHorizontal: theme.space.lg,
   },
+  topScroll: { flexGrow: 0 },
   topContent: {
     gap: theme.space.sm,
     maxWidth: theme.size.contentMax,

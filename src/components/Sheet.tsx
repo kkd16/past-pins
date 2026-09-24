@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { theme } from '../theme';
+import { t } from '../localization';
 import { Button } from './Button';
 import { ScreenHeader } from './ScreenHeader';
 
@@ -10,7 +11,7 @@ export function Sheet({
   subtitle,
   onDone,
   onCancel,
-  doneLabel = 'Done',
+  doneLabel = t('common.done'),
   children,
 }: {
   title: string;
@@ -22,6 +23,7 @@ export function Sheet({
 }) {
   return (
     <ScrollView
+      onAccessibilityEscape={onCancel ?? onDone}
       style={styles.scroll}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={styles.content}
@@ -30,7 +32,11 @@ export function Sheet({
       {onCancel ? (
         <>
           <View style={styles.actions}>
-            <Button label="Cancel" variant="quiet" onPress={onCancel} />
+            <Button
+              label={t('common.cancel')}
+              variant="quiet"
+              onPress={onCancel}
+            />
             <Button label={doneLabel} variant="quiet" onPress={onDone} />
           </View>
           <ScreenHeader title={title} subtitle={subtitle} compact />
@@ -46,7 +52,12 @@ export function Sheet({
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', justifyContent: 'space-between' },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: theme.space.sm,
+  },
   scroll: { flexGrow: 0 },
   content: {
     width: '100%',

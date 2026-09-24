@@ -5,6 +5,7 @@ import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import type { AppData } from '../data/model';
 import { theme } from '../theme';
+import { t, formatNumber, language } from '../localization';
 import { CountryRow } from './CountryRow';
 import {
   getEmptyCountriesMessage,
@@ -79,16 +80,24 @@ export function CountryList({
         />
       )}
       renderSectionHeader={({ section }) => (
-        <View style={styles.section}>
-          <AppText
-            variant="heading"
-            accessibilityRole="header"
-            style={styles.label}
-          >
+        <View
+          accessible
+          accessibilityRole="header"
+          accessibilityLanguage={language}
+          accessibilityLabel={t('countries.sectionLabel', {
+            name: section.title,
+            places: t('countries.placeCount', {
+              count: section.data.length,
+              amount: formatNumber(section.data.length),
+            }),
+          })}
+          style={styles.section}
+        >
+          <AppText variant="heading" style={styles.label}>
             {section.title}
           </AppText>
           <AppText variant="caption" tone="muted">
-            {section.data.length}
+            {formatNumber(section.data.length)}
           </AppText>
         </View>
       )}
@@ -97,7 +106,10 @@ export function CountryList({
           {header}
           {ready && (
             <AppText variant="caption" tone="muted" style={styles.count}>
-              {resultCount} {resultCount === 1 ? 'place' : 'places'}
+              {t('countries.placeCount', {
+                count: resultCount,
+                amount: formatNumber(resultCount),
+              })}
             </AppText>
           )}
         </>
@@ -113,7 +125,11 @@ export function CountryList({
               {empty.message}
             </AppText>
             <Button
-              label={narrowed ? 'Clear search & filters' : 'Browse places'}
+              label={
+                narrowed
+                  ? t('countries.empty.clearFilters')
+                  : t('countries.empty.browse')
+              }
               variant="quiet"
               onPress={onReset}
             />

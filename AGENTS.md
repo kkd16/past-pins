@@ -30,6 +30,14 @@ bunx expo install --fix      # fix incompatible package versions
 
 Run lint and typecheck before declaring any task done.
 
+## Localization and accessibility
+
+- Put all UI text, alerts, errors, and accessibility labels in JSON resources under `src/localization/locales/<language-code>/`; use the typed `t` helper, whole sentences, interpolation, and plural entries. Format displayed numbers, percentages, and lists with the shared helpers. Keep stored IDs and backup formats locale-independent.
+- Use library defaults and iOS language preferences, with English fallback. Add a language with complete messages, library plural/formatting data, geographic names, tests, and matching native supported locales. Verify Hermes support before using new `Intl` APIs; avoid speculative adapters and language state.
+- Prefer native controls and their built-in semantics, including the `disabled` prop. Add localized labels, roles, or accessibility states only where the control does not already expose them. Hide decorative graphics, avoid duplicate VoiceOver stops, and preserve accessible alternatives to map gestures and country popups.
+- Keep targets at least 44 points, allow Dynamic Type without global font caps, honor Reduce Motion, and preserve theme contrast. Use logical spacing for RTL; never mirror geographic coordinates. Keep native layout direction tied to supported app languages rather than forcing RTL from the device language.
+- After UI changes, check long translations, large text, VoiceOver order/actions, and short iPad layouts. After Expo/React Native upgrades, verify the matching docs and repeat locale/RTL, VoiceOver, Dynamic Type, and Reduce Motion checks on iPhone and iPad. Report native checks that could not be run; JavaScript tests and export do not replace them.
+
 ## Navigation & Routing
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.

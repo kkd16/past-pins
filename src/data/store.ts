@@ -1,3 +1,5 @@
+import { t } from '../localization';
+import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
 import type { AppStorage } from '../storage/snapshot-storage';
 import { validateAppData } from './backup';
@@ -90,7 +92,7 @@ export function createAppDataStore(
 
   async function replace(data: AppData) {
     if (snapshot.status === 'loading' || snapshot.busy)
-      throw new Error('Your data is not ready. Try again in a moment.');
+      throw new UserFacingError(t('common.errors.dataNotReady'));
     const next = validateAppData(data);
     publish({ busy: true });
     try {
@@ -124,7 +126,7 @@ export function createAppDataStore(
     ): Promise<boolean> {
       if (!editable()) return false;
       if (ids.some((id) => !countryIds.has(id)))
-        throw new Error('Unknown country.');
+        throw new UserFacingError(t('common.errors.unknownCountry'));
       const next = changePlaceStatus(
         snapshot.data,
         ids,
@@ -140,16 +142,16 @@ export function createAppDataStore(
           publish({ busy: false });
         }
       }
-      changeTravel(next, ids.length === 1 ? 'Place updated' : 'Places updated');
+      changeTravel(next, t('common.placesUpdated', { count: ids.length }));
       return true;
     },
     setHome(id: string | null) {
       if (!editable()) return;
       if (id !== null && !countryIds.has(id))
-        throw new Error('Unknown country.');
+        throw new UserFacingError(t('common.errors.unknownCountry'));
       changeTravel(
         changeHome(snapshot.data, id),
-        id ? 'Home updated' : 'Home cleared',
+        id ? t('common.homeUpdated') : t('common.homeCleared'),
       );
     },
     updatePreferences(patch: Partial<Preferences>) {
@@ -184,7 +186,7 @@ export function createAppDataStore(
     restore: replace,
     async clearTravel() {
       if (!editable())
-        throw new Error('Your data is not ready. Try again in a moment.');
+        throw new UserFacingError(t('common.errors.dataNotReady'));
       await replace({ ...snapshot.data, places: {}, homeCountryId: null });
     },
     resetPreferences() {

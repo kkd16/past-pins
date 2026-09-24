@@ -10,6 +10,7 @@ export type AtlasViewportProps = {
   selectedId: string | null;
   selectedAnchor: readonly number[] | null;
   labels: boolean;
+  dockSelection: boolean;
   command: AtlasCommand | null;
   topInset: number;
   bottomInset: number;

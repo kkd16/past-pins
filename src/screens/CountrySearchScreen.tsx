@@ -12,6 +12,7 @@ import { searchCountries } from '../countries/search';
 import { getStatusPresentation } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
+import { t, language } from '../localization';
 
 export function CountrySearchScreen({
   title,
@@ -27,17 +28,21 @@ export function CountrySearchScreen({
   const [query, setQuery] = useState('');
   const { data, status, busy } = useAppData();
   return (
-    <Screen>
+    <Screen onAccessibilityEscape={onCancel}>
       {onCancel && (
         <ScreenHeader title={title} compact>
-          <Button label="Cancel" variant="quiet" onPress={onCancel} />
+          <Button
+            label={t('common.cancel')}
+            variant="quiet"
+            onPress={onCancel}
+          />
         </ScreenHeader>
       )}
       <SearchField
         value={query}
         onChangeText={setQuery}
-        placeholder="Search countries"
-        accessibilityLabel="Search countries"
+        placeholder={t('countries.search')}
+        accessibilityLabel={t('countries.searchLabel')}
       />
       <DataFeedback />
       <FlatList
@@ -51,7 +56,7 @@ export function CountrySearchScreen({
         ListHeaderComponent={
           onClear && (
             <Button
-              label="Clear current home"
+              label={t('countries.details.clearHome')}
               variant="quiet"
               onPress={onClear}
               disabled={busy || status !== 'ready'}
@@ -60,7 +65,7 @@ export function CountrySearchScreen({
         }
         ListEmptyComponent={
           <AppText tone="muted" style={styles.empty}>
-            No matching countries.
+            {t('countries.empty.noSearchResults')}
           </AppText>
         }
         renderItem={({ item }) => {
@@ -71,16 +76,22 @@ export function CountrySearchScreen({
           return (
             <Pressable
               accessibilityRole="button"
+              accessibilityLanguage={language}
               onPress={() => onSelect(item.id)}
               disabled={busy || status !== 'ready'}
-              accessibilityState={{ disabled: busy || status !== 'ready' }}
-              accessibilityLabel={`${item.name}, ${presentation.label}`}
+              accessibilityLabel={t('countries.countryStatus', {
+                name: item.name,
+                status: presentation.label,
+              })}
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             >
               <View style={styles.name}>
                 <AppText>{item.name}</AppText>
                 <AppText variant="caption" tone="muted">
-                  {item.continent.name} · {presentation.label}
+                  {t('countries.countrySubtitle', {
+                    continent: item.continent.name,
+                    status: presentation.label,
+                  })}
                 </AppText>
               </View>
               <Icon name={presentation.icon} color={presentation.color} />

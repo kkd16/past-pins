@@ -2,28 +2,32 @@ import { isRunningInExpoGo } from 'expo';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { Link } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import notices from '../../licenses/notices.json';
 import { AppText } from '../components/AppText';
+import { language, t } from '../localization';
 import { InfoPage, InfoSection } from '../settings/InfoPage';
 import { theme } from '../theme';
 
 const links = [
-  { label: 'Source code', href: 'https://github.com/kkd16/past-pins' },
-  { label: 'GitHub', href: 'https://github.com/kkd16' },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/kyle-deliyannides/' },
+  { label: 'settings.sourceCode', href: 'https://github.com/kkd16/past-pins' },
+  { label: 'settings.github', href: 'https://github.com/kkd16' },
+  {
+    label: 'settings.linkedin',
+    href: 'https://www.linkedin.com/in/kyle-deliyannides/',
+  },
 ] as const;
 
 const sources = [
   {
     name: '@rembish/iso-topojson',
-    label: 'Map boundaries · iso-topojson',
+    label: 'settings.mapBoundaries',
     href: 'https://github.com/rembish/iso-topojson',
   },
   {
     name: 'countries-list',
-    label: 'Country facts · Countries',
+    label: 'settings.countryFacts',
     href: 'https://github.com/annexare/Countries',
   },
 ] as const;
@@ -36,49 +40,72 @@ export function AboutScreen() {
   const build = inExpoGo ? null : Application.nativeBuildVersion;
   return (
     <InfoPage>
-      <InfoSection title="Past Pins">
-        Your visited places, homes, and wishlist. Saved on this device.
+      <InfoSection title={t('common.appName')}>
+        {t('settings.appDescription')}
       </InfoSection>
       <View style={styles.details}>
-        <AppText selectable>By Kyle Deliyannides</AppText>
+        <AppText selectable>
+          {t('settings.author', { name: 'Kyle Deliyannides' })}
+        </AppText>
         <AppText tone="muted" selectable>
-          Version {version ?? 'Unknown'}
-          {build ? ` · Build ${build}` : ''}
+          {build
+            ? t('settings.versionAndBuild', {
+                version: version ?? t('common.unknown'),
+                build,
+              })
+            : t('settings.version', {
+                version: version ?? t('common.unknown'),
+              })}
         </AppText>
       </View>
       <View>
         {links.map(({ label, href }) => (
-          <Link key={href} href={href} style={styles.link}>
-            {label}
-          </Link>
+          <AboutLink key={href} href={href} label={t(label)} />
         ))}
       </View>
-      <InfoSection title="Map data">
-        Countries and territories, bundled for offline use. Map © Alex Rembish,
-        based on Natural Earth. Geometry and styling adapted by Past Pins.
+      <InfoSection title={t('settings.mapData')}>
+        {t('settings.mapAttribution')}
       </InfoSection>
       <View>
         {sources.map(({ name, label, href }) => (
-          <Link key={name} href={href} style={styles.link}>
-            {label} · {notices.find((notice) => notice.name === name)?.version}
-          </Link>
+          <AboutLink
+            key={name}
+            href={href}
+            label={t(label, {
+              version:
+                notices.find((notice) => notice.name === name)?.version ??
+                t('common.unknown'),
+            })}
+          />
         ))}
-        <Link
+        <AboutLink
           href="https://creativecommons.org/licenses/by/4.0/"
-          style={styles.link}
-        >
-          Map license · CC BY 4.0
-        </Link>
+          label={t('settings.mapLicense')}
+        />
       </View>
     </InfoPage>
+  );
+}
+
+function AboutLink({
+  href,
+  label,
+}: {
+  href: `https://${string}`;
+  label: string;
+}) {
+  return (
+    <Link href={href} asChild>
+      <Pressable accessibilityLanguage={language} style={styles.link}>
+        <AppText tone="accent">{label}</AppText>
+      </Pressable>
+    </Link>
   );
 }
 
 const styles = StyleSheet.create({
   details: { gap: theme.space.xs },
   link: {
-    ...theme.typography.body,
-    color: theme.color.accent,
     paddingVertical: theme.space.md,
     minHeight: theme.size.touch,
   },

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { Icon } from '../components/Icon';
 import { Surface } from '../components/Surface';
+import { language } from '../localization';
 import { theme } from '../theme';
 
 export function SettingsSection({
@@ -48,7 +49,7 @@ export function SettingsRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled }}
+      accessibilityLanguage={language}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -83,9 +84,13 @@ export function SettingsToggle({
 }) {
   return (
     <View style={styles.row}>
-      <AppText style={styles.text}>{title}</AppText>
+      <AppText style={styles.text} accessibilityElementsHidden>
+        {title}
+      </AppText>
       <Switch
+        hitSlop={theme.space.sm}
         accessibilityLabel={title}
+        accessibilityLanguage={language}
         value={value}
         onValueChange={onChange}
         disabled={disabled}

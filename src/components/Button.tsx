@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
+import { language } from '../localization';
 import { theme } from '../theme';
 import { AppText } from './AppText';
 
@@ -17,9 +18,9 @@ export function Button({
 }: ButtonProps) {
   return (
     <Pressable
+      accessibilityLanguage={language}
       {...props}
       accessibilityRole="button"
-      accessibilityState={{ ...props.accessibilityState, disabled: !!disabled }}
       disabled={disabled}
       style={(state) => [
         styles.base,

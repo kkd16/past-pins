@@ -19,18 +19,21 @@ export function useViewportLifecycle(controller: {
     }, [controller]),
   );
   useEffect(() => {
-    let mounted = true;
+    let pendingInitialRead = true;
     const subscription = AccessibilityInfo.addEventListener(
       'reduceMotionChanged',
-      (enabled) => controller.setReduceMotion(enabled),
+      (enabled) => {
+        pendingInitialRead = false;
+        controller.setReduceMotion(enabled);
+      },
     );
     void AccessibilityInfo.isReduceMotionEnabled()
       .then((enabled) => {
-        if (mounted) controller.setReduceMotion(enabled);
+        if (pendingInitialRead) controller.setReduceMotion(enabled);
       })
       .catch(() => undefined);
     return () => {
-      mounted = false;
+      pendingInitialRead = false;
       subscription.remove();
     };
   }, [controller]);

@@ -8,6 +8,8 @@ import { UndoNotice } from '../components/UndoNotice';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { isVisited } from '../data/model';
+import { UserFacingError } from '../data/errors';
+import { formatNumber, t } from '../localization';
 import { pickBackup, shareBackup } from '../settings/backup-files';
 import {
   SettingsRow,
@@ -23,7 +25,11 @@ function confirm(
 ): Promise<boolean> {
   return new Promise((resolve) =>
     Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      {
+        text: t('common.cancel'),
+        style: 'cancel',
+        onPress: () => resolve(false),
+      },
       { text: action, style: 'destructive', onPress: () => resolve(true) },
     ]),
   );
@@ -56,8 +62,10 @@ export function SettingsScreen({
       await action();
     } catch (error) {
       Alert.alert(
-        'Could not finish',
-        error instanceof Error ? error.message : 'Please try again.',
+        t('settings.couldNotFinish'),
+        error instanceof UserFacingError
+          ? error.message
+          : t('common.unknownError'),
       );
     } finally {
       running.current = false;
@@ -74,12 +82,17 @@ export function SettingsScreen({
     const wishlist = statuses.filter((value) => value === 'wishlist').length;
     const home = backup.homeCountryId
       ? countryById.get(backup.homeCountryId)!.name
-      : 'None';
+      : t('common.none');
     if (
       await confirm(
-        'Replace with this backup?',
-        `${visited} visited · ${lived} lived · ${wishlist} wishlist\nHome: ${home}\n\nReplaces your places, home, and settings. Cannot be undone.`,
-        'Replace data',
+        t('settings.replaceTitle'),
+        t('settings.replaceSummary', {
+          visited: formatNumber(visited),
+          lived: formatNumber(lived),
+          wishlist: formatNumber(wishlist),
+          home,
+        }),
+        t('settings.replaceData'),
       )
     ) {
       await restore(backup);
@@ -93,57 +106,57 @@ export function SettingsScreen({
         contentContainerStyle={styles.content}
       >
         <DataFeedback />
-        <SettingsSection title="Map">
+        <SettingsSection title={t('common.map')}>
           <ChoiceRow
-            label="Globe"
+            label={t('settings.globe')}
             selected={prefs.mapView === 'globe'}
             disabled={disabled}
             onPress={() => updatePreferences({ mapView: 'globe' })}
           />
           <ChoiceRow
-            label="World map"
+            label={t('settings.worldMap')}
             selected={prefs.mapView === 'map'}
             disabled={disabled}
             onPress={() => updatePreferences({ mapView: 'map' })}
           />
           <SettingsToggle
-            title="Country labels"
+            title={t('settings.countryLabels')}
             value={prefs.countryLabels}
             disabled={disabled}
             onChange={(countryLabels) => updatePreferences({ countryLabels })}
           />
           <SettingsToggle
-            title="Travel summary"
+            title={t('settings.travelSummary')}
             value={prefs.mapSummary}
             disabled={disabled}
             onChange={(mapSummary) => updatePreferences({ mapSummary })}
           />
         </SettingsSection>
         <SettingsSection
-          title="Home"
-          description="Home counts as Lived and Visited. Former homes stay Lived."
+          title={t('settings.home')}
+          description={t('settings.homeDescription')}
         >
           <SettingsRow
-            title="Current home"
+            title={t('common.currentHome')}
             disclosure
             value={
               data.homeCountryId
                 ? countryById.get(data.homeCountryId)?.name
-                : 'Choose a country'
+                : t('settings.chooseCountry')
             }
             disabled={disabled}
             onPress={() => onOpen('home')}
           />
         </SettingsSection>
-        <SettingsSection title="Country list">
+        <SettingsSection title={t('settings.countryList')}>
           <ChoiceRow
-            label="By continent"
+            label={t('settings.byContinent')}
             selected={prefs.countryGrouping === 'continent'}
             disabled={disabled}
             onPress={() => updatePreferences({ countryGrouping: 'continent' })}
           />
           <ChoiceRow
-            label="Alphabetical"
+            label={t('settings.alphabetical')}
             selected={prefs.countryGrouping === 'alphabetical'}
             disabled={disabled}
             onPress={() =>
@@ -151,41 +164,41 @@ export function SettingsScreen({
             }
           />
         </SettingsSection>
-        <SettingsSection title="Feedback">
+        <SettingsSection title={t('settings.feedback')}>
           <SettingsToggle
-            title="Haptics"
+            title={t('settings.haptics')}
             value={prefs.haptics}
             disabled={disabled}
             onChange={(haptics) => updatePreferences({ haptics })}
           />
         </SettingsSection>
         <SettingsSection
-          title="Your data"
-          description="Saved on this device. Export a backup to keep a copy."
+          title={t('settings.yourData')}
+          description={t('settings.dataDescription')}
         >
           <SettingsRow
-            title="Export backup"
-            value="Places, home, and settings"
+            title={t('settings.exportBackup')}
+            value={t('settings.backupContents')}
             disabled={disabled}
             onPress={() => void run(() => shareBackup(data))}
           />
           <SettingsRow
-            title="Restore backup"
-            value="Preview, then replace your data"
+            title={t('settings.restoreBackup')}
+            value={t('settings.restoreDescription')}
             disabled={busy || working || status === 'loading'}
             onPress={() => void run(importBackup)}
           />
           <SettingsRow
-            title="Clear travel data"
+            title={t('settings.clearTravel')}
             destructive
             disabled={disabled}
             onPress={() =>
               void run(async () => {
                 if (
                   await confirm(
-                    'Clear all travel data?',
-                    'Removes all places and home. Keeps your settings. Cannot be undone.',
-                    'Clear travel data',
+                    t('settings.clearTravelTitle'),
+                    t('settings.clearTravelMessage'),
+                    t('settings.clearTravel'),
                   )
                 )
                   await clearTravel();
@@ -193,15 +206,15 @@ export function SettingsScreen({
             }
           />
           <SettingsRow
-            title="Reset preferences"
+            title={t('settings.resetPreferences')}
             disabled={disabled}
             onPress={() =>
               void run(async () => {
                 if (
                   await confirm(
-                    'Reset preferences?',
-                    'Resets settings to defaults. Keeps your places and home.',
-                    'Reset preferences',
+                    t('settings.resetTitle'),
+                    t('settings.resetMessage'),
+                    t('settings.resetPreferences'),
                   )
                 )
                   resetPreferences();
@@ -210,14 +223,14 @@ export function SettingsScreen({
           />
         </SettingsSection>
         <UndoNotice />
-        <SettingsSection title="App">
+        <SettingsSection title={t('settings.app')}>
           <SettingsRow
-            title="About"
+            title={t('common.about')}
             disclosure
             onPress={() => onOpen('about')}
           />
           <SettingsRow
-            title="Open-source licenses"
+            title={t('common.licenses')}
             disclosure
             onPress={() => onOpen('licenses')}
           />

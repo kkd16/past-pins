@@ -1,0 +1,43 @@
+{
+  "appName": "Past Pins",
+  "countries": "Countries",
+  "map": "Map",
+  "stats": "Stats",
+  "settings": "Settings",
+  "about": "About",
+  "currentHome": "Current home",
+  "licenses": "Open-source licenses",
+  "license": "License",
+  "done": "Done",
+  "cancel": "Cancel",
+  "apply": "Apply",
+  "retry": "Try again",
+  "search": "Search",
+  "undo": "Undo",
+  "loading": "Loading",
+  "unknownError": "Please try again.",
+  "none": "None",
+  "unknown": "Unknown",
+  "thisPlace": "This place",
+  "clearHomeTitle": "Clear current home?",
+  "clearHomeMessage": "%{country} will no longer be your home.",
+  "updatePlace": "Update place",
+  "placesUpdated": {
+    "one": "Place updated",
+    "other": "Places updated"
+  },
+  "homeUpdated": "Home updated",
+  "homeCleared": "Home cleared",
+  "errors": {
+    "invalidData": "This file does not contain valid Past Pins data.",
+    "invalidPlaces": "The saved places are invalid.",
+    "invalidPlaceStatus": "The file contains an unknown place or status.",
+    "invalidHome": "Current home must be one of your lived places.",
+    "invalidPreferences": "The saved preferences are invalid.",
+    "invalidJson": "This file is not a valid JSON backup.",
+    "invalidBackup": "Choose a backup exported by this version of Past Pins.",
+    "dataNotReady": "Your data is not ready. Try again in a moment.",
+    "unknownCountry": "Unknown country.",
+    "backupTooLarge": "This file is too large to be a Past Pins backup."
+  }
+}

@@ -1,3 +1,4 @@
+import { t } from '../../localization';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { theme } from '../../theme';
@@ -25,7 +26,9 @@ export default function TabsLayout() {
         disableAutomaticContentInsets
         contentStyle={{ backgroundColor: theme.color.background }}
       >
-        <NativeTabs.Trigger.Label>Countries</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>
+          {t('common.countries')}
+        </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="list.bullet" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
@@ -34,7 +37,7 @@ export default function TabsLayout() {
         disableScrollToTop
         contentStyle={{ backgroundColor: theme.color.background }}
       >
-        <NativeTabs.Trigger.Label>Map</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('common.map')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="globe" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
@@ -42,7 +45,7 @@ export default function TabsLayout() {
         disableAutomaticContentInsets
         contentStyle={{ backgroundColor: theme.color.background }}
       >
-        <NativeTabs.Trigger.Label>Stats</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('common.stats')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }}
         />
