@@ -59,7 +59,7 @@ describe('travel theme accessibility', () => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  test('land is distinct from water and native appearance matches the theme', () => {
+  test('base globe colors are distinct and native appearance matches the theme', () => {
     expect(
       contrast(theme.globe.land, theme.globe.ocean),
     ).toBeGreaterThanOrEqual(3);

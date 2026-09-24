@@ -65,6 +65,7 @@ Bun tests cover theme contrast, catalog joins, geometry coverage and winding, ca
 - Filters intersect with search and visit status; Done applies and swipe dismissal cancels.
 - Insets, native tabs, sheet expansion, keyboards, and text remain usable at large Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.
 - At the largest text size, Countries controls and results scroll together; typing retains focus and does not reset scroll. Test on a small iPhone and a short iPad window with the keyboard open.
+- In a short iPad window at large text sizes, the map welcome and retry panels scroll within the safe area. With saved visits and no error, dragging through the visit summary still rotates the globe.
 - Simulate a storage failure: VoiceOver announces it once across mounted tabs, retry remains available, and a new failure after successful recovery is announced again.
 - After loading the development bundle, all globe data and visit editing work offline. Expo Go still needs its normal Metro connection to load a fresh development session.
 
