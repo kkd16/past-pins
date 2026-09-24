@@ -1,7 +1,6 @@
 import type { CountryId } from '../countries/types';
 import type { VisitStorage } from '../countries/visit-storage';
 
-// The subset of Expo SQLite used here also lets tests execute the SQL with Bun.
 type VisitTransaction = {
   runAsync(sql: string, params: string[]): Promise<unknown>;
 };
@@ -22,7 +21,6 @@ export function createSQLiteVisitStorage(
   let database: VisitDatabase | undefined;
   let queue = Promise.resolve();
 
-  // Initialization, reads, and writes share one queue, including after failures.
   function enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const result = queue.then(operation);
     queue = result.then(() => undefined, () => undefined);
@@ -40,7 +38,6 @@ export function createSQLiteVisitStorage(
         );
       `);
     } catch (error) {
-      // Preserve the initialization error even if releasing the handle fails.
       await opened.closeAsync().catch(() => undefined);
       throw error;
     }
@@ -62,7 +59,7 @@ export function createSQLiteVisitStorage(
       });
     },
     async save(visitedIds) {
-      // Snapshot before any await so later changes cannot alter a queued save.
+      // Snapshot before queueing to preserve rapid edits.
       const ids = [...visitedIds];
       if (ids.some((id) => !knownIds.has(id))) {
         throw new Error('Cannot save an unknown country ID.');

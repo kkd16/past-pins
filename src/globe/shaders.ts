@@ -1,4 +1,3 @@
-// Orthographic globe: cached country vertices are rotated entirely on the GPU.
 export const surfaceVertex = `
 attribute vec3 position;
 attribute vec3 color;

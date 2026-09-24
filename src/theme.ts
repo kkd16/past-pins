@@ -20,7 +20,6 @@ export const theme = {
     accent: palette.fern,
     onAccent: palette.forest,
     selectedSurface: '#20382C',
-    transparent: 'transparent',
   },
   typography: {
     title: {
@@ -39,11 +38,10 @@ export const theme = {
     label: { fontSize: 15, fontWeight: '600' },
     caption: { fontSize: 13, fontWeight: '400' },
   } satisfies Record<string, TextStyle>,
-  space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
+  space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 },
   radius: { sm: 12, lg: 20, pill: 999 },
   size: { touch: 44, row: 60, check: 26, icon: 20, contentMax: 760 },
   opacity: { pressed: 0.72, disabled: 0.45 },
-  motion: { spring: { tension: 180, friction: 12 } },
 } as const;
 
 export type TextVariant = keyof typeof theme.typography;

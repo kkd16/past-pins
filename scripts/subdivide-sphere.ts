@@ -2,8 +2,7 @@ import { vec3 } from 'gl-matrix';
 
 export type Point = [number, number, number];
 
-// Split long edges at shared spherical midpoints. Both adjacent triangles split
-// the same edge, so their chords meet without visible cracks when zoomed in.
+// Share edge midpoints to prevent cracks.
 export function subdivideSphere(
   points: Point[],
   triangles: number[],

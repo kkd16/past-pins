@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, AppState, StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-screens/experimental';
@@ -15,11 +15,9 @@ import { GlobeSurface } from './GlobeSurface';
 
 export function GlobeViewport({
   visitedIds,
-  selectedId,
   onSelect,
 }: {
   visitedIds: ReadonlySet<CountryId>;
-  selectedId: CountryId | null;
   onSelect: (id: CountryId) => void;
 }) {
   const [failed, setFailed] = useState(false);
@@ -28,14 +26,15 @@ export function GlobeViewport({
     setFailed(true);
   }, []);
   const [controller] = useState(() => new GlobeController(fail));
-  const focused = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
-      focused.current = true;
       controller.setActive(AppState.currentState === 'active');
+      const subscription = AppState.addEventListener('change', (state) =>
+        controller.setActive(state === 'active'),
+      );
       return () => {
-        focused.current = false;
+        subscription.remove();
         controller.setActive(false);
       };
     }, [controller]),
@@ -43,9 +42,6 @@ export function GlobeViewport({
 
   useEffect(() => {
     let mounted = true;
-    const state = AppState.addEventListener('change', (next) =>
-      controller.setActive(focused.current && next === 'active'),
-    );
     const motion = AccessibilityInfo.addEventListener(
       'reduceMotionChanged',
       (enabled) => controller.setReduceMotion(enabled),
@@ -54,19 +50,16 @@ export function GlobeViewport({
       .then((enabled) => {
         if (mounted) controller.setReduceMotion(enabled);
       })
-      .catch(() => {
-        /* Keep inertia disabled if the preference is unavailable. */
-      });
+      .catch(() => undefined);
     return () => {
       mounted = false;
-      state.remove();
       motion.remove();
     };
   }, [controller]);
 
   useEffect(() => {
-    controller.setColors(visitedIds, selectedId);
-  }, [controller, visitedIds, selectedId]);
+    controller.setColors(visitedIds);
+  }, [controller, visitedIds]);
 
   const gesture = useMemo(
     () => globeGestures(controller, onSelect),

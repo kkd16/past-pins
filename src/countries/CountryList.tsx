@@ -30,7 +30,7 @@ export function CountryList({
   scrollResetKey: string;
 }) {
   const list = useRef<SectionList<Country, CountrySection>>(null);
-  // Filter choices start at the top; typing in the header and editing visits keep position.
+  // Reset for filter changes, but keep position while typing or editing visits.
   useLayoutEffect(() => {
     list.current?.getScrollResponder()?.scrollTo({ y: 0, animated: false });
   }, [scrollResetKey]);

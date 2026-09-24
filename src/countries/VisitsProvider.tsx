@@ -33,7 +33,7 @@ export function VisitsProvider({
       : saveError
         ? 'Your latest changes haven’t been saved. Use Retry save to try again.'
         : null;
-  // Tabs stay mounted: announce errors once here, not from each visible notice.
+  // Mounted tabs share this single VoiceOver announcement.
   useEffect(() => {
     if (errorAnnouncement) {
       AccessibilityInfo.announceForAccessibilityWithOptions(errorAnnouncement, {

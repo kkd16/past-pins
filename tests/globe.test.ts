@@ -106,7 +106,6 @@ describe('bundled globe geometry', () => {
   });
 
   test('sampled interiors have triangles, including antimeridian islands and Antarctica', () => {
-    // Geography fixtures, not per-country rendering exceptions.
     const fixtures: [string, number, number][] = [
       ['ca', -106, 56],
       ['au', 134, -25],

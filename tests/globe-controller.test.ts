@@ -44,12 +44,13 @@ describe('globe frame lifecycle', () => {
 
   test('renders on demand, coalesces changes, and does no GPU work while hidden', () => {
     const { controller, renderer } = setup();
-    controller.setColors(new Set(['ca']), null);
+    controller.setColors(new Set(['ca']));
     expect(pending.size).toBe(0);
     expect(renderer.setColors).not.toHaveBeenCalled();
     controller.setActive(true);
     controller.drag(10, 10);
     controller.zoom(2);
+    controller.stop();
     expect(pending.size).toBe(1);
     frame();
     expect(renderer.draw).toHaveBeenCalledTimes(1);
@@ -57,7 +58,7 @@ describe('globe frame lifecycle', () => {
     expect(pending.size).toBe(0);
     controller.drag(10, 0);
     controller.setActive(false);
-    controller.setColors(new Set(['fr']), 'fr');
+    controller.setColors(new Set(['fr']));
     frame();
     expect(renderer.draw).toHaveBeenCalledTimes(1);
     expect(renderer.setColors).toHaveBeenCalledTimes(1);
@@ -65,7 +66,7 @@ describe('globe frame lifecycle', () => {
     controller.setActive(true);
     frame();
     expect(Array.from(controller.camera.rotation)).toEqual(orientation);
-    expect(renderer.setColors).toHaveBeenLastCalledWith(new Set(['fr']), 'fr');
+    expect(renderer.setColors).toHaveBeenLastCalledWith(new Set(['fr']));
   });
 
   test('inertia settles; Reduce Motion and leaving the tab stop it', () => {

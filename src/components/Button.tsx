@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
 import { theme } from '../theme';
@@ -7,13 +6,11 @@ import { AppText } from './AppText';
 export type ButtonProps = Omit<PressableProps, 'children'> & {
   label: string;
   variant?: 'primary' | 'quiet';
-  leading?: ReactNode;
 };
 
 export function Button({
   label,
   variant = 'primary',
-  leading,
   disabled,
   style,
   ...props
@@ -32,7 +29,6 @@ export function Button({
         typeof style === 'function' ? style(state) : style,
       ]}
     >
-      {leading}
       <AppText
         variant="label"
         style={variant === 'primary' ? styles.primaryLabel : styles.quietLabel}
@@ -50,10 +46,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.sm,
     borderRadius: theme.radius.pill,
-    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: theme.space.sm,
   },
   primary: { backgroundColor: theme.color.accent },
   primaryLabel: { color: theme.color.onAccent },

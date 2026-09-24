@@ -31,8 +31,7 @@ export function generateGlobe(): GlobeGeometry {
       for (const polygon of countryPolygons(shape)) {
         const center = geoCentroid({ type: 'Polygon', coordinates: polygon });
         const normal = toCartesian(center);
-        // Gnomonic projection turns great-circle edges into straight lines,
-        // including across the antimeridian and around either pole.
+        // Gnomonic projection keeps great-circle edges straight.
         const project = geoGnomonic()
           .rotate([-center[0], -center[1]])
           .scale(1)

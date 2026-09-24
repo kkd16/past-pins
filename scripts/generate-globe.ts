@@ -1,8 +1,7 @@
 import { generateGlobe } from './globe-geometry';
 
 const path = new URL('../src/globe/world.json', import.meta.url);
-// Nine significant digits preserve GPU float precision without bundling
-// unnecessary double-precision decimal tails.
+// Nine significant digits retain GPU float precision.
 const generated =
   JSON.stringify(generateGlobe(), (_key, value) =>
     typeof value === 'number' ? Number(value.toPrecision(9)) : value,

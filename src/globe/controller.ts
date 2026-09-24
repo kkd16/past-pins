@@ -1,7 +1,6 @@
 import { GlobeCamera } from './camera';
 import type { GlobeRenderer } from './renderer';
 
-// Owns the frame loop independently of React. Idle and hidden globes do no work.
 export class GlobeController {
   readonly camera = new GlobeCamera();
   private renderer: GlobeRenderer | null = null;
@@ -11,7 +10,6 @@ export class GlobeController {
   private active = false;
   private reduceMotion = true;
   private visitedIds: ReadonlySet<string> = new Set();
-  private selectedId: string | null = null;
   private colorsDirty = true;
 
   constructor(private readonly onError: (error: unknown) => void) {}
@@ -28,9 +26,9 @@ export class GlobeController {
   }
 
   detach() {
-    this.stop();
     this.renderer?.dispose();
     this.renderer = null;
+    this.stop();
   }
 
   setActive(active: boolean) {
@@ -42,12 +40,10 @@ export class GlobeController {
   setReduceMotion(enabled: boolean) {
     this.reduceMotion = enabled;
     if (enabled) this.stop();
-    this.invalidate();
   }
 
-  setColors(visitedIds: ReadonlySet<string>, selectedId: string | null) {
+  setColors(visitedIds: ReadonlySet<string>) {
     this.visitedIds = visitedIds;
-    this.selectedId = selectedId;
     this.colorsDirty = true;
     this.invalidate();
   }
@@ -58,9 +54,8 @@ export class GlobeController {
   }
 
   reset() {
-    this.stop();
     this.camera.reset();
-    this.invalidate();
+    this.stop();
   }
 
   drag(dx: number, dy: number) {
@@ -75,7 +70,6 @@ export class GlobeController {
 
   coast(x: number, y: number) {
     if (this.reduceMotion || !this.active) return;
-    // Cap flick speed; velocity is in screen points per second.
     const scale = Math.min(1, 1600 / Math.max(1, Math.hypot(x, y)));
     this.velocity = { x: x * scale, y: y * scale };
     this.lastTime = null;
@@ -87,6 +81,7 @@ export class GlobeController {
     this.frame = null;
     this.lastTime = null;
     this.velocity = { x: 0, y: 0 };
+    this.invalidate();
   }
 
   private invalidate() {
@@ -109,7 +104,7 @@ export class GlobeController {
     this.velocity.y *= decay;
     try {
       if (this.colorsDirty) {
-        this.renderer.setColors(this.visitedIds, this.selectedId);
+        this.renderer.setColors(this.visitedIds);
         this.colorsDirty = false;
       }
       this.renderer.draw(this.camera);

@@ -4,7 +4,6 @@ import { useCallback, useLayoutEffect, useRef } from 'react';
 import type { GlobeController } from './controller';
 import { createGlobeRenderer } from './renderer';
 
-// Keep GPU resource ownership tied to the native surface, including retries.
 export function GlobeSurface({
   controller,
   onError,
@@ -15,16 +14,11 @@ export function GlobeSurface({
   const mounted = useRef(false);
   useLayoutEffect(() => {
     mounted.current = true;
-    const timeout = setTimeout(() => {
-      if (!controller.ready)
-        onError(new Error('Globe initialization timed out.'));
-    }, 10000);
     return () => {
       mounted.current = false;
-      clearTimeout(timeout);
       controller.detach();
     };
-  }, [controller, onError]);
+  }, [controller]);
 
   const createContext = useCallback(
     (gl: ExpoWebGLRenderingContext) => {

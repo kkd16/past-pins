@@ -14,7 +14,6 @@ export const defaultCountryFilters: CountryFilters = {
   grouping: 'continent',
 };
 
-// Route inputs are untrusted, including links opened from outside the app.
 export function readCountryFilters(params: {
   continent?: string | string[];
   grouping?: string | string[];

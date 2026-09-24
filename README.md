@@ -38,13 +38,13 @@ The root mounts one `VisitsProvider` with an injected `VisitStorage`. All tabs a
 
 `catalog.ts` joins polygon data from `@rembish/iso-topojson/iso-a2.json` to `countries-list` continent metadata by ISO alpha-2 code. The current map contains 250 places, including countries, dependent territories, Antarctica, and Kosovo. This is the map's catalog, not a count of sovereign states. Names and boundaries follow the map package; primary continent assignments follow the metadata package.
 
-There are no place-specific overrides, manually maintained geographic tables, or runtime geographic downloads. `geography.ts` converts the published topology to features. The catalog joins those features to country metadata independently of the renderer. Country picking intersects the front of the sphere and checks the original geographic polygons; small places can also be selected through Countries.
+`geography.ts` converts the published topology to features. The catalog joins them to country metadata independently of rendering. Picking checks the front of the sphere against the original polygons; small places can also be selected through Countries. All geographic data is bundled, with no place-specific overrides.
 
-`bun run globe:generate` builds the checked-in `src/globe/world.json`. Each polygon is projected onto its own tangent plane with a gnomonic projection, which preserves great-circle edges as straight lines across poles and the antimeridian. Earcut triangulates the boundary and holes, then shared spherical midpoints subdivide long edges. Features with zero area get a marker at their source centroid. Generation rejects missing coverage or geometry outside its projection hemisphere rather than silently omitting places. `bun run globe:check` verifies the asset is current; tests compare country surface areas and triangle interiors against the source.
+`bun run globe:generate` builds `src/globe/world.json` using gnomonic projection, Earcut, and shared spherical edge subdivision. Zero-area features get a marker at their source centroid. Generation checks coverage and projection bounds. `bun run globe:check` detects stale assets; tests compare country areas and triangle interiors against the source.
 
-Expo GL uploads the geometry once and draws the ocean, land, boundaries, and markers in four batches. Rotation uses cached vertices and GPU shaders. Drag and pinch update the camera without React renders. The frame loop runs only for changes and brief drag inertia, stops when the tab is hidden or the app is backgrounded, and honors Reduce Motion. No WebView, mapping service, API key, account, custom development build, or paid service is required.
+Expo GL draws cached geometry in four batches. Gestures update the camera without React renders. Frames run on changes and during inertia, stop while hidden or backgrounded, and honor Reduce Motion. The renderer works in Expo Go without a mapping service or account.
 
-The globe starts facing the Atlantic at 120% of the shorter viewport dimension. Pinch out to see the complete sphere, zoom in for country detail, or reset the original view. Missing metadata and duplicate IDs remain errors. There is no renderer fallback or legacy map implementation.
+The globe starts facing the Atlantic at 120% of the shorter viewport dimension. Pinch out for the whole sphere, zoom in for detail, or reset the original view.
 
 ## Visits
 
@@ -70,6 +70,6 @@ Bun tests cover catalog joins, geometry coverage and winding, camera/picking, fr
 
 ## Attribution
 
-Map data © 2026 Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on [Natural Earth](https://www.naturalearthdata.com/) public-domain data. PastPins projects the supplied geometry and changes its styling and visit/selection colors.
+Map data © 2026 Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on [Natural Earth](https://www.naturalearthdata.com/) public-domain data. PastPins projects the supplied geometry and changes its styling and visit colors.
 
 Continent metadata comes from [Countries by Annexare](https://github.com/annexare/Countries), MIT licensed. Geometry generation uses [Earcut](https://github.com/mapbox/earcut), ISC licensed. Attribution and bundled notices for the map, metadata, geometry, graphics, gestures, and segmented-control dependencies are accessible in Stats. `licenses/map-and-controls.json` contains the installed packages’ license text; refresh it from their `LICENSE` files when updating those dependencies.

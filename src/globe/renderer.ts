@@ -101,20 +101,15 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
     const border = rgb(theme.color.background);
     const unvisited = rgb(theme.color.land);
     const visited = rgb(theme.color.accent);
-    const selected = rgb(theme.color.text);
 
     if (gl.getError() !== gl.NO_ERROR)
       throw new Error('Could not upload globe geometry.');
 
     return {
       dispose,
-      setColors(visitedIds: ReadonlySet<string>, selectedId: string | null) {
+      setColors(visitedIds: ReadonlySet<string>) {
         const color = (id: string) =>
-          id === selectedId
-            ? selected
-            : visitedIds.has(id)
-              ? visited
-              : unvisited;
+          visitedIds.has(id) ? visited : unvisited;
         for (const { id, firstVertex, vertexCount } of world.countries) {
           const tint = color(id);
           for (let i = firstVertex; i < firstVertex + vertexCount; i++)

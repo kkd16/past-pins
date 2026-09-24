@@ -1,5 +1,3 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-screens/experimental';
 
@@ -19,28 +17,11 @@ export function MapScreen({
   onOpenCountries: () => void;
 }) {
   const visits = useVisits();
-  const [selectedId, setSelectedId] = useState<CountryId | null>(null);
-  useFocusEffect(
-    useCallback(() => {
-      setSelectedId(null);
-    }, []),
-  );
-  const select = useCallback(
-    (id: CountryId) => {
-      setSelectedId(id);
-      onSelect(id);
-    },
-    [onSelect],
-  );
   const ready = visits.status === 'ready';
 
   return (
     <View style={styles.screen}>
-      <GlobeViewport
-        visitedIds={visits.visitedIds}
-        selectedId={selectedId}
-        onSelect={select}
-      />
+      <GlobeViewport visitedIds={visits.visitedIds} onSelect={onSelect} />
       <SafeAreaView
         style={styles.overlay}
         pointerEvents="box-none"
