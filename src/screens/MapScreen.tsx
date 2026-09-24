@@ -257,7 +257,7 @@ export function MapScreen({
                 </View>
                 {!Object.keys(data.places).length && (
                   <Button
-                    label="Mark your first place"
+                    label="Add a place"
                     onPress={onOpenCountries}
                     variant="quiet"
                   />

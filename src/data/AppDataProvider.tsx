@@ -25,7 +25,7 @@ function confirmHomeChange(id: string): Promise<boolean> {
   return new Promise((resolve) => {
     Alert.alert(
       'Clear current home?',
-      `${countryById.get(id)?.name ?? 'This place'} will no longer be marked as your current home.`,
+      `${countryById.get(id)?.name ?? 'This place'} will no longer be your home.`,
       [
         { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
         { text: 'Update place', onPress: () => resolve(true) },
@@ -49,9 +49,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [store]);
   const announcement =
     snapshot.status === 'load-error'
-      ? 'Could not load your data. Use Try again to retry.'
+      ? 'Couldn’t load your places. Select Try again.'
       : snapshot.saveError
-        ? 'Your latest changes haven’t been saved. Use Retry save to try again.'
+        ? 'Changes haven’t been saved. Select Retry save.'
         : null;
   useEffect(() => {
     if (announcement)

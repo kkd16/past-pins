@@ -113,9 +113,7 @@ export function CountryList({
               {empty.message}
             </AppText>
             <Button
-              label={
-                narrowed ? 'Reset search and filters' : 'Browse all places'
-              }
+              label={narrowed ? 'Clear search & filters' : 'Browse places'}
               variant="quiet"
               onPress={onReset}
             />

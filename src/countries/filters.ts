@@ -87,33 +87,33 @@ export function getEmptyCountriesMessage(
   if (narrowed)
     return {
       title: 'No matching places',
-      message: 'Try another name or change your filters.',
+      message: 'Try another search or filter.',
     };
   switch (scope) {
     case 'wishlist':
       return {
         title: 'Where to next?',
-        message: 'Add places to your wishlist from their country details.',
+        message: 'Choose a place to add to your wishlist.',
       };
     case 'visited':
       return {
-        title: 'Your world starts here',
-        message: 'Mark a place visited to start your collection.',
+        title: 'No visits yet',
+        message: 'Mark your first place Visited.',
       };
     case 'lived':
       return {
-        title: 'Places you’ve called home',
-        message: 'Mark places Lived to keep them together here.',
+        title: 'No lived places yet',
+        message: 'Mark a place Lived to add it here.',
       };
     case 'not-visited':
       return {
         title: 'Every place visited',
-        message: 'You’ve marked every country and territory in the catalog.',
+        message: 'You’ve visited every place on the map.',
       };
     default:
       return {
         title: 'No matching places',
-        message: 'Try another name or change your filters.',
+        message: 'Try another search or filter.',
       };
   }
 }

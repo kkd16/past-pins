@@ -21,7 +21,7 @@ The app targets Expo SDK 57 and uses its bundled native modules. Start Expo once
 - **Countries:** search, group by continent or alphabetically, and choose All, Visited, Wishlist, Lived, or Not visited. Continent filters use Cancel/Apply. Select mode updates multiple results together; changing the search or result set clears selection.
 - **Details:** edit status and current home, read available capital/language/currency facts, or Show on map. Changes save immediately. There are no dates, notes, or timelines.
 - **Stats:** visited, wishlist, lived, remaining, and continent summaries open matching country lists. Percentages count catalog places rather than land area. The gear opens Settings.
-- **Settings:** choose map preferences, labels, summary, home, list organization, and haptics. Export or restore a backup, clear travel data, reset preferences, and read help, version/build details, credits, and offline licenses.
+- **Settings:** choose map preferences, home, list organization, and haptics. Export or restore a backup, clear travel data, and reset preferences. About includes app and data versions, project/profile links, and map credits; license notices are available offline.
 
 A place is unmarked, Wishlist, Visited, or Lived. Lived always counts as Visited; Not visited includes Wishlist. Setting current home marks that country Lived. Moving or clearing home keeps former homes in Lived. Bulk Mark visited preserves existing Lived status; a single-country status menu or details can explicitly downgrade it. Changing the current home’s status away from Lived asks to clear home too.
 
@@ -75,4 +75,4 @@ Before shipping, verify on physical iPhone and iPad:
 - Country edits, bulk actions, home changes, Undo, Stats drilldowns, filter cancellation, and Show on map agree across tabs and survive relaunch where appropriate.
 - Backup export/import cancellation, invalid files, failed saves, and failed restores recover without partial data. Retry remains available and storage errors are announced once when they appear.
 - Native tabs, sheets, search keyboards, and Settings remain usable on short/resizable iPad windows, at the largest Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.
-- After loading the bundle, all geography, facts, editing, help, and license notices work offline. Check smooth native rendering on-device; passing JavaScript tests or an export does not establish iOS visual quality or frame rate.
+- After loading the bundle, all geography, facts, editing, and license notices work offline. Check smooth native rendering on-device; passing JavaScript tests or an export does not establish iOS visual quality or frame rate.

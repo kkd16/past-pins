@@ -43,7 +43,7 @@ export function CountryDetailsScreen({
           <Surface
             style={styles.section}
             accessibilityRole="radiogroup"
-            accessibilityLabel="Your connection"
+            accessibilityLabel="Status"
           >
             <AppText
               variant="label"
@@ -51,7 +51,7 @@ export function CountryDetailsScreen({
               accessibilityRole="header"
               style={styles.sectionLabel}
             >
-              Your connection
+              Status
             </AppText>
             {statusOptions.map(({ value, label }) => (
               <ChoiceRow
@@ -65,14 +65,14 @@ export function CountryDetailsScreen({
               />
             ))}
             <AppText variant="caption" tone="muted" style={styles.sectionLabel}>
-              Lived places also count as visited.
+              Lived counts as Visited.
             </AppText>
           </Surface>
           <Surface style={styles.home}>
             <View style={styles.label}>
               <AppText variant="label">Current home</AppText>
               <AppText variant="caption" tone="muted">
-                You can have one current home. Previous homes stay marked Lived.
+                One current home. Former homes stay Lived.
               </AppText>
             </View>
             <Switch

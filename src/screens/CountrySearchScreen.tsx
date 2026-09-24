@@ -60,7 +60,7 @@ export function CountrySearchScreen({
         }
         ListEmptyComponent={
           <AppText tone="muted" style={styles.empty}>
-            No countries found. Try another name.
+            No matching countries.
           </AppText>
         }
         renderItem={({ item }) => {

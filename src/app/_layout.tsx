@@ -22,6 +22,7 @@ export default function RootLayout() {
           screenOptions={{
             headerStyle: { backgroundColor: theme.color.background },
             headerTintColor: theme.color.accent,
+            headerBackButtonDisplayMode: 'minimal',
             headerTitleStyle: { color: theme.color.text },
             headerShadowVisible: false,
             contentStyle: { backgroundColor: theme.color.background },
@@ -37,14 +38,6 @@ export default function RootLayout() {
             options={{ title: 'Current home' }}
           />
           <Stack.Screen name="settings/about" options={{ title: 'About' }} />
-          <Stack.Screen
-            name="settings/help"
-            options={{ title: 'Help & controls' }}
-          />
-          <Stack.Screen
-            name="settings/credits"
-            options={{ title: 'Credits' }}
-          />
           <Stack.Screen
             name="settings/licenses"
             options={{ title: 'Open-source licenses' }}

@@ -32,7 +32,7 @@ function confirm(
 export function SettingsScreen({
   onOpen,
 }: {
-  onOpen: (page: 'home' | 'about' | 'help' | 'credits' | 'licenses') => void;
+  onOpen: (page: 'home' | 'about' | 'licenses') => void;
 }) {
   const {
     data,
@@ -78,7 +78,7 @@ export function SettingsScreen({
     if (
       await confirm(
         'Replace with this backup?',
-        `${visited} visited · ${lived} lived · ${wishlist} wishlist\nHome: ${home}\n\nThis replaces all your places, home, and settings. It cannot be undone.`,
+        `${visited} visited · ${lived} lived · ${wishlist} wishlist\nHome: ${home}\n\nReplaces your places, home, and settings. Cannot be undone.`,
         'Replace data',
       )
     ) {
@@ -93,10 +93,7 @@ export function SettingsScreen({
         contentContainerStyle={styles.content}
       >
         <DataFeedback />
-        <SettingsSection
-          title="Your atlas"
-          description="The view you choose on the map is remembered here too."
-        >
+        <SettingsSection title="Map">
           <ChoiceRow
             label="Globe"
             selected={prefs.mapView === 'globe'}
@@ -116,15 +113,15 @@ export function SettingsScreen({
             onChange={(countryLabels) => updatePreferences({ countryLabels })}
           />
           <SettingsToggle
-            title="Travel summary on map"
+            title="Travel summary"
             value={prefs.mapSummary}
             disabled={disabled}
             onChange={(mapSummary) => updatePreferences({ mapSummary })}
           />
         </SettingsSection>
         <SettingsSection
-          title="Your places"
-          description="Current home counts as Lived and Visited. Former homes stay in Lived."
+          title="Home"
+          description="Home counts as Lived and Visited. Former homes stay Lived."
         >
           <SettingsRow
             title="Current home"
@@ -140,7 +137,7 @@ export function SettingsScreen({
         </SettingsSection>
         <SettingsSection title="Country list">
           <ChoiceRow
-            label="Group by continent"
+            label="By continent"
             selected={prefs.countryGrouping === 'continent'}
             disabled={disabled}
             onPress={() => updatePreferences({ countryGrouping: 'continent' })}
@@ -164,7 +161,7 @@ export function SettingsScreen({
         </SettingsSection>
         <SettingsSection
           title="Your data"
-          description="Your places are saved on this device. Export a backup to keep a copy in Files or move it to another device."
+          description="Saved on this device. Export a backup to keep a copy."
         >
           <SettingsRow
             title="Export backup"
@@ -174,7 +171,7 @@ export function SettingsScreen({
           />
           <SettingsRow
             title="Restore backup"
-            value="Preview a backup before replacing your data"
+            value="Preview, then replace your data"
             disabled={busy || working || status === 'loading'}
             onPress={() => void run(importBackup)}
           />
@@ -187,7 +184,7 @@ export function SettingsScreen({
                 if (
                   await confirm(
                     'Clear all travel data?',
-                    'This removes Visited, Wishlist, Lived, and your current home. Your settings stay the same. It cannot be undone.',
+                    'Removes all places and home. Keeps your settings. Cannot be undone.',
                     'Clear travel data',
                   )
                 )
@@ -203,7 +200,7 @@ export function SettingsScreen({
                 if (
                   await confirm(
                     'Reset preferences?',
-                    'Restore the default map, labels, summary, grouping, and haptics. Your travel data and home stay the same.',
+                    'Resets settings to defaults. Keeps your places and home.',
                     'Reset preferences',
                   )
                 )
@@ -213,21 +210,11 @@ export function SettingsScreen({
           />
         </SettingsSection>
         <UndoNotice />
-        <SettingsSection title="About Past Pins">
-          <SettingsRow
-            title="Help & controls"
-            disclosure
-            onPress={() => onOpen('help')}
-          />
+        <SettingsSection title="App">
           <SettingsRow
             title="About"
             disclosure
             onPress={() => onOpen('about')}
-          />
-          <SettingsRow
-            title="Credits & map sources"
-            disclosure
-            onPress={() => onOpen('credits')}
           />
           <SettingsRow
             title="Open-source licenses"

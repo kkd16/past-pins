@@ -130,21 +130,21 @@ export function CountriesScreen({
               <SearchField
                 value={query}
                 onChangeText={onQueryChange}
-                placeholder="Find a country or territory"
+                placeholder="Search countries"
                 accessibilityLabel="Search countries and territories"
                 onSubmitEditing={Keyboard.dismiss}
               />
               <CountryScopeControl value={scope} onChange={onScopeChange} />
               <View style={styles.selectionActions}>
-                <AppText
-                  variant="caption"
-                  tone="muted"
-                  style={styles.selectionLabel}
-                >
-                  {selecting
-                    ? selectedIds.size + ' selected'
-                    : 'Your places, your story.'}
-                </AppText>
+                {selecting && (
+                  <AppText
+                    variant="caption"
+                    tone="muted"
+                    style={styles.selectionLabel}
+                  >
+                    {selectedIds.size} selected
+                  </AppText>
+                )}
                 <Button
                   label={selecting ? 'Cancel' : 'Select'}
                   variant="quiet"
@@ -227,6 +227,7 @@ const styles = StyleSheet.create({
   controls: { gap: theme.space.md, paddingBottom: theme.space.md },
   selectionActions: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     gap: theme.space.md,
   },

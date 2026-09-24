@@ -20,8 +20,8 @@ export function DataFeedback() {
     <Surface style={styles.notice}>
       <AppText variant="caption">
         {status === 'load-error'
-          ? 'Could not load your places. Try again.'
-          : 'Your latest changes haven’t been saved.'}
+          ? 'Couldn’t load your places.'
+          : 'Changes haven’t been saved.'}
       </AppText>
       <Button
         label={status === 'load-error' ? 'Try again' : 'Retry save'}

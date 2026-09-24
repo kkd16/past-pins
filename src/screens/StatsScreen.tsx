@@ -91,10 +91,7 @@ export function StatsScreen({
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={styles.content}
       >
-        <ScreenHeader
-          title="Your world"
-          subtitle="Every place, part of your story."
-        >
+        <ScreenHeader title="Your world">
           <IconButton
             name="settings"
             accessibilityLabel="Settings"
@@ -121,9 +118,7 @@ export function StatsScreen({
               {loading ? '—' : String(stats.visited)}
             </AppText>
             <AppText tone="muted">
-              {loading
-                ? 'Loading your world…'
-                : stats.percent.toFixed(1) + '% of the world’s places'}
+              {loading ? 'Loading…' : stats.percent.toFixed(1) + '% visited'}
             </AppText>
           </Surface>
         </Pressable>
@@ -137,13 +132,13 @@ export function StatsScreen({
             },
             {
               scope: 'lived' as const,
-              label: 'Places lived',
+              label: 'Lived',
               value: stats.lived,
               color: theme.color.lived,
             },
             {
               scope: 'not-visited' as const,
-              label: 'Places remaining',
+              label: 'Remaining',
               value: stats.remaining,
               color: theme.color.accent,
             },
@@ -172,7 +167,7 @@ export function StatsScreen({
             />
           ) : (
             <Button
-              label="Choose your home"
+              label="Choose home"
               variant="quiet"
               disabled={loading}
               onPress={onChooseHome}
@@ -212,8 +207,8 @@ export function StatsScreen({
           ))}
         </Surface>
         <AppText variant="caption" tone="muted" style={styles.explanation}>
-          Progress counts countries and territories in the catalog, not land
-          area. Lived places count as visited.
+          Counts countries and territories, not land area. Lived counts as
+          Visited.
         </AppText>
       </ScrollView>
     </Screen>
