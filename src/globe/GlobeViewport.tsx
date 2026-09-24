@@ -64,6 +64,8 @@ export function GlobeViewport({
         controller.move(() =>
           camera.focus(country.anchor, country.angularRadius),
         );
+    } else if (command.type === 'location') {
+      controller.move(() => camera.focus(command.point, 0.1));
     } else if (command.type === 'north') controller.northUp();
     else controller.reset();
     onCommandApplied(command.key);

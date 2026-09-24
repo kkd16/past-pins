@@ -9,6 +9,7 @@ import { AppDataProvider } from '../data/AppDataProvider';
 import { AppToastHost } from '../feedback/AppToastHost';
 import { ToastProvider } from '../feedback/ToastProvider';
 import { ReducedMotionProvider } from '../motion/ReducedMotion';
+import { LocationSuggestions } from '../location/LocationSuggestions';
 import { theme } from '../theme';
 
 export const unstable_settings = { anchor: '(tabs)' };
@@ -82,6 +83,7 @@ export default function RootLayout() {
               />
             </Stack>
             <AppToastHost />
+            <LocationSuggestions />
           </AppDataProvider>
         </ToastProvider>
       </ReducedMotionProvider>

@@ -1,6 +1,7 @@
 import type { AppData } from '../data/model';
 
 export type AtlasCommand =
+  | { key: string | number; type: 'location'; point: [number, number] }
   | { key: string | number; type: 'focus'; id: string }
   | { key: string | number; type: 'reset' | 'north' };
 

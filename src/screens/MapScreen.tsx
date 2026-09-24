@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
+  AppState,
   ScrollView,
   StyleSheet,
   View,
@@ -17,6 +19,9 @@ import { WorldMapViewport } from '../atlas/WorldMapViewport';
 import { DataFeedback } from '../components/DataFeedback';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
+import { UserFacingError } from '../data/errors';
+import { t } from '../localization';
+import { getCurrentLocation } from '../location/current-location';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
@@ -43,7 +48,7 @@ export function MapScreen({
   // Reuse each renderer after its first visit; inactive views do no frame work.
   const [loaded, setLoaded] = useState({ globe: false, map: false });
   if (ready && !loaded[mode]) setLoaded({ ...loaded, [mode]: true });
-  const homeCountryId = data.homeCountryId;
+  const [locating, setLocating] = useState(false);
   const [globe] = useState(() => new GlobeCamera());
   const [flat] = useState(() => new FlatCamera());
   const [selection, setSelection] = useState<{
@@ -59,11 +64,26 @@ export function MapScreen({
   const largeText = fontScale > theme.accessibility.largeTextScale;
   const screenReader = useScreenReaderEnabled();
   const dockSelection = largeText || screenReader;
-  const focusCountry = useCallback((id: string) => {
-    setSelection({ id, anchor: null });
-    const key = ++sequence.current;
-    setCommand({ type: 'focus', id, key });
-  }, []);
+  async function focusLocation() {
+    if (locating) return;
+    setLocating(true);
+    try {
+      const point = await getCurrentLocation();
+      if (AppState.currentState !== 'active') return;
+      setSelection(null);
+      setCommand({ type: 'location', point, key: ++sequence.current });
+    } catch (error) {
+      if (AppState.currentState === 'active')
+        Alert.alert(
+          t('location.unavailableTitle'),
+          error instanceof UserFacingError
+            ? error.message
+            : t('location.unavailableMessage'),
+        );
+    } finally {
+      setLocating(false);
+    }
+  }
   const incomingFocus = useMemo(
     () =>
       focus && ready && countryById.has(focus)
@@ -156,9 +176,8 @@ export function MapScreen({
               disabled={!ready || app.busy}
               onChangeMode={(mapView) => app.updatePreferences({ mapView })}
               onSearch={onSearch}
-              onHome={
-                homeCountryId ? () => focusCountry(homeCountryId) : undefined
-              }
+              onLocation={focusLocation}
+              locating={locating}
               onNorth={() =>
                 setCommand({ type: 'north', key: ++sequence.current })
               }

@@ -31,7 +31,8 @@ Reset leaves other projects' Metro caches and Watchman watches alone. The `react
 
 ## Product flows
 
-- **Map:** switch between the native GL globe and an Equal Earth world map. Each keeps its own camera during the session. Drag, pinch, and—with the globe—twist two fingers. Search or Go home focuses a country; North up straightens the globe; Fit world restores the flat overview.
+- **Map:** switch between the native GL globe and an Equal Earth world map. Each keeps its own camera during the session. Drag, pinch, and—with the globe—twist two fingers. Search focuses a country; Current location centers the device’s coordinates; North up straightens the globe; Fit world restores the flat overview.
+- **Location suggestions:** on launch and return from the background, request optional When In Use location access and look up the current country with iOS reverse geocoding. Offer to mark it Visited only when it is neither Visited nor Lived. Confirmation uses the usual save and Undo flow. Each country is suggested at most once per session. Unavailable locations, denied permission, and unsuccessful country lookups are silent on open; the map button explains location failures. Country lookup may need a network connection; it does not block map positioning. Coordinates are not saved or included in backups.
 - **Country selection:** tap a place for a small anchored name/status callout, then tap the callout for details. Closing details preserves selection and camera. Tap ocean to dismiss selection. Labels are sparse and automatically placed.
 - **Countries:** search, group by continent or alphabetically, and choose All, Visited, Wishlist, Lived, or Not visited. Continent filters use Cancel/Apply. Select mode updates multiple results together; changing the search or result set clears selection.
 - **Details:** edit status and current home, read available capital/language/currency facts, or Show on map. Changes save immediately. There are no dates, notes, or timelines.
@@ -48,6 +49,7 @@ Undo appears in a toast after an individual, bulk, or home edit and restores tha
 - `src/screens/`: page composition and connected navigation flows. Search typing stays local; route parameters carry navigation requests, scope, and continent. Grouping is a persisted preference.
 - `src/countries/`: authoritative catalog joins, country facts, pure search/filter/statistics functions, and country controls.
 - `src/data/`: the app snapshot, pure status/home transitions, current-format backup validation, and one shared store/provider with Undo.
+- `src/location/`: shared foreground location lookup and launch/resume visit suggestions. No background tracking or location history.
 - `src/storage/`: serialized snapshot persistence through Expo SQLite key-value storage.
 - `src/atlas/`: map toolbar and summary, shared selection, colors, label/callout placement, and the flat camera/renderer. `src/globe/` owns spherical camera math, GPU geometry, picking, gestures, and rendering. Only the active view mounts.
 - `src/settings/`: small settings layouts and native backup file operations. `src/components/` and `src/theme.ts` centralize reusable controls, typography, spacing, surfaces, state colors, and appearance. `AppPressable` supplies touch targets and interaction feedback while forwarding native props; `ChoiceSection` and `ToggleRow` keep radio groups and native switches consistent across screens.
@@ -60,7 +62,7 @@ One `AppDataProvider` owns statuses, current home, and preferences. Rows receive
 
 The store is new and app-owned. There are no migrations or legacy readers. Backups contain the full persistent snapshot and accept only the current format. Import validates before offering a count preview, then replaces the stored snapshot before publishing it. A failed restore preserves current state. Clearing travel data keeps preferences; resetting preferences keeps places and home.
 
-Map mode, labels, summary, haptics, and list organization persist across launches. Cameras, selections, search/filter state, and Undo are session-only. No accounts, location permission, remote tiles, or cloud sync are required. Expo Go still needs Metro to load a fresh development bundle.
+Map mode, labels, summary, haptics, and list organization persist across launches. Cameras, selections, search/filter state, and Undo are session-only. Location permission is optional; browsing and editing work without it. No accounts, remote tiles, or cloud sync are required. Expo Go still needs Metro to load a fresh development bundle. `app.config.ts` adds the location plugin with permission text from the English JSON resources; rebuild existing iOS development clients after installing this native module.
 
 ## Geography and notices
 
@@ -92,6 +94,7 @@ Before shipping, verify on physical iPhone and iPad:
 - Globe/world-map switching preserves each camera. Drag, focal pinch, twist, north-up, search focus, and fit controls work across zoom limits, poles, and the antimeridian. Idle/background views stop rendering.
 - Callouts remain readable inside safe areas, follow selection, hide behind the globe or outside the viewport, and return after details. Small islands, polygon holes, and overseas territories remain selectable.
 - Country edits, bulk actions, home changes, Undo, Stats drilldowns, filter cancellation, and Show on map agree across tabs and survive relaunch where appropriate.
+- Location: test Allow Once, While Using, denial, disabled services, approximate location, no location fix, and offline country lookup. Launch/resume suggests unmarked or wishlisted countries, skips Visited/Lived, and does not repeat a dismissed country during that session. Confirm and Undo agree across tabs. Current location works with no saved home and centers the actual coordinates in both map modes. Check the location button with VoiceOver and large text on iPhone and short iPad windows.
 - Toasts remain reachable above sheets, expire after repeated edits, and leave the rest of the screen accessible to VoiceOver. Check long text, large Dynamic Type, Reduce Motion, and short iPad windows.
 - Backup export/import cancellation, invalid files, failed saves, and failed restores recover without partial data. Retry remains available and storage errors are announced once when they appear.
 - Native tabs, sheets, search keyboards, and Settings remain usable on short/resizable iPad windows, at the largest Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.

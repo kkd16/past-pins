@@ -14,7 +14,8 @@ export function MapToolbar({
   disabled,
   onChangeMode,
   onSearch,
-  onHome,
+  onLocation,
+  locating,
   onNorth,
   onReset,
 }: {
@@ -23,7 +24,8 @@ export function MapToolbar({
   disabled: boolean;
   onChangeMode: (mode: Preferences['mapView']) => void;
   onSearch: () => void;
-  onHome?: () => void;
+  onLocation: () => void;
+  locating: boolean;
   onNorth: () => void;
   onReset: () => void;
 }) {
@@ -79,14 +81,16 @@ export function MapToolbar({
         />
       </View>
       <View style={styles.actions}>
-        {onHome && (
-          <IconButton
-            name="home"
-            accessibilityLabel={t('atlas.goHome')}
-            onPress={onHome}
-            style={styles.control}
-          />
-        )}
+        <IconButton
+          name="location"
+          accessibilityLabel={
+            locating ? t('location.locating') : t('location.goToLocation')
+          }
+          accessibilityState={{ busy: locating }}
+          disabled={disabled || locating}
+          onPress={onLocation}
+          style={styles.control}
+        />
         {mode === 'globe' && (
           <IconButton
             name="north"

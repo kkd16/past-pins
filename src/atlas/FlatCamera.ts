@@ -86,6 +86,11 @@ export class FlatCamera {
     this.clamp();
   }
 
+  focusLocation(point: [number, number]) {
+    this.zoom = 8;
+    this.center = projection(point)!;
+  }
+
   project(point: readonly number[]) {
     const projected = projection(point as [number, number]);
     return projected ? this.projectPoint(projected) : null;

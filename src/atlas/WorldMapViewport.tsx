@@ -46,9 +46,11 @@ export function WorldMapViewport({
   useViewportLifecycle(controller, active);
   useEffect(() => {
     if (!active || !sized || !command) return;
-    controller.move(() =>
-      command.type === 'focus' ? camera.focus(command.id) : camera.fitWorld(),
-    );
+    controller.move(() => {
+      if (command.type === 'focus') camera.focus(command.id);
+      else if (command.type === 'location') camera.focusLocation(command.point);
+      else camera.fitWorld();
+    });
     onCommandApplied(command.key);
   }, [active, camera, command, controller, sized, onCommandApplied]);
   const { onSelect } = props;
