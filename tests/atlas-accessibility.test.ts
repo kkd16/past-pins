@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import { FlatCamera } from '../src/atlas/FlatCamera';
 import { FlatController } from '../src/atlas/FlatController';
@@ -6,8 +6,8 @@ import { mapAccessibility } from '../src/atlas/mapAccessibility';
 import { GlobeCamera } from '../src/globe/camera';
 import { GlobeController } from '../src/globe/controller';
 
-function actions(controller: FlatController | GlobeController) {
-  const props = mapAccessibility(controller, 'Map');
+function actions(controller: Parameters<typeof mapAccessibility>[0]) {
+  const props = mapAccessibility(controller, 'Map', controller.camera.zoom);
   return {
     props,
     perform(actionName: string) {
@@ -18,6 +18,21 @@ function actions(controller: FlatController | GlobeController) {
 }
 
 describe('map accessibility actions', () => {
+  test('cached actions use current camera dimensions and zoom', () => {
+    const controller = {
+      camera: { width: 390, height: 844, zoom: 1.2 },
+      stop: mock(),
+      drag: mock(),
+      zoom: mock(),
+    };
+    const { perform } = actions(controller);
+    Object.assign(controller.camera, { width: 1000, height: 600, zoom: 4 });
+    perform('increment');
+    expect(controller.zoom).toHaveBeenCalledWith(5, 500, 300, 500, 300);
+    perform('left');
+    expect(controller.drag).toHaveBeenCalledWith(-150, 0);
+  });
+
   test('globe actions zoom and pan without touch gestures and respect camera bounds', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);

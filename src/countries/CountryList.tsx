@@ -14,6 +14,10 @@ import {
 } from './filters';
 import type { Country, CountryId } from './types';
 
+function ItemSeparator() {
+  return <View style={styles.separator} />;
+}
+
 export function CountryList({
   header,
   sections,
@@ -126,7 +130,7 @@ export function CountryList({
           )}
         </>
       }
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ItemSeparatorComponent={ItemSeparator}
       ListEmptyComponent={
         ready ? (
           <View style={styles.empty}>

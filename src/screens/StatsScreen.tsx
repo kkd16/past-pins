@@ -15,7 +15,6 @@ import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Surface } from '../components/Surface';
-import { UndoNotice } from '../components/UndoNotice';
 import { countryById } from '../countries/catalog';
 import type { CountryScope } from '../countries/filters';
 import { ProgressSummary } from '../countries/ProgressSummary';
@@ -102,7 +101,6 @@ export function StatsScreen({
           />
         </ScreenHeader>
         <DataFeedback />
-        <UndoNotice />
         <AppPressable
           accessibilityLabel={
             loading

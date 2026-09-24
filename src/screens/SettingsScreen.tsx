@@ -5,11 +5,11 @@ import { ChoiceRow } from '../components/ChoiceRow';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { ToggleRow } from '../components/ToggleRow';
-import { UndoNotice } from '../components/UndoNotice';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { isVisited } from '../data/model';
 import { UserFacingError } from '../data/errors';
+import { useToast } from '../feedback/ToastProvider';
 import { formatNumber, t } from '../localization';
 import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
@@ -39,6 +39,7 @@ export function SettingsScreen({
 }: {
   onOpen: (page: 'home' | 'about' | 'licenses') => void;
 }) {
+  const { showToast } = useToast();
   const {
     data,
     status,
@@ -96,10 +97,7 @@ export function SettingsScreen({
       )
     ) {
       await restore(backup);
-      Alert.alert(
-        t('settings.backupRestored'),
-        t('settings.backupRestoredMessage'),
-      );
+      showToast({ message: t('settings.backupRestored') });
     }
   }
 
@@ -209,8 +207,10 @@ export function SettingsScreen({
                     t('settings.clearTravelMessage'),
                     t('settings.clearTravel'),
                   )
-                )
+                ) {
                   await clearTravel();
+                  showToast({ message: t('settings.travelCleared') });
+                }
               })
             }
           />
@@ -226,13 +226,14 @@ export function SettingsScreen({
                     t('settings.resetMessage'),
                     t('settings.resetPreferences'),
                   )
-                )
+                ) {
                   resetPreferences();
+                  showToast({ message: t('settings.preferencesReset') });
+                }
               })
             }
           />
         </SettingsSection>
-        <UndoNotice />
         <SettingsSection title={t('settings.app')}>
           <SettingsRow
             title={t('common.about')}

@@ -53,6 +53,10 @@ export function GlobeViewport({
     () => globeGestures(controller, props.onSelect),
     [controller, props.onSelect],
   );
+  const accessibility = useMemo(
+    () => mapAccessibility(controller, t('atlas.globe'), camera.zoom),
+    [controller, camera.zoom],
+  );
   return (
     <View
       style={styles.fill}
@@ -65,7 +69,7 @@ export function GlobeViewport({
       {!failed && (
         <GestureDetector gesture={gesture}>
           <View
-            {...mapAccessibility(controller, t('atlas.globe'))}
+            {...accessibility}
             style={styles.fill}
             collapsable={false}
           >

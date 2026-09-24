@@ -69,7 +69,10 @@ export function changeHome(data: AppData, id: string | null): AppData {
   if (data.homeCountryId === id) return data;
   return {
     ...data,
-    places: id ? { ...data.places, [id]: 'lived' } : data.places,
+    places:
+      id && data.places[id] !== 'lived'
+        ? { ...data.places, [id]: 'lived' }
+        : data.places,
     homeCountryId: id,
   };
 }

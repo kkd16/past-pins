@@ -37,8 +37,13 @@ describe('travel statuses', () => {
     data = changeHome(data, 'fr');
     expect(data.places).toEqual({ ca: 'lived', fr: 'lived' });
     expect(data.homeCountryId).toBe('fr');
+    const places = data.places;
+    data = changeHome(data, 'ca');
+    expect(data.homeCountryId).toBe('ca');
+    expect(data.places).toBe(places);
     data = changeHome(data, null);
     expect(data.homeCountryId).toBeNull();
+    expect(data.places).toBe(places);
     expect(data.places).toEqual({ ca: 'lived', fr: 'lived' });
   });
 

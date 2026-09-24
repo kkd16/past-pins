@@ -12,12 +12,14 @@ function fixture() {
   let writeFailure = false;
   let confirm = true;
   let confirmations = 0;
+  let writes = 0;
   const feedback: boolean[] = [];
   const storage = createSnapshotStorage({
     async getItem() {
       return serialized;
     },
     async setItem(_key, value) {
+      writes++;
       if (writeFailure) throw new Error('Write failed');
       serialized = value;
     },
@@ -40,6 +42,7 @@ function fixture() {
       confirm = value;
     },
     confirmations: () => confirmations,
+    writes: () => writes,
   };
 }
 
@@ -88,13 +91,15 @@ describe('app data owner', () => {
       fr: 'visited',
       jp: 'visited',
     });
+    const pendingUndo = store.getSnapshot().pendingUndo!;
     store.updatePreferences({ mapView: 'map', haptics: false });
-    store.undo();
-    store.undo();
+    expect(store.getSnapshot().pendingUndo).toBe(pendingUndo);
+    expect(store.undo(pendingUndo.id)).toBe(true);
+    expect(store.undo(pendingUndo.id)).toBe(false);
     expect(store.getSnapshot().data.places).toEqual({ ca: 'lived' });
     expect(store.getSnapshot().data.homeCountryId).toBe('ca');
     expect(store.getSnapshot().data.preferences.mapView).toBe('map');
-    expect(store.getSnapshot().undoLabel).toBeNull();
+    expect(store.getSnapshot().pendingUndo).toBeNull();
     expect(feedback).toEqual([true, true, false]);
     await settle(storage);
     expect(await storage.load()).toEqual(store.getSnapshot().data);
@@ -106,13 +111,79 @@ describe('app data owner', () => {
     store.setHome('ca');
     await store.setStatus(['fr'], 'visited');
     await store.setStatus(['ca', 'fr', 'jp', 'jp'], 'visited');
-    expect(store.getSnapshot().undoLabel).toBe('Place updated');
+    const pendingUndo = store.getSnapshot().pendingUndo!;
+    expect(pendingUndo.label).toBe('Place updated');
     await store.setStatus(['ca', 'fr', 'jp'], 'visited');
-    store.undo();
+    expect(store.getSnapshot().pendingUndo).toBe(pendingUndo);
+    store.undo(pendingUndo.id);
     expect(store.getSnapshot().data.places).toEqual({
       ca: 'lived',
       fr: 'visited',
     });
+  });
+
+  test('identical Undo labels have distinct IDs and reject stale actions or dismissal', async () => {
+    const { store } = fixture();
+    await store.load();
+    await store.setStatus(['ca'], 'visited');
+    const first = store.getSnapshot().pendingUndo!;
+    await store.setStatus(['fr'], 'visited');
+    const second = store.getSnapshot().pendingUndo!;
+    expect(second.label).toBe(first.label);
+    expect(second.id).not.toBe(first.id);
+    const current = store.getSnapshot();
+    expect(store.undo(first.id)).toBe(false);
+    store.discardUndo(first.id);
+    expect(store.getSnapshot()).toBe(current);
+    expect(store.undo(second.id)).toBe(true);
+    expect(store.getSnapshot().data.places).toEqual({ ca: 'visited' });
+  });
+
+  test('expiring Undo leaves saved data and feedback untouched', async () => {
+    const f = fixture();
+    await f.store.load();
+    await f.store.setStatus(['ca'], 'visited');
+    await settle(f.storage);
+    const prior = f.store.getSnapshot();
+    const writes = f.writes();
+    f.store.discardUndo(prior.pendingUndo!.id);
+    expect(f.store.getSnapshot()).toEqual({ ...prior, pendingUndo: null });
+    expect(f.store.getSnapshot().data).toBe(prior.data);
+    expect(f.store.undo(prior.pendingUndo!.id)).toBe(false);
+    const expired = f.store.getSnapshot();
+    f.store.discardUndo(prior.pendingUndo!.id);
+    expect(f.store.getSnapshot()).toBe(expired);
+    await settle(f.storage);
+    expect(f.writes()).toBe(writes);
+    expect(f.feedback).toEqual([true]);
+    expect(await f.storage.load()).toEqual(prior.data);
+  });
+
+  test('Undo is blocked while busy but can expire before a new confirmed change', async () => {
+    const confirmation = Promise.withResolvers<boolean>();
+    const f = fixture();
+    const store = createAppDataStore(f.storage, {
+      confirmHomeChange: () => confirmation.promise,
+    });
+    await store.load();
+    store.setHome('ca');
+    const prior = store.getSnapshot();
+    const changing = store.setStatus(['ca'], 'unvisited');
+    expect(store.getSnapshot().busy).toBe(true);
+    expect(store.undo(prior.pendingUndo!.id)).toBe(false);
+    store.discardUndo(prior.pendingUndo!.id);
+    expect(store.getSnapshot()).toEqual({
+      ...prior,
+      busy: true,
+      pendingUndo: null,
+    });
+    confirmation.resolve(true);
+    expect(await changing).toBe(true);
+    const next = store.getSnapshot().pendingUndo!;
+    expect(next.id).not.toBe(prior.pendingUndo!.id);
+    expect(store.undo(prior.pendingUndo!.id)).toBe(false);
+    expect(store.undo(next.id)).toBe(true);
+    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
   });
 
   test('only notifies subscribers when saves change the error state', async () => {
@@ -160,7 +231,7 @@ describe('app data owner', () => {
       places: { ca: 'visited' },
     });
     expect(f.confirmations()).toBe(2);
-    f.store.undo();
+    f.store.undo(f.store.getSnapshot().pendingUndo!.id);
     expect(f.store.getSnapshot().data.homeCountryId).toBe('ca');
   });
 
@@ -208,7 +279,8 @@ describe('app data owner', () => {
     f.failWrites(false);
     await f.store.restore(defaultAppData());
     expect(f.store.getSnapshot().data).toEqual(defaultAppData());
-    expect(f.store.getSnapshot().undoLabel).toBeNull();
+    expect(f.store.getSnapshot().pendingUndo).toBeNull();
+    expect(f.store.undo(prior.pendingUndo!.id)).toBe(false);
   });
 
   test('restore waits for pending writes, gates edits, and cannot be overtaken', async () => {
@@ -302,7 +374,7 @@ describe('app data owner', () => {
     await expect(replacement).rejects.toThrow('Write failed');
     expect(f.store.getSnapshot().saveError).toBe(true);
     expect(f.store.getSnapshot().data.places.ca).toBe('visited');
-    expect(f.store.getSnapshot().undoLabel).not.toBeNull();
+    expect(f.store.getSnapshot().pendingUndo).not.toBeNull();
   });
 
   test('clear travel and reset preferences preserve their separate domains and clear Undo', async () => {
@@ -315,13 +387,13 @@ describe('app data owner', () => {
     expect(f.store.getSnapshot().data.preferences).toEqual(
       defaultAppData().preferences,
     );
-    expect(f.store.getSnapshot().undoLabel).toBeNull();
+    expect(f.store.getSnapshot().pendingUndo).toBeNull();
     f.store.updatePreferences({ mapView: 'map' });
     await f.store.clearTravel();
     expect(f.store.getSnapshot().data.places).toEqual({});
     expect(f.store.getSnapshot().data.homeCountryId).toBeNull();
     expect(f.store.getSnapshot().data.preferences.mapView).toBe('map');
-    expect(f.store.getSnapshot().undoLabel).toBeNull();
+    expect(f.store.getSnapshot().pendingUndo).toBeNull();
   });
 
   test('load errors retain storage and support retry', async () => {

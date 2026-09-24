@@ -4,6 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { theme } from '../theme';
 
 const paths = {
+  close: 'm6 6 12 12M6 18 18 6',
   check: 'm5 12 4 4L19 6',
   search: 'm16 16 4 4',
   reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6',

@@ -12,7 +12,6 @@ import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { UndoNotice } from '../components/UndoNotice';
 import { continents, countryById } from '../countries/catalog';
 import { CountryBulkActions } from '../countries/CountryBulkActions';
 import { CountryList } from '../countries/CountryList';
@@ -174,7 +173,7 @@ export function CountriesScreen({
           setSelection({ filterKey, ids: emptySelection });
         }}
       />
-      {(selecting || app.undoLabel) && (
+      {selecting && (
         <ScrollView
           style={styles.footer}
           bounces={false}
@@ -182,16 +181,12 @@ export function CountriesScreen({
           keyboardShouldPersistTaps="handled"
           scrollsToTop={false}
         >
-          {selecting ? (
-            <CountryBulkActions
-              resultIds={resultIds}
-              selectedIds={selectedIds}
-              onSelectionChange={(ids) => setSelection({ filterKey, ids })}
-              onEndSelection={endSelection}
-            />
-          ) : (
-            <UndoNotice />
-          )}
+          <CountryBulkActions
+            resultIds={resultIds}
+            selectedIds={selectedIds}
+            onSelectionChange={(ids) => setSelection({ filterKey, ids })}
+            onEndSelection={endSelection}
+          />
         </ScrollView>
       )}
     </Screen>

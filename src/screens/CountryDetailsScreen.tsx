@@ -8,7 +8,6 @@ import { DataFeedback } from '../components/DataFeedback';
 import { Sheet } from '../components/Sheet';
 import { Surface } from '../components/Surface';
 import { ToggleRow } from '../components/ToggleRow';
-import { UndoNotice } from '../components/UndoNotice';
 import { countryById } from '../countries/catalog';
 import { statusOptions } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
@@ -78,7 +77,6 @@ export function CountryDetailsScreen({
             />
           </Surface>
           <DataFeedback />
-          <UndoNotice />
           <Button
             label={t('countries.details.showMap')}
             onPress={() => onShowMap(id)}

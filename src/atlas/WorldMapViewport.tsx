@@ -64,6 +64,10 @@ export function WorldMapViewport({
     () => flatGestures(controller, props.onSelect),
     [controller, props.onSelect],
   );
+  const accessibility = useMemo(
+    () => mapAccessibility(controller, t('atlas.worldMap'), camera.zoom),
+    [controller, camera.zoom],
+  );
   return (
     <View
       style={styles.fill}
@@ -75,7 +79,7 @@ export function WorldMapViewport({
     >
       <GestureDetector gesture={gesture}>
         <View
-          {...mapAccessibility(controller, t('atlas.worldMap'))}
+          {...accessibility}
           style={styles.fill}
           collapsable={false}
         >

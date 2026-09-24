@@ -19,7 +19,7 @@ export type DataSnapshot = {
   status: 'loading' | 'ready' | 'load-error';
   saveError: boolean;
   busy: boolean;
-  undoLabel: string | null;
+  pendingUndo: { id: number; label: string } | null;
 };
 
 export function createAppDataStore(
@@ -34,10 +34,11 @@ export function createAppDataStore(
     status: 'loading',
     saveError: false,
     busy: false,
-    undoLabel: null,
+    pendingUndo: null,
   };
   const listeners = new Set<() => void>();
   let undoTravel: TravelData | null = null;
+  let undoSequence = 0;
   let revision = 0;
   let loading: Promise<void> | null = null;
   let lastWrite = Promise.resolve();
@@ -69,7 +70,7 @@ export function createAppDataStore(
       places: snapshot.data.places,
       homeCountryId: snapshot.data.homeCountryId,
     };
-    publish({ data, undoLabel: label });
+    publish({ data, pendingUndo: { id: ++undoSequence, label } });
     persist(data);
     effects.feedback?.(data.preferences.haptics);
   }
@@ -102,7 +103,7 @@ export function createAppDataStore(
       publish({
         data: next,
         status: 'ready',
-        undoLabel: null,
+        pendingUndo: null,
         saveError: false,
       });
     } finally {
@@ -173,13 +174,20 @@ export function createAppDataStore(
       publish({ data });
       persist(data);
     },
-    undo() {
-      if (!editable() || !undoTravel) return;
+    undo(id: number): boolean {
+      if (!editable() || !undoTravel || snapshot.pendingUndo?.id !== id)
+        return false;
       const data = { ...snapshot.data, ...undoTravel };
       undoTravel = null;
-      publish({ data, undoLabel: null });
+      publish({ data, pendingUndo: null });
       persist(data);
       effects.feedback?.(data.preferences.haptics);
+      return true;
+    },
+    discardUndo(id: number) {
+      if (snapshot.pendingUndo?.id !== id) return;
+      undoTravel = null;
+      publish({ pendingUndo: null });
     },
     retry() {
       if (snapshot.status === 'load-error') void load();
@@ -195,7 +203,7 @@ export function createAppDataStore(
       if (!editable()) return;
       const data = { ...snapshot.data, preferences: { ...defaultPreferences } };
       undoTravel = null;
-      publish({ data, undoLabel: null });
+      publish({ data, pendingUndo: null });
       persist(data);
     },
   };

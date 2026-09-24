@@ -5,6 +5,7 @@ import { calloutRect, placeLabels, type Rect } from '../src/atlas/annotations';
 import { FlatCamera } from '../src/atlas/FlatCamera';
 import {
   countryAnchors,
+  flatCountryById,
   flatCountries,
   projection,
 } from '../src/atlas/geography';
@@ -17,6 +18,7 @@ import world from '../src/globe/world.json';
 describe('source-derived atlas', () => {
   test('every anchor is inside its largest source polygon, except source-degenerate markers', () => {
     expect(countryAnchors.size).toBe(countryFeatures.length);
+    expect(flatCountryById.size).toBe(countryFeatures.length);
     for (const shape of countryFeatures) {
       const id = shape.properties.iso_a2.toLowerCase();
       const anchor = countryAnchors.get(id)!;
@@ -27,6 +29,14 @@ describe('source-derived atlas', () => {
       expect(anchor.angularRadius).toBeGreaterThan(0);
       if (geoArea(main))
         expect(geoContains(main, anchor.anchor as [number, number])).toBe(true);
+      const [[left, top], [right, bottom]] = flatCountryById.get(id)!.bounds;
+      const [x, y] = projection(anchor.anchor as [number, number])!;
+      expect([left, top, right, bottom].every(Number.isFinite)).toBe(true);
+      // Focus bounds must contain the anchor, allowing asset rounding.
+      expect(x).toBeGreaterThanOrEqual(left - 0.001);
+      expect(x).toBeLessThanOrEqual(right + 0.001);
+      expect(y).toBeGreaterThanOrEqual(top - 0.001);
+      expect(y).toBeLessThanOrEqual(bottom + 0.001);
     }
     expect(flatCountries.every(({ path }) => !path.includes('NaN'))).toBe(true);
   });

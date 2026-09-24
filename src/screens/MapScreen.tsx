@@ -12,10 +12,9 @@ import { CountryCallout } from '../atlas/CountryCallout';
 import { MapSummary } from '../atlas/MapSummary';
 import { MapToolbar } from '../atlas/MapToolbar';
 import type { AtlasCommand } from '../atlas/types';
-import { useScreenReaderEnabled } from '../atlas/useScreenReaderEnabled';
+import { useScreenReaderEnabled } from '../accessibility/useScreenReaderEnabled';
 import { WorldMapViewport } from '../atlas/WorldMapViewport';
 import { DataFeedback } from '../components/DataFeedback';
-import { UndoNotice } from '../components/UndoNotice';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { GlobeCamera } from '../globe/camera';
@@ -166,7 +165,6 @@ export function MapScreen({
               />
             )}
             <DataFeedback />
-            <UndoNotice />
             {ready && data.preferences.mapSummary && (
               <MapSummary
                 places={data.places}

@@ -14,6 +14,8 @@
   "retry": "Try again",
   "search": "Search",
   "undo": "Undo",
+  "dismissNotification": "Dismiss notification",
+  "toastAnnouncement": "%{message}. %{action} available.",
   "loading": "Loading",
   "unknownError": "Please try again.",
   "none": "None",

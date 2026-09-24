@@ -16,6 +16,7 @@ export function mapAccessibility(
     ) => void;
   },
   label: string,
+  zoom: number,
 ): ViewProps {
   const { camera } = controller;
   return {
@@ -25,7 +26,7 @@ export function mapAccessibility(
     accessibilityLanguage: language,
     accessibilityHint: t('atlas.exploreHint'),
     accessibilityValue: {
-      text: t('atlas.zoom', { value: formatPercent(camera.zoom) }),
+      text: t('atlas.zoom', { value: formatPercent(zoom) }),
     },
     accessibilityActions: [
       { name: 'increment', label: t('atlas.zoomIn') },

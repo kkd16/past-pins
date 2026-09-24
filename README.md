@@ -23,7 +23,7 @@ The app targets Expo SDK 57 and uses its bundled native modules. Use the Bun ver
 | `bun run test:coverage` | Inspect coverage of the code loaded by tests |
 | `bun run lint --fix` | Apply ESLint's available fixes |
 | `bun run start --clear` | Start Expo with its built-in Metro cache reset |
-| `bun run generate` | Regenerate globe geometry and license notices |
+| `bun run generate` | Regenerate map geometry and license notices |
 | `bun run deps:update` | Update compatible dependencies, align Expo versions, regenerate assets, and run all checks |
 | `bun run reset` | Reinstall locked dependencies and clear this project's Expo state |
 
@@ -40,7 +40,7 @@ Reset leaves other projects' Metro caches and Watchman watches alone. The `react
 
 A place is unmarked, Wishlist, Visited, or Lived. Lived always counts as Visited; Not visited includes Wishlist. Setting current home marks that country Lived. Moving or clearing home keeps former homes in Lived. Bulk Mark visited preserves existing Lived status; a single-country status menu or details can explicitly downgrade it. Changing the current home’s status away from Lived asks to clear home too.
 
-Undo restores the last individual, bulk, or home edit without reverting preferences. Another travel edit replaces it. Restore and reset actions clear Undo.
+Undo appears in a toast after an individual, bulk, or home edit and restores that edit without reverting preferences. Toasts dismiss after 6 seconds (15 with VoiceOver), pause while data is busy, and can be dismissed manually. Another travel edit replaces Undo; dismissal, restore, and reset clear it.
 
 ## Architecture and data
 
@@ -52,6 +52,7 @@ Undo restores the last individual, bulk, or home edit without reverting preferen
 - `src/atlas/`: map toolbar and summary, shared selection, colors, label/callout placement, and the flat camera/renderer. `src/globe/` owns spherical camera math, GPU geometry, picking, gestures, and rendering. Only the active view mounts.
 - `src/settings/`: small settings layouts and native backup file operations. `src/components/` and `src/theme.ts` centralize reusable controls, typography, spacing, surfaces, state colors, and appearance. `AppPressable` supplies touch targets and interaction feedback while forwarding native props; `ChoiceSection` and `ToggleRow` keep radio groups and native switches consistent across screens.
 - `src/motion/`: one shared Reduce Motion subscription. Press feedback, callout entrances, checks, and progress use native-driven animation; bulk selection uses native layout animation. Timings live in the theme. Native navigation keeps its standard transitions.
+- `src/feedback/`: one toast host above native tabs and sheets. `useToast().showToast({ message, action? })` replaces the current toast; IDs keep expired actions and animation callbacks from affecting newer messages.
 - `src/localization/`: JSON resources grouped by language code, typed lookups, iOS locale selection, and shared number/list formatting. Domain catalogs keep copy beside its owning feature without spreading strings through UI code.
 - `scripts/`: deterministic geography and license generation; these tools are not bundled into the app.
 
@@ -65,7 +66,7 @@ Map mode, labels, summary, haptics, and list organization persist across launche
 
 `@rembish/iso-topojson/iso-a2.json` supplies names and polygons; `countries-list` supplies primary continents and available country facts. The catalog includes countries, territories, Antarctica, and Kosovo. It is not a count of sovereign states. Geography is bundled and contains no hand-maintained country coordinates or overrides.
 
-`bun run globe:generate` derives globe triangles and country anchors from the installed source, including tiny-place markers. GL renders cached geometry; the flat view uses SVG paths from D3’s Equal Earth projection. Label candidates and focus anchors come from source polygons, with the main landmass used for country focus. Rendering stops while hidden or backgrounded; animation respects Reduce Motion.
+`bun run globe:generate` derives globe triangles, country anchors, flat-map SVG paths, and focus bounds from the installed source, including tiny-place markers. GL and SVG render these bundled assets without rebuilding country paths at app startup. The flat view and asset generator share D3’s Equal Earth projection. Label candidates and focus anchors come from source polygons, with the main landmass used for country focus. Rendering stops while hidden or backgrounded; animation respects Reduce Motion.
 
 Map data © Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on [Natural Earth](https://www.naturalearthdata.com/) public-domain data. PastPins transforms geometry, projection, labeling, and styling. Country facts come from [Countries by Annexare](https://github.com/annexare/Countries).
 
@@ -91,6 +92,7 @@ Before shipping, verify on physical iPhone and iPad:
 - Globe/world-map switching preserves each camera. Drag, focal pinch, twist, north-up, search focus, and fit controls work across zoom limits, poles, and the antimeridian. Idle/background views stop rendering.
 - Callouts remain readable inside safe areas, follow selection, hide behind the globe or outside the viewport, and return after details. Small islands, polygon holes, and overseas territories remain selectable.
 - Country edits, bulk actions, home changes, Undo, Stats drilldowns, filter cancellation, and Show on map agree across tabs and survive relaunch where appropriate.
+- Toasts remain reachable above sheets, expire after repeated edits, and leave the rest of the screen accessible to VoiceOver. Check long text, large Dynamic Type, Reduce Motion, and short iPad windows.
 - Backup export/import cancellation, invalid files, failed saves, and failed restores recover without partial data. Retry remains available and storage errors are announced once when they appear.
 - Native tabs, sheets, search keyboards, and Settings remain usable on short/resizable iPad windows, at the largest Dynamic Type sizes, with VoiceOver and Reduce Motion enabled.
 - After loading the bundle, all geography, facts, editing, and license notices work offline. Check smooth native rendering on-device; passing JavaScript tests or an export does not establish iOS visual quality or frame rate.
