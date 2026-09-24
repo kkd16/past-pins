@@ -1,17 +1,14 @@
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
 
-import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { ChoiceRow } from '../components/ChoiceRow';
+import { ChoiceSection } from '../components/ChoiceSection';
 import { Sheet } from '../components/Sheet';
-import { Surface } from '../components/Surface';
 import { continents } from '../countries/catalog';
 import {
   defaultCountryFilters,
   type CountryFilters,
 } from '../countries/filters';
-import { theme } from '../theme';
 import { t } from '../localization';
 
 export function CountryFiltersScreen({
@@ -31,14 +28,7 @@ export function CountryFiltersScreen({
       onCancel={onCancel}
       onDone={() => onApply(filters)}
     >
-      <Surface
-        style={styles.section}
-        accessibilityRole="radiogroup"
-        accessibilityLabel={t('countries.organization')}
-      >
-        <AppText variant="label" tone="muted" accessibilityRole="header">
-          {t('countries.organization')}
-        </AppText>
+      <ChoiceSection title={t('countries.organization')}>
         <ChoiceRow
           label={t('countries.byContinent')}
           selected={filters.grouping === 'continent'}
@@ -49,15 +39,8 @@ export function CountryFiltersScreen({
           selected={filters.grouping === 'alphabetical'}
           onPress={() => setFilters({ ...filters, grouping: 'alphabetical' })}
         />
-      </Surface>
-      <Surface
-        style={styles.section}
-        accessibilityRole="radiogroup"
-        accessibilityLabel={t('countries.continent')}
-      >
-        <AppText variant="label" tone="muted" accessibilityRole="header">
-          {t('countries.continent')}
-        </AppText>
+      </ChoiceSection>
+      <ChoiceSection title={t('countries.continent')}>
         {[{ id: 'all', name: t('countries.allContinents') }, ...continents].map(
           (continent) => (
             <ChoiceRow
@@ -70,7 +53,7 @@ export function CountryFiltersScreen({
             />
           ),
         )}
-      </Surface>
+      </ChoiceSection>
       <Button
         label={t('countries.resetFilters')}
         variant="quiet"
@@ -79,7 +62,3 @@ export function CountryFiltersScreen({
     </Sheet>
   );
 }
-
-const styles = StyleSheet.create({
-  section: { padding: theme.space.md, gap: theme.space.sm },
-});

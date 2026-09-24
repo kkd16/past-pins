@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Icon } from '../components/Icon';
 import { Surface } from '../components/Surface';
-import { language } from '../localization';
 import { theme } from '../theme';
 
 export function SettingsSection({
@@ -47,16 +47,10 @@ export function SettingsRow({
   disabled?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLanguage={language}
+    <AppPressable
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-      ]}
+      style={styles.row}
     >
       <View style={styles.text}>
         <AppText style={destructive && styles.destructive}>{title}</AppText>
@@ -67,36 +61,7 @@ export function SettingsRow({
         )}
       </View>
       {disclosure && <Icon name="chevronRight" />}
-    </Pressable>
-  );
-}
-
-export function SettingsToggle({
-  title,
-  value,
-  onChange,
-  disabled,
-}: {
-  title: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <View style={styles.row}>
-      <AppText style={styles.text} accessibilityElementsHidden>
-        {title}
-      </AppText>
-      <Switch
-        hitSlop={theme.space.sm}
-        accessibilityLabel={title}
-        accessibilityLanguage={language}
-        value={value}
-        onValueChange={onChange}
-        disabled={disabled}
-        trackColor={{ false: theme.color.border, true: theme.color.accent }}
-      />
-    </View>
+    </AppPressable>
   );
 }
 
@@ -112,6 +77,4 @@ const styles = StyleSheet.create({
   },
   text: { flex: 1, gap: theme.space.xs },
   destructive: { color: theme.color.destructive },
-  pressed: { opacity: theme.opacity.pressed },
-  disabled: { opacity: theme.opacity.disabled },
 });

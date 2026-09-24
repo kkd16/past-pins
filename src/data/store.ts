@@ -53,13 +53,13 @@ export function createAppDataStore(
 
   function persist(data: AppData) {
     const ownRevision = ++revision;
+    function finish(saveError: boolean) {
+      if (ownRevision === revision && saveError !== snapshot.saveError)
+        publish({ saveError });
+    }
     lastWrite = storage.save(data).then(
-      () => {
-        if (ownRevision === revision) publish({ saveError: false });
-      },
-      () => {
-        if (ownRevision === revision) publish({ saveError: true });
-      },
+      () => finish(false),
+      () => finish(true),
     );
   }
 
@@ -142,7 +142,10 @@ export function createAppDataStore(
           publish({ busy: false });
         }
       }
-      changeTravel(next, t('common.placesUpdated', { count: ids.length }));
+      const count = [...new Set(ids)].filter(
+        (id) => next.places[id] !== snapshot.data.places[id],
+      ).length;
+      changeTravel(next, t('common.placesUpdated', { count }));
       return true;
     },
     setHome(id: string | null) {
@@ -156,18 +159,17 @@ export function createAppDataStore(
     },
     updatePreferences(patch: Partial<Preferences>) {
       if (!editable()) return;
+      if (
+        Object.entries(patch).every(
+          ([key, value]) =>
+            snapshot.data.preferences[key as keyof Preferences] === value,
+        )
+      )
+        return;
       const data = {
         ...snapshot.data,
         preferences: { ...snapshot.data.preferences, ...patch },
       };
-      if (
-        Object.keys(patch).every(
-          (key) =>
-            data.preferences[key as keyof Preferences] ===
-            snapshot.data.preferences[key as keyof Preferences],
-        )
-      )
-        return;
       publish({ data });
       persist(data);
     },

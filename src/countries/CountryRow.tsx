@@ -1,12 +1,13 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Checkmark } from '../components/Checkmark';
 import { Icon } from '../components/Icon';
 import { isVisited, type PlaceStatus } from '../data/model';
 import { theme } from '../theme';
-import { t, language } from '../localization';
+import { t } from '../localization';
 import { getStatusPresentation } from './status';
 import type { Country, CountryId } from './types';
 
@@ -30,83 +31,58 @@ export const CountryRow = memo(function CountryRow({
   onSelect: (id: CountryId) => void;
 }) {
   const presentation = getStatusPresentation(status, home);
-  const label = (
-    <View style={styles.label}>
-      <AppText>{country.name}</AppText>
-      {status !== 'unvisited' && (
-        <AppText variant="caption" style={{ color: presentation.color }}>
-          {presentation.label}
-        </AppText>
-      )}
-    </View>
-  );
-
-  if (selecting)
-    return (
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityLanguage={language}
-        accessibilityLabel={t('countries.countryStatus', {
-          name: country.name,
-          status: presentation.label,
-        })}
-        accessibilityState={{ checked: selected }}
-        disabled={disabled}
-        onPress={() => onSelect(country.id)}
-        style={({ pressed }) => [
-          styles.row,
-          styles.selection,
-          selected && styles.highlight,
-          pressed && styles.pressed,
-        ]}
-      >
-        {label}
-        <Checkmark checked={selected} />
-      </Pressable>
-    );
-
   return (
-    <View style={[styles.row, isVisited(status) && styles.highlight]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLanguage={language}
+    <View
+      style={[
+        styles.row,
+        (selecting ? selected : isVisited(status)) && styles.highlight,
+      ]}
+    >
+      <AppPressable
+        accessibilityRole={selecting ? 'checkbox' : 'button'}
         accessibilityLabel={t('countries.countryStatus', {
           name: country.name,
           status: presentation.label,
         })}
-        accessibilityHint={t('countries.detailsHint')}
+        accessibilityHint={selecting ? undefined : t('countries.detailsHint')}
+        accessibilityState={selecting ? { checked: selected } : undefined}
+        disabled={selecting && disabled}
         onPress={() => onSelect(country.id)}
-        style={({ pressed }) => [styles.details, pressed && styles.pressed]}
+        style={styles.details}
       >
-        {label}
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLanguage={language}
-        accessibilityLabel={t('countries.changeStatus', {
-          name: country.name,
-          status: presentation.label,
-        })}
-        disabled={disabled}
-        onPress={() => onChangeStatus(country.id)}
-        style={({ pressed }) => [
-          styles.toggle,
-          pressed && styles.pressed,
-          disabled && styles.disabled,
-        ]}
-      >
-        {status === 'wishlist' || status === 'lived' || home ? (
-          <View style={[styles.status, { borderColor: presentation.color }]}>
-            <Icon
-              name={presentation.icon}
-              color={presentation.color}
-              size={theme.size.iconSmall}
-            />
-          </View>
-        ) : (
-          <Checkmark checked={status === 'visited'} />
-        )}
-      </Pressable>
+        <View style={styles.label}>
+          <AppText>{country.name}</AppText>
+          {status !== 'unvisited' && (
+            <AppText variant="caption" style={{ color: presentation.color }}>
+              {presentation.label}
+            </AppText>
+          )}
+        </View>
+        {selecting && <Checkmark checked={selected} />}
+      </AppPressable>
+      {!selecting && (
+        <AppPressable
+          accessibilityLabel={t('countries.changeStatus', {
+            name: country.name,
+            status: presentation.label,
+          })}
+          disabled={disabled}
+          onPress={() => onChangeStatus(country.id)}
+          style={styles.toggle}
+        >
+          {status === 'wishlist' || status === 'lived' || home ? (
+            <View style={[styles.status, { borderColor: presentation.color }]}>
+              <Icon
+                name={presentation.icon}
+                color={presentation.color}
+                size={theme.size.iconSmall}
+              />
+            </View>
+          ) : (
+            <Checkmark checked={status === 'visited'} />
+          )}
+        </AppPressable>
+      )}
     </View>
   );
 });
@@ -119,15 +95,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color.surface,
   },
   highlight: { backgroundColor: theme.color.visitedSurface },
-  selection: {
-    minHeight: theme.size.row,
-    padding: theme.space.lg,
-    gap: theme.space.lg,
-  },
   details: {
     flex: 1,
     minHeight: theme.size.row,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.lg,
     padding: theme.space.lg,
   },
   label: { flex: 1, gap: theme.space.xs },
@@ -145,6 +118,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: { opacity: theme.opacity.pressed },
-  disabled: { opacity: theme.opacity.disabled },
 });

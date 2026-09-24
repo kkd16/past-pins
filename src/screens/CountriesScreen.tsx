@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
@@ -8,9 +8,9 @@ import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { Surface } from '../components/Surface';
 import { UndoNotice } from '../components/UndoNotice';
 import { continents, countryById } from '../countries/catalog';
+import { CountryBulkActions } from '../countries/CountryBulkActions';
 import { CountryList } from '../countries/CountryList';
 import { CountryScopeControl } from '../countries/CountryScopeControl';
 import {
@@ -183,52 +183,12 @@ export function CountriesScreen({
         selectedIds={selectedIds}
       />
       {selecting && (
-        <ScrollView
-          style={styles.bulkScroll}
-          bounces={false}
-          contentInsetAdjustmentBehavior="never"
-        >
-          <Surface style={styles.bulk}>
-            <Button
-              label={
-                selectedIds.size === resultIds.length
-                  ? t('countries.deselectAll')
-                  : t('countries.selectAll')
-              }
-              variant="quiet"
-              disabled={disabled}
-              onPress={() =>
-                setSelection({
-                  filterKey,
-                  ids:
-                    selectedIds.size === resultIds.length
-                      ? emptySelection
-                      : new Set(resultIds),
-                })
-              }
-            />
-            <Button
-              label={t('countries.updateCount', {
-                count: selectedIds.size,
-                amount: formatNumber(selectedIds.size),
-              })}
-              disabled={disabled || selectedIds.size === 0}
-              onPress={() =>
-                showStatusPicker(
-                  t('countries.placeCount', {
-                    count: selectedIds.size,
-                    amount: formatNumber(selectedIds.size),
-                  }),
-                  (status) => {
-                    void setStatus([...selectedIds], status).then((applied) => {
-                      if (applied) setSelection(null);
-                    });
-                  },
-                )
-              }
-            />
-          </Surface>
-        </ScrollView>
+        <CountryBulkActions
+          resultIds={resultIds}
+          selectedIds={selectedIds}
+          onSelectionChange={(ids) => setSelection({ filterKey, ids })}
+          onComplete={() => setSelection(null)}
+        />
       )}
     </Screen>
   );
@@ -243,11 +203,4 @@ const styles = StyleSheet.create({
     gap: theme.space.md,
   },
   selectionLabel: { flex: 1, paddingStart: theme.space.lg },
-  bulkScroll: { flexGrow: 0, maxHeight: '40%', marginVertical: theme.space.sm },
-  bulk: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.space.sm,
-    padding: theme.space.sm,
-  },
 });

@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
@@ -22,7 +22,7 @@ import { ProgressSummary } from '../countries/ProgressSummary';
 import { getTravelStatistics } from '../countries/statistics';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
-import { t, formatNumber, formatPercent, language } from '../localization';
+import { t, formatNumber, formatPercent } from '../localization';
 
 function Statistic({
   value,
@@ -40,18 +40,12 @@ function Statistic({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <AppPressable
       accessibilityLabel={t('countries.stats.summary', { label, value })}
-      accessibilityLanguage={language}
       accessibilityHint={t('countries.stats.matchingHint')}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.statistic,
-        largeText && styles.fullWidth,
-        pressed && styles.pressed,
-      ]}
+      style={[styles.statistic, largeText && styles.fullWidth]}
     >
       <Surface style={styles.statisticContent}>
         <AppText variant={largeText ? 'heading' : 'number'} style={{ color }}>
@@ -61,7 +55,7 @@ function Statistic({
           {label}
         </AppText>
       </Surface>
-    </Pressable>
+    </AppPressable>
   );
 }
 
@@ -102,9 +96,7 @@ export function StatsScreen({
         </ScreenHeader>
         <DataFeedback />
         <UndoNotice />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLanguage={language}
+        <AppPressable
           accessibilityLabel={
             loading
               ? t('countries.loadingPlaces')
@@ -116,7 +108,6 @@ export function StatsScreen({
           accessibilityHint={t('countries.stats.visitedHint')}
           disabled={loading}
           onPress={() => onOpenCountries('visited')}
-          style={({ pressed }) => pressed && styles.pressed}
         >
           <Surface style={styles.journey}>
             <AppText variant="label">{t('countries.stats.visited')}</AppText>
@@ -131,7 +122,7 @@ export function StatsScreen({
                   })}
             </AppText>
           </Surface>
-        </Pressable>
+        </AppPressable>
         <View style={styles.totals}>
           {[
             {
@@ -189,10 +180,8 @@ export function StatsScreen({
         </AppText>
         <Surface style={styles.continents}>
           {stats.byContinent.map((continent) => (
-            <Pressable
+            <AppPressable
               key={continent.id}
-              accessibilityRole="button"
-              accessibilityLanguage={language}
               accessibilityLabel={t('countries.stats.continentProgress', {
                 name: continent.name,
                 visited: formatNumber(continent.visited),
@@ -201,7 +190,6 @@ export function StatsScreen({
               accessibilityHint={t('countries.stats.continentHint')}
               disabled={loading}
               onPress={() => onOpenCountries('visited', continent.id)}
-              style={({ pressed }) => pressed && styles.pressed}
             >
               <View accessibilityElementsHidden>
                 <ProgressSummary
@@ -211,7 +199,7 @@ export function StatsScreen({
                   loading={loading}
                 />
               </View>
-            </Pressable>
+            </AppPressable>
           ))}
         </Surface>
         <AppText variant="caption" tone="muted" style={styles.explanation}>
@@ -241,5 +229,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.space.sm,
   },
-  pressed: { opacity: theme.opacity.pressed },
 });

@@ -4,6 +4,7 @@ import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { ChoiceRow } from '../components/ChoiceRow';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
+import { ToggleRow } from '../components/ToggleRow';
 import { UndoNotice } from '../components/UndoNotice';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
@@ -11,11 +12,7 @@ import { isVisited } from '../data/model';
 import { UserFacingError } from '../data/errors';
 import { formatNumber, t } from '../localization';
 import { pickBackup, shareBackup } from '../settings/backup-files';
-import {
-  SettingsRow,
-  SettingsSection,
-  SettingsToggle,
-} from '../settings/SettingsSection';
+import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
 import { theme } from '../theme';
 
 function confirm(
@@ -119,17 +116,19 @@ export function SettingsScreen({
             disabled={disabled}
             onPress={() => updatePreferences({ mapView: 'map' })}
           />
-          <SettingsToggle
+          <ToggleRow
             title={t('settings.countryLabels')}
             value={prefs.countryLabels}
             disabled={disabled}
-            onChange={(countryLabels) => updatePreferences({ countryLabels })}
+            onValueChange={(countryLabels) =>
+              updatePreferences({ countryLabels })
+            }
           />
-          <SettingsToggle
+          <ToggleRow
             title={t('settings.travelSummary')}
             value={prefs.mapSummary}
             disabled={disabled}
-            onChange={(mapSummary) => updatePreferences({ mapSummary })}
+            onValueChange={(mapSummary) => updatePreferences({ mapSummary })}
           />
         </SettingsSection>
         <SettingsSection
@@ -165,11 +164,11 @@ export function SettingsScreen({
           />
         </SettingsSection>
         <SettingsSection title={t('settings.feedback')}>
-          <SettingsToggle
+          <ToggleRow
             title={t('settings.haptics')}
             value={prefs.haptics}
             disabled={disabled}
-            onChange={(haptics) => updatePreferences({ haptics })}
+            onValueChange={(haptics) => updatePreferences({ haptics })}
           />
         </SettingsSection>
         <SettingsSection

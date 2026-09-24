@@ -1,17 +1,17 @@
 import { useLayoutEffect, useRef } from 'react';
 import {
   I18nManager,
-  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { ChoiceRow } from '../components/ChoiceRow';
 import { theme } from '../theme';
-import { t, language } from '../localization';
+import { t } from '../localization';
 import { countryScopes, type CountryScope } from './filters';
 
 export function CountryScopeControl({
@@ -57,7 +57,7 @@ export function CountryScopeControl({
       accessibilityLabel={t('countries.placesToShow')}
     >
       {countryScopes.map((option) => (
-        <Pressable
+        <AppPressable
           key={option.value}
           onLayout={({ nativeEvent: { layout } }) => {
             positions.current[option.value] = layout.x;
@@ -65,13 +65,11 @@ export function CountryScopeControl({
               scroll.current?.scrollTo({ x: layout.x, animated: false });
           }}
           accessibilityRole="tab"
-          accessibilityLanguage={language}
           accessibilityState={{ selected: value === option.value }}
           onPress={() => onChange(option.value)}
-          style={({ pressed }) => [
+          style={[
             styles.option,
             value === option.value && styles.selected,
-            pressed && styles.pressed,
           ]}
         >
           <AppText
@@ -80,7 +78,7 @@ export function CountryScopeControl({
           >
             {option.label}
           </AppText>
-        </Pressable>
+        </AppPressable>
       ))}
     </ScrollView>
   );
@@ -89,12 +87,10 @@ export function CountryScopeControl({
 const styles = StyleSheet.create({
   options: { gap: theme.space.xs },
   option: {
-    minHeight: theme.size.touch,
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.sm,
     justifyContent: 'center',
     borderRadius: theme.radius.pill,
   },
   selected: { backgroundColor: theme.color.selectedSurface },
-  pressed: { opacity: theme.opacity.pressed },
 });

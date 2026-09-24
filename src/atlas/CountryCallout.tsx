@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import {
   AccessibilityInfo,
-  Pressable,
   StyleSheet,
   View,
   type LayoutChangeEvent,
@@ -9,12 +8,13 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Icon } from '../components/Icon';
 import { countryById } from '../countries/catalog';
 import { getStatusPresentation } from '../countries/status';
 import type { SavedStatus } from '../data/model';
-import { language, t } from '../localization';
+import { t } from '../localization';
 import { theme } from '../theme';
 
 export function CountryCallout({
@@ -45,11 +45,8 @@ export function CountryCallout({
   }, [autofocus, countryId]);
   if (!country) return null;
   return (
-    <Pressable
+    <AppPressable
       ref={ref}
-      accessible
-      accessibilityRole="button"
-      accessibilityLanguage={language}
       accessibilityLabel={t('atlas.countryStatus', {
         country: country.name,
         status: presentation.label,
@@ -64,11 +61,7 @@ export function CountryCallout({
       onAccessibilityEscape={onDismiss}
       onPress={() => onDetails(country.id)}
       onLayout={onLayout}
-      style={({ pressed }) => [
-        styles.callout,
-        style,
-        pressed && styles.pressed,
-      ]}
+      style={[styles.callout, style]}
     >
       <View style={styles.content}>
         <AppText variant="label">{country.name}</AppText>
@@ -87,14 +80,13 @@ export function CountryCallout({
         </View>
       </View>
       <Icon name="chevronRight" />
-    </Pressable>
+    </AppPressable>
   );
 }
 
 const styles = StyleSheet.create({
   callout: {
     ...theme.surface.floating,
-    minHeight: theme.size.touch,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.sm,
@@ -104,5 +96,4 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1, gap: theme.space.xs },
   status: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
-  pressed: { opacity: theme.opacity.pressed },
 });

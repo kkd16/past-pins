@@ -99,6 +99,48 @@ describe('app data owner', () => {
     expect(await storage.load()).toEqual(store.getSnapshot().data);
   });
 
+  test('bulk Undo describes changed countries, excluding duplicates and preserved statuses', async () => {
+    const { store } = fixture();
+    await store.load();
+    store.setHome('ca');
+    await store.setStatus(['fr'], 'visited');
+    await store.setStatus(['ca', 'fr', 'jp', 'jp'], 'visited');
+    expect(store.getSnapshot().undoLabel).toBe('Place updated');
+    store.undo();
+    expect(store.getSnapshot().data.places).toEqual({
+      ca: 'lived',
+      fr: 'visited',
+    });
+  });
+
+  test('only notifies subscribers when saves change the error state', async () => {
+    const f = fixture();
+    await f.store.load();
+    let notifications = 0;
+    f.store.subscribe(() => notifications++);
+
+    await f.store.setStatus(['ca'], 'visited');
+    await settle(f.storage);
+    expect(notifications).toBe(1);
+    f.store.updatePreferences({ mapView: 'globe' });
+    expect(notifications).toBe(1);
+
+    f.failWrites(true);
+    f.store.retry();
+    await settle(f.storage);
+    expect(notifications).toBe(2);
+    expect(f.store.getSnapshot().saveError).toBe(true);
+    f.store.retry();
+    await settle(f.storage);
+    expect(notifications).toBe(2);
+
+    f.failWrites(false);
+    f.store.retry();
+    await settle(f.storage);
+    expect(notifications).toBe(3);
+    expect(f.store.getSnapshot().saveError).toBe(false);
+  });
+
   test('home downgrade requires confirmation and cancelling leaves all state unchanged', async () => {
     const f = fixture();
     await f.store.load();

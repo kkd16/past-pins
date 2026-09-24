@@ -34,8 +34,8 @@ Undo restores the last individual, bulk, or home edit without reverting preferen
 - `src/countries/`: authoritative catalog joins, country facts, pure search/filter/statistics functions, and country controls.
 - `src/data/`: the app snapshot, pure status/home transitions, current-format backup validation, and one shared store/provider with Undo.
 - `src/storage/`: serialized snapshot persistence through Expo SQLite key-value storage.
-- `src/atlas/`: shared map selection, colors, label/callout placement, and the flat camera/renderer. `src/globe/` owns spherical camera math, GPU geometry, picking, gestures, and rendering. Only the active view mounts.
-- `src/settings/`: small settings layouts and native backup file operations. `src/components/` and `src/theme.ts` centralize reusable controls, typography, spacing, surfaces, state colors, and appearance.
+- `src/atlas/`: map toolbar and summary, shared selection, colors, label/callout placement, and the flat camera/renderer. `src/globe/` owns spherical camera math, GPU geometry, picking, gestures, and rendering. Only the active view mounts.
+- `src/settings/`: small settings layouts and native backup file operations. `src/components/` and `src/theme.ts` centralize reusable controls, typography, spacing, surfaces, state colors, and appearance. `AppPressable` supplies touch targets and interaction feedback while forwarding native props; `ChoiceSection` and `ToggleRow` keep radio groups and native switches consistent across screens.
 - `src/localization/`: JSON resources grouped by language code, typed lookups, iOS locale selection, and shared number/list formatting. Domain catalogs keep copy beside its owning feature without spreading strings through UI code.
 - `scripts/`: deterministic geography and license generation; these tools are not bundled into the app.
 

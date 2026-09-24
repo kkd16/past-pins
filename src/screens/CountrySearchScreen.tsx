@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
@@ -12,7 +13,7 @@ import { searchCountries } from '../countries/search';
 import { getStatusPresentation } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
-import { t, language } from '../localization';
+import { t } from '../localization';
 
 export function CountrySearchScreen({
   title,
@@ -74,16 +75,14 @@ export function CountrySearchScreen({
             data.homeCountryId === item.id,
           );
           return (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLanguage={language}
+            <AppPressable
               onPress={() => onSelect(item.id)}
               disabled={busy || status !== 'ready'}
               accessibilityLabel={t('countries.countryStatus', {
                 name: item.name,
                 status: presentation.label,
               })}
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              style={styles.row}
             >
               <View style={styles.name}>
                 <AppText>{item.name}</AppText>
@@ -95,7 +94,7 @@ export function CountrySearchScreen({
                 </AppText>
               </View>
               <Icon name={presentation.icon} color={presentation.color} />
-            </Pressable>
+            </AppPressable>
           );
         }}
       />
@@ -114,5 +113,4 @@ const styles = StyleSheet.create({
   },
   name: { flex: 1, gap: theme.space.xs },
   empty: { padding: theme.space.xl, textAlign: 'center' },
-  pressed: { opacity: theme.opacity.pressed },
 });

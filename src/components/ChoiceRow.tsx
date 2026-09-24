@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { language } from '../localization';
 import { theme } from '../theme';
+import { AppPressable } from './AppPressable';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 
@@ -17,30 +17,23 @@ export function ChoiceRow({
   disabled?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityLanguage={language}
+    <AppPressable
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        selected && styles.selected,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-      ]}
+      style={[styles.row, selected && styles.selected]}
     >
       <AppText tone={selected ? 'accent' : 'default'} style={styles.label}>
         {label}
       </AppText>
       {selected && <Icon name="check" color={theme.color.accent} />}
-    </Pressable>
+    </AppPressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: theme.size.touch,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.md,
@@ -51,6 +44,4 @@ const styles = StyleSheet.create({
   selected: {
     backgroundColor: theme.color.selectedSurface,
   },
-  pressed: { opacity: theme.opacity.pressed },
-  disabled: { opacity: theme.opacity.disabled },
 });

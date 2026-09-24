@@ -1,10 +1,10 @@
-import { Pressable, StyleSheet, type PressableProps } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { language } from '../localization';
 import { theme } from '../theme';
+import { AppPressable, type AppPressableProps } from './AppPressable';
 import { AppText } from './AppText';
 
-export type ButtonProps = Omit<PressableProps, 'children'> & {
+export type ButtonProps = Omit<AppPressableProps, 'children'> & {
   label: string;
   variant?: 'primary' | 'quiet';
 };
@@ -12,21 +12,15 @@ export type ButtonProps = Omit<PressableProps, 'children'> & {
 export function Button({
   label,
   variant = 'primary',
-  disabled,
   style,
   ...props
 }: ButtonProps) {
   return (
-    <Pressable
-      accessibilityLanguage={language}
+    <AppPressable
       {...props}
-      accessibilityRole="button"
-      disabled={disabled}
       style={(state) => [
         styles.base,
         variant === 'primary' && styles.primary,
-        state.pressed && styles.pressed,
-        disabled && styles.disabled,
         typeof style === 'function' ? style(state) : style,
       ]}
     >
@@ -39,14 +33,12 @@ export function Button({
       >
         {label}
       </AppText>
-    </Pressable>
+    </AppPressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: theme.size.touch,
-    minWidth: theme.size.touch,
     maxWidth: '100%',
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.sm,
@@ -58,6 +50,4 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: theme.color.accent },
   primaryLabel: { color: theme.color.onAccent },
   quietLabel: { color: theme.color.accent },
-  pressed: { opacity: theme.opacity.pressed },
-  disabled: { opacity: theme.opacity.disabled },
 });

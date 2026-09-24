@@ -1,11 +1,13 @@
-import { StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { ChoiceRow } from '../components/ChoiceRow';
+import { ChoiceSection } from '../components/ChoiceSection';
 import { DataFeedback } from '../components/DataFeedback';
 import { Sheet } from '../components/Sheet';
 import { Surface } from '../components/Surface';
+import { ToggleRow } from '../components/ToggleRow';
 import { UndoNotice } from '../components/UndoNotice';
 import { countryById } from '../countries/catalog';
 import { statusOptions } from '../countries/status';
@@ -47,19 +49,10 @@ export function CountryDetailsScreen({
     >
       {country ? (
         <>
-          <Surface
-            style={styles.section}
-            accessibilityRole="radiogroup"
-            accessibilityLabel={t('countries.status.title')}
+          <ChoiceSection
+            title={t('countries.status.title')}
+            description={t('countries.details.livedHint')}
           >
-            <AppText
-              variant="label"
-              tone="muted"
-              accessibilityRole="header"
-              style={styles.sectionLabel}
-            >
-              {t('countries.status.title')}
-            </AppText>
             {statusOptions.map(({ value, label }) => (
               <ChoiceRow
                 key={value}
@@ -71,31 +64,17 @@ export function CountryDetailsScreen({
                 }}
               />
             ))}
-            <AppText variant="caption" tone="muted" style={styles.sectionLabel}>
-              {t('countries.details.livedHint')}
-            </AppText>
-          </Surface>
-          <Surface style={styles.home}>
-            <View style={styles.label} accessibilityElementsHidden>
-              <AppText variant="label">{t('common.currentHome')}</AppText>
-              <AppText variant="caption" tone="muted">
-                {t('countries.details.homeHint')}
-              </AppText>
-            </View>
-            <Switch
-              hitSlop={theme.space.sm}
-              accessibilityLanguage={language}
+          </ChoiceSection>
+          <Surface>
+            <ToggleRow
+              title={t('common.currentHome')}
+              description={t('countries.details.homeHint')}
               accessibilityLabel={t('countries.details.homeLabel', {
                 name: country.name,
               })}
-              accessibilityHint={t('countries.details.homeHint')}
               value={app.data.homeCountryId === id}
               disabled={disabled}
               onValueChange={(home) => app.setHome(home ? id : null)}
-              trackColor={{
-                true: theme.color.visitedEmphasis,
-                false: theme.color.controlBorder,
-              }}
             />
           </Surface>
           <DataFeedback />
@@ -133,18 +112,6 @@ export function CountryDetailsScreen({
 }
 
 const styles = StyleSheet.create({
-  section: { padding: theme.space.sm, gap: theme.space.xs },
-  sectionLabel: {
-    paddingHorizontal: theme.space.md,
-    paddingVertical: theme.space.sm,
-  },
-  home: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.lg,
-    padding: theme.space.lg,
-  },
-  label: { flex: 1, gap: theme.space.xs },
   facts: { padding: theme.space.lg, gap: theme.space.lg },
   fact: { gap: theme.space.xs },
 });

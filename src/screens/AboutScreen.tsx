@@ -2,11 +2,12 @@ import { isRunningInExpoGo } from 'expo';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import notices from '../../licenses/notices.json';
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
-import { language, t } from '../localization';
+import { t } from '../localization';
 import { InfoPage, InfoSection } from '../settings/InfoPage';
 import { theme } from '../theme';
 
@@ -96,9 +97,9 @@ function AboutLink({
 }) {
   return (
     <Link href={href} asChild>
-      <Pressable accessibilityLanguage={language} style={styles.link}>
+      <AppPressable style={styles.link}>
         <AppText tone="accent">{label}</AppText>
-      </Pressable>
+      </AppPressable>
     </Link>
   );
 }
@@ -107,6 +108,5 @@ const styles = StyleSheet.create({
   details: { gap: theme.space.xs },
   link: {
     paddingVertical: theme.space.md,
-    minHeight: theme.size.touch,
   },
 });
