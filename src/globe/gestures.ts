@@ -14,7 +14,6 @@ export function globeGestures(
   let multiTouch = false;
   let pointers = 0;
   const pan = Gesture.Pan()
-    .minDistance(4)
     .runOnJS(true)
     .onBegin(() => {
       controller.stop();
@@ -66,7 +65,6 @@ export function globeGestures(
       twisting = false;
     });
   const tap = Gesture.Tap()
-    .maxDistance(4)
     .runOnJS(true)
     .onBegin(() => controller.stop())
     .onTouchesDown((event) => {

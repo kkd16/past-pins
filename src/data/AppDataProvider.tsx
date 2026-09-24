@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
@@ -11,7 +12,6 @@ import { AccessibilityInfo, Alert } from 'react-native';
 
 import { countryById } from '../countries/catalog';
 import { appStorage } from '../storage/app-storage';
-import type { AppStorage } from '../storage/snapshot-storage';
 import { createAppDataStore, type DataSnapshot } from './store';
 
 type AppDataContextValue = DataSnapshot &
@@ -34,22 +34,14 @@ function confirmHomeChange(id: string): Promise<boolean> {
   });
 }
 
-export function AppDataProvider({
-  storage = appStorage,
-  children,
-}: {
-  storage?: AppStorage;
-  children: ReactNode;
-}) {
-  const store = useMemo(
-    () =>
-      createAppDataStore(storage, {
-        confirmHomeChange,
-        feedback: (enabled) => {
-          if (enabled) void Haptics.selectionAsync().catch(() => undefined);
-        },
-      }),
-    [storage],
+export function AppDataProvider({ children }: { children: ReactNode }) {
+  const [store] = useState(() =>
+    createAppDataStore(appStorage, {
+      confirmHomeChange,
+      feedback: (enabled) => {
+        if (enabled) void Haptics.selectionAsync().catch(() => undefined);
+      },
+    }),
   );
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot);
   useEffect(() => {

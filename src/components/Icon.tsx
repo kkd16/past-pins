@@ -4,7 +4,6 @@ import { theme } from '../theme';
 
 const paths = {
   check: 'm5 12 4 4L19 6',
-  close: 'm6 6 12 12M18 6 6 18',
   search: 'm16 16 4 4',
   reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6',
   filter: 'M4 6h16M7 12h10M10 18h4',

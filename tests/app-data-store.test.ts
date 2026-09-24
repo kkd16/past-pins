@@ -297,4 +297,31 @@ describe('app data owner', () => {
     expect(f.store.getSnapshot().status).toBe('ready');
     expect(f.store.getSnapshot().data).toEqual(replacement);
   });
+
+  test('retry cannot reload data while a backup is replacing a failed load', async () => {
+    const write = Promise.withResolvers<void>();
+    let reads = 0;
+    const store = createAppDataStore(
+      {
+        async load() {
+          if (++reads === 1) throw new Error('Corrupt stored data');
+          return defaultAppData();
+        },
+        save: () => write.promise,
+      },
+      { confirmHomeChange: async () => true },
+    );
+    await store.load();
+    const replacement = defaultAppData();
+    replacement.places.ca = 'visited';
+    const restoring = store.restore(replacement);
+    store.retry();
+    await store.load();
+    expect(reads).toBe(1);
+    expect(store.getSnapshot().status).toBe('load-error');
+    write.resolve();
+    await restoring;
+    expect(store.getSnapshot().status).toBe('ready');
+    expect(store.getSnapshot().data).toEqual(replacement);
+  });
 });

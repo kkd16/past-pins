@@ -13,7 +13,6 @@ export function flatGestures(
   let zoom = 1;
   let focal = { x: 0, y: 0 };
   const pan = Gesture.Pan()
-    .minDistance(4)
     .runOnJS(true)
     .onBegin(() => {
       controller.stop();
@@ -46,7 +45,6 @@ export function flatGestures(
       pinching = false;
     });
   const tap = Gesture.Tap()
-    .maxDistance(4)
     .runOnJS(true)
     .onBegin(() => controller.stop())
     .onTouchesDown((event) => {

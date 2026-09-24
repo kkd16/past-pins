@@ -20,16 +20,47 @@ export default function RootLayout() {
         <StatusBar style={theme.appearance.statusBarStyle} />
         <Stack
           screenOptions={{
-            headerShown: false,
+            headerStyle: { backgroundColor: theme.color.background },
+            headerTintColor: theme.color.accent,
+            headerTitleStyle: { color: theme.color.text },
+            headerShadowVisible: false,
             contentStyle: { backgroundColor: theme.color.background },
           }}
         >
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="settings" />
-          <Stack.Screen name="map-search" options={{ presentation: 'modal' }} />
+          <Stack.Screen
+            name="(tabs)"
+            options={{ headerShown: false, title: 'Past Pins' }}
+          />
+          <Stack.Screen name="settings/index" options={{ title: 'Settings' }} />
+          <Stack.Screen
+            name="settings/home"
+            options={{ title: 'Current home' }}
+          />
+          <Stack.Screen name="settings/about" options={{ title: 'About' }} />
+          <Stack.Screen
+            name="settings/help"
+            options={{ title: 'Help & controls' }}
+          />
+          <Stack.Screen
+            name="settings/credits"
+            options={{ title: 'Credits' }}
+          />
+          <Stack.Screen
+            name="settings/licenses"
+            options={{ title: 'Open-source licenses' }}
+          />
+          <Stack.Screen
+            name="settings/license"
+            options={{ title: 'License' }}
+          />
+          <Stack.Screen
+            name="map-search"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
           <Stack.Screen
             name="country/[id]"
             options={{
+              headerShown: false,
               presentation: 'formSheet',
               sheetAllowedDetents: [0.65, 1],
               sheetGrabberVisible: true,
@@ -38,6 +69,7 @@ export default function RootLayout() {
           <Stack.Screen
             name="filters"
             options={{
+              headerShown: false,
               presentation: 'formSheet',
               sheetAllowedDetents: [0.7],
               sheetGrabberVisible: true,

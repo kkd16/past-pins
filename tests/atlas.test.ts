@@ -196,7 +196,7 @@ describe('map callouts and sparse labels', () => {
       name: 'Place',
       point: [80 + (index % 10) * 125, 100 + Math.floor(index / 10) * 80],
     }));
-    const labels = placeLabels(candidates, wide, blocked);
+    const labels = placeLabels(candidates, wide, [blocked]);
     expect(labels.length).toBe(12);
     labels.forEach((label, index) => {
       expect(intersects(label, blocked)).toBe(false);
@@ -204,5 +204,20 @@ describe('map callouts and sparse labels', () => {
         labels.slice(index + 1).some((other) => intersects(label, other)),
       ).toBe(false);
     });
+  });
+
+  test('labels also leave a visible home marker clear', () => {
+    const home = { x: 181, y: 386, width: 28, height: 28 };
+    const callout = { x: 8, y: 520, width: 240, height: 80 };
+    const labels = placeLabels(
+      [
+        { id: 'near-home', name: 'Home neighbor', point: [220, 400] },
+        { id: 'near-callout', name: 'Selected neighbor', point: [195, 560] },
+        { id: 'clear', name: 'Clear country', point: [195, 300] },
+      ],
+      bounds,
+      [home, callout],
+    );
+    expect(labels.map(({ id }) => id)).toEqual(['clear']);
   });
 });

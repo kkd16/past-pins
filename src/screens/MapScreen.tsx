@@ -63,7 +63,6 @@ export function MapScreen({
     setSelection({ id, anchor: null });
     const key = ++sequence.current;
     setCommand({ type: 'focus', id, key });
-    return key;
   }, []);
   const incomingFocus = useMemo<AtlasCommand | null>(
     () =>

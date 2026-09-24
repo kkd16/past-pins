@@ -29,7 +29,7 @@ Undo restores the last individual, bulk, or home edit without reverting preferen
 
 ## Architecture and data
 
-- `src/app/`: thin Expo Router routes, native tabs, form sheets, and Settings navigation.
+- `src/app/`: thin Expo Router routes, native tabs, and one native stack for detail sheets and Settings.
 - `src/screens/`: page composition and connected navigation flows. Query, scope, and continent live in route parameters; grouping is a persisted preference.
 - `src/countries/`: authoritative catalog joins, country facts, pure search/filter/statistics functions, and country controls.
 - `src/data/`: the app snapshot, pure status/home transitions, current-format backup validation, and one shared store/provider with Undo.

@@ -29,6 +29,7 @@ export class FlatController {
   }
 
   resize(width: number, height: number) {
+    this.stop();
     this.camera.resize(width, height);
     this.invalidate();
   }

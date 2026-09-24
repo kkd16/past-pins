@@ -40,6 +40,7 @@ export function LicensesScreen({
         renderItem={({ item }) => (
           <SettingsRow
             title={item.name}
+            disclosure
             value={`${item.version} · ${item.license}`}
             onPress={() => onSelect(item.name, item.version)}
           />

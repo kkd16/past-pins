@@ -50,7 +50,7 @@ export function calloutRect(
 export function placeLabels(
   candidates: { id: string; name: string; point: number[] | null }[],
   bounds: ViewBounds,
-  blocked: Rect | null,
+  blocked: Rect[],
 ) {
   const result: (Rect & { id: string; name: string })[] = [];
   for (const candidate of candidates) {
@@ -70,7 +70,7 @@ export function placeLabels(
     )
       continue;
     if (
-      (blocked && intersects(rect, blocked, 16)) ||
+      blocked.some((other) => intersects(rect, other, 16)) ||
       result.some((other) => intersects(rect, other, 18))
     )
       continue;

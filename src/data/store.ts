@@ -74,7 +74,7 @@ export function createAppDataStore(
 
   function load(): Promise<void> {
     if (loading) return loading;
-    if (snapshot.status === 'ready') return Promise.resolve();
+    if (snapshot.status === 'ready' || snapshot.busy) return Promise.resolve();
     publish({ status: 'loading' });
     loading = storage
       .load()

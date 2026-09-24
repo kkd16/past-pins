@@ -35,12 +35,14 @@ export function SettingsRow({
   value,
   onPress,
   destructive,
+  disclosure = false,
   disabled = false,
 }: {
   title: string;
   value?: string;
   onPress: () => void;
   destructive?: boolean;
+  disclosure?: boolean;
   disabled?: boolean;
 }) {
   return (
@@ -63,10 +65,7 @@ export function SettingsRow({
           </AppText>
         )}
       </View>
-      <Icon
-        name="chevronRight"
-        color={destructive ? theme.color.destructive : theme.color.textMuted}
-      />
+      {disclosure && <Icon name="chevronRight" />}
     </Pressable>
   );
 }

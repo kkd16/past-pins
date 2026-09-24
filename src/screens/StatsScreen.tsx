@@ -65,10 +65,12 @@ function Statistic({
 
 export function StatsScreen({
   onOpenSettings,
+  onChooseHome,
   onOpenCountries,
   onOpenCountry,
 }: {
   onOpenSettings: () => void;
+  onChooseHome: () => void;
   onOpenCountries: (scope: CountryScope, continent?: string) => void;
   onOpenCountry: (id: string) => void;
 }) {
@@ -173,7 +175,7 @@ export function StatsScreen({
               label="Choose your home"
               variant="quiet"
               disabled={loading}
-              onPress={onOpenSettings}
+              onPress={onChooseHome}
             />
           )}
         </Surface>

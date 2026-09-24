@@ -128,6 +128,7 @@ export function SettingsScreen({
         >
           <SettingsRow
             title="Current home"
+            disclosure
             value={
               data.homeCountryId
                 ? countryById.get(data.homeCountryId)?.name
@@ -167,7 +168,7 @@ export function SettingsScreen({
         >
           <SettingsRow
             title="Export backup"
-            value={working ? 'Working…' : 'Places, home, and settings'}
+            value="Places, home, and settings"
             disabled={disabled}
             onPress={() => void run(() => shareBackup(data))}
           />
@@ -213,14 +214,24 @@ export function SettingsScreen({
         </SettingsSection>
         <UndoNotice />
         <SettingsSection title="About Past Pins">
-          <SettingsRow title="Help & controls" onPress={() => onOpen('help')} />
-          <SettingsRow title="About" onPress={() => onOpen('about')} />
+          <SettingsRow
+            title="Help & controls"
+            disclosure
+            onPress={() => onOpen('help')}
+          />
+          <SettingsRow
+            title="About"
+            disclosure
+            onPress={() => onOpen('about')}
+          />
           <SettingsRow
             title="Credits & map sources"
+            disclosure
             onPress={() => onOpen('credits')}
           />
           <SettingsRow
             title="Open-source licenses"
+            disclosure
             onPress={() => onOpen('licenses')}
           />
         </SettingsSection>

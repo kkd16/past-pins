@@ -80,6 +80,26 @@ describe('atlas camera transitions', () => {
     expect(pending.size).toBe(0);
   });
 
+  test('resizing interrupts a flat transition before it can restore stale bounds', () => {
+    const camera = new FlatCamera();
+    const controller = new FlatController(camera, mock());
+    controller.resize(390, 844);
+    camera.start(null);
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    controller.move(() => camera.focus('fj'));
+    frame();
+    controller.resize(844, 390);
+    const position = [...camera.center];
+    const zoom = camera.zoom;
+    for (let i = 0; i < 40; i++) frame();
+    expect(camera.center).toEqual(position);
+    expect(camera.zoom).toBe(zoom);
+    expect(pending.size).toBe(0);
+    camera.resize(844, 390);
+    expect(camera.center).toEqual(position);
+  });
+
   test('globe initial focus survives renderer attachment and animated focus ends at its destination', () => {
     const controller = new GlobeController(mock());
     controller.resize(390, 844);

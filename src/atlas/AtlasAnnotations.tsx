@@ -10,6 +10,8 @@ import { calloutRect, inBounds, placeLabels } from './annotations';
 import { countryAnchors, labelCandidates } from './geography';
 import type { AtlasViewportProps } from './types';
 
+const homeSize = 28;
+
 export function AtlasAnnotations({
   selectedId,
   selectedAnchor,
@@ -56,6 +58,15 @@ export function AtlasAnnotations({
     ? countryAnchors.get(homeCountryId)?.anchor
     : null;
   const homePoint = homeAnchor ? project(homeAnchor) : null;
+  const homeMarker =
+    homeCountryId !== selectedId && homePoint && inBounds(homePoint, bounds)
+      ? {
+          x: homePoint[0] - homeSize / 2,
+          y: homePoint[1] - homeSize / 2,
+          width: homeSize,
+          height: homeSize,
+        }
+      : null;
   const callout = calloutRect(point, size, bounds);
   const status = country
     ? getStatusPresentation(places[country.id], country.id === homeCountryId)
@@ -76,33 +87,27 @@ export function AtlasAnnotations({
               point: project(anchor),
             })),
           bounds,
-          callout,
+          [callout, homeMarker].filter((rect) => rect !== null),
         )
       : [];
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      {homeCountryId &&
-        homeCountryId !== selectedId &&
-        homePoint &&
-        inBounds(homePoint, bounds) && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Current home: ${countryById.get(homeCountryId)?.name}. Select country.`}
-            hitSlop={8}
-            onPress={() => propsSelect(homeCountryId, homeAnchor!)}
-            style={[
-              styles.home,
-              { left: homePoint[0] - 14, top: homePoint[1] - 14 },
-            ]}
-          >
-            <Icon
-              name="home"
-              color={theme.color.lived}
-              size={theme.size.iconSmall}
-            />
-          </Pressable>
-        )}
+      {homeCountryId && homeMarker && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Current home: ${countryById.get(homeCountryId)?.name}. Select country.`}
+          hitSlop={8}
+          onPress={() => propsSelect(homeCountryId, homeAnchor!)}
+          style={[styles.home, { left: homeMarker.x, top: homeMarker.y }]}
+        >
+          <Icon
+            name="home"
+            color={theme.color.lived}
+            size={theme.size.iconSmall}
+          />
+        </Pressable>
+      )}
       {names.map((label) => (
         <View
           key={label.id}
@@ -169,8 +174,8 @@ export function AtlasAnnotations({
 const styles = StyleSheet.create({
   home: {
     position: 'absolute',
-    width: 28,
-    height: 28,
+    width: homeSize,
+    height: homeSize,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.radius.pill,

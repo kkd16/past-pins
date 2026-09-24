@@ -6,6 +6,7 @@ export default function StatsRoute() {
   return (
     <StatsScreen
       onOpenSettings={() => router.push('/settings')}
+      onChooseHome={() => router.push('/settings/home')}
       onOpenCountries={(scope, continent = 'all') =>
         router.navigate({
           pathname: '/countries',

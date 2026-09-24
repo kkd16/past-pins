@@ -2,7 +2,6 @@ import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { theme } from '../theme';
 import { Icon } from './Icon';
-import { IconButton } from './IconButton';
 
 export function SearchField({
   value,
@@ -25,20 +24,13 @@ export function SearchField({
         keyboardAppearance={theme.appearance.colorScheme}
         autoCapitalize="none"
         autoCorrect={false}
+        clearButtonMode="always"
         returnKeyType="search"
         {...props}
         value={value}
         onChangeText={onChangeText}
         style={[styles.input, style]}
       />
-      {value.length > 0 && (
-        <IconButton
-          name="close"
-          size={theme.size.iconSmall}
-          accessibilityLabel="Clear search"
-          onPress={() => onChangeText('')}
-        />
-      )}
     </View>
   );
 }
