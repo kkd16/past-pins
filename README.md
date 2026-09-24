@@ -38,9 +38,13 @@ To update data, use `bunx expo install @svg-maps/world --bun` and review the ups
 
 ## Saved visits
 
-AsyncStorage stores `{ version: 1, visitedIds: [...] }` under `past-pins.visits.v1`. Reads finish before editing is enabled; writes are serialized so quick checks cannot save out of order. Failed saves show a retry action. Invalid saved data stays untouched unless the user explicitly confirms a reset.
+Visits are stored locally in `past-pins.db` using [Expo SQLite for SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/). The `visited_countries` table has one `country_id` primary key per visited place. The connection opens asynchronously on first use, enables WAL, and creates the table if needed.
 
-To swap storage, implement [VisitStorage](src/countries/visit-storage.ts) (`load` and `save`) and select it in `src/storage/visits.ts`. The route injects it; the UI and hook do not depend on AsyncStorage or JSON. Keep the adapter stable for the screen's lifetime and preserve validation, ordered snapshot writes, and error handling. Migrate existing visits explicitly when changing backends.
+Reads finish before editing is enabled. Reads and snapshot writes are serialized so rapid toggles persist in order. Each save replaces the selection in a transaction; failure preserves the last committed selection. Load and save failures offer retry, and unknown country IDs are rejected without silently changing saved data.
+
+This is a hard cutover: previous AsyncStorage data is ignored. There is no JSON parser, migration, fallback backend, or reset flow.
+
+[VisitStorage](src/countries/visit-storage.ts) exposes `load` and `save`; `src/storage/visits.ts` creates the app's stable adapter, which the route injects into the screen. Tests execute the adapter's SQL against temporary databases using Bun's SQLite support. Native behavior still needs an iPhone/iPad smoke test. Expo SQLite is included in SDK 57 Expo Go; rebuild an existing development client after adding it.
 
 ## Attribution
 

@@ -1,10 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { openDatabaseAsync } from 'expo-sqlite';
 
 import { countryIds } from '../countries/catalog';
-import type { VisitStorage } from '../countries/visit-storage';
-import { createLocalVisitStorage } from './local-visit-storage';
+import { createSQLiteVisitStorage } from './sqlite-visit-storage';
 
-export const visitStorage: VisitStorage = createLocalVisitStorage(
-  AsyncStorage,
+export const visitStorage = createSQLiteVisitStorage(
+  () => openDatabaseAsync('past-pins.db'),
   countryIds,
 );

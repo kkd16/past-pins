@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
@@ -7,33 +7,14 @@ import type { VisitedCountries } from '../hooks/useVisitedCountries';
 
 type VisitsFeedbackProps = Pick<
   VisitedCountries,
-  'status' | 'loadError' | 'saveError' | 'retry' | 'resetUnreadableVisits'
+  'status' | 'saveError' | 'retry'
 >;
 
 export function VisitsFeedback({
   status,
-  loadError,
   saveError,
   retry,
-  resetUnreadableVisits,
 }: VisitsFeedbackProps) {
-  function confirmReset() {
-    Alert.alert(
-      'Reset saved visits?',
-      'This replaces the unreadable saved collection with an empty one. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset visits',
-          style: 'destructive',
-          onPress: () => {
-            void resetUnreadableVisits();
-          },
-        },
-      ],
-    );
-  }
-
   return (
     <>
       {status === 'loading' && (
@@ -43,19 +24,12 @@ export function VisitsFeedback({
           accessibilityLabel="Loading saved visits"
         />
       )}
-      {status === 'load-error' && loadError && (
+      {status === 'load-error' && (
         <View style={styles.notice} accessibilityRole="alert">
-          <AppText variant="caption">{loadError.message}</AppText>
-          <View style={styles.actions}>
-            <Button label="Try again" variant="quiet" onPress={retry} />
-            {loadError.canReset && (
-              <Button
-                label="Reset saved visits"
-                variant="quiet"
-                onPress={confirmReset}
-              />
-            )}
-          </View>
+          <AppText variant="caption">
+            Could not load your visits. Try again.
+          </AppText>
+          <Button label="Try again" variant="quiet" onPress={retry} />
         </View>
       )}
       {saveError && (
@@ -79,5 +53,4 @@ const styles = StyleSheet.create({
     marginBottom: theme.space.md,
     gap: theme.space.xs,
   },
-  actions: { flexDirection: 'row', flexWrap: 'wrap' },
 });
