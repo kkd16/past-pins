@@ -65,20 +65,29 @@ describe('travel statuses', () => {
     one.preferences.haptics = false;
     one.places.ca = 'visited';
     one.subdivisions['region-a'] = 'visited';
+    one.lists.push({ id: 'list-one', name: 'Next trip', placeIds: ['ca'] });
     expect(two.preferences.haptics).toBe(true);
     expect(two.places).toEqual({});
     expect(two.subdivisions).toEqual({});
+    expect(two.lists).toEqual([]);
   });
 
   test('regions have exclusive statuses and preserve lived during mark-visited', () => {
-    let data = changeSubdivisionStatus(defaultAppData(), ['region-a'], 'wishlist');
+    let data = changeSubdivisionStatus(
+      defaultAppData(),
+      ['region-a'],
+      'wishlist',
+    );
     expect(getSubdivisionStatus(data, 'region-a')).toBe('wishlist');
     expect(isVisited(data.subdivisions['region-a'])).toBe(false);
     data = changeSubdivisionStatus(data, ['region-a'], 'lived');
     expect(isVisited(data.subdivisions['region-a'])).toBe(true);
     expect(changeSubdivisionStatus(data, ['region-a'], 'visited')).toBe(data);
     data = changeSubdivisionStatus(data, ['region-a', 'region-b'], 'visited');
-    expect(data.subdivisions).toEqual({ 'region-a': 'lived', 'region-b': 'visited' });
+    expect(data.subdivisions).toEqual({
+      'region-a': 'lived',
+      'region-b': 'visited',
+    });
     data = changeSubdivisionStatus(data, ['region-a'], 'visited', false);
     expect(data.subdivisions['region-a']).toBe('visited');
     data = changeSubdivisionStatus(data, ['region-a'], 'unvisited');

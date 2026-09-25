@@ -64,6 +64,24 @@ export default function RootLayout() {
                 options={{ presentation: 'modal', headerShown: false }}
               />
               <Stack.Screen
+                name="lists/[id]"
+                options={{ title: t('lists.title') }}
+              />
+              <Stack.Screen
+                name="lists/places"
+                options={{
+                  title: t('lists.editPlaces'),
+                  presentation: 'modal',
+                }}
+              />
+              <Stack.Screen
+                name="lists/add"
+                options={{
+                  title: t('lists.saveToLists'),
+                  presentation: 'modal',
+                }}
+              />
+              <Stack.Screen
                 name="regions/index"
                 options={{ title: t('subdivisions.title') }}
               />

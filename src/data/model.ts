@@ -1,6 +1,14 @@
 export type SavedStatus = 'wishlist' | 'visited' | 'lived';
 export type PlaceStatus = SavedStatus | 'unvisited';
 
+export const MAX_LIST_NAME_LENGTH = 80;
+
+export type TravelList = {
+  id: string;
+  name: string;
+  placeIds: string[];
+};
+
 export type Preferences = {
   mapView: 'globe' | 'map';
   countryLabels: boolean;
@@ -12,6 +20,7 @@ export type Preferences = {
 export type AppData = {
   places: Partial<Record<string, SavedStatus>>;
   subdivisions: Partial<Record<string, SavedStatus>>;
+  lists: TravelList[];
   homeCountryId: string | null;
   preferences: Preferences;
 };
@@ -28,6 +37,7 @@ export function defaultAppData(): AppData {
   return {
     places: {},
     subdivisions: {},
+    lists: [],
     homeCountryId: null,
     preferences: { ...defaultPreferences },
   };
@@ -47,7 +57,7 @@ export function getSubdivisionStatus(data: AppData, id: string): PlaceStatus {
 
 export type TravelData = Pick<
   AppData,
-  'places' | 'subdivisions' | 'homeCountryId'
+  'places' | 'subdivisions' | 'lists' | 'homeCountryId'
 >;
 
 function changeStatuses(

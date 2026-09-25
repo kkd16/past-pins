@@ -3,7 +3,11 @@ import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
 import { subdivisionIds } from '../subdivisions/catalog';
 import type { AppStorage } from '../storage/snapshot-storage';
-import { validateAppData } from './validation';
+import {
+  validateAppData,
+  validateListName,
+  validateListPlaces,
+} from './validation';
 import {
   changeHome,
   changePlaceStatus,
@@ -46,6 +50,7 @@ export function createAppDataStore(
   let revision = 0;
   let loading: Promise<void> | null = null;
   let lastWrite = Promise.resolve();
+  let listSequence = 0;
 
   function publish(patch: Partial<DataSnapshot>) {
     snapshot = { ...snapshot, ...patch };
@@ -73,6 +78,7 @@ export function createAppDataStore(
     undoTravel = {
       places: snapshot.data.places,
       subdivisions: snapshot.data.subdivisions,
+      lists: snapshot.data.lists,
       homeCountryId: snapshot.data.homeCountryId,
     };
     publish({ data, pendingUndo: { id: ++undoSequence, label } });
@@ -117,6 +123,28 @@ export function createAppDataStore(
     } finally {
       publish({ busy: false });
     }
+  }
+
+  function setListPlaces(id: string, placeIds: readonly string[]): boolean {
+    if (!editable()) return false;
+    const list = snapshot.data.lists.find((list) => list.id === id);
+    if (!list) return false;
+    const members = validateListPlaces(placeIds);
+    if (
+      members.length === list.placeIds.length &&
+      members.every((member, index) => member === list.placeIds[index])
+    )
+      return true;
+    changeTravel(
+      {
+        ...snapshot.data,
+        lists: snapshot.data.lists.map((item) =>
+          item.id === id ? { ...item, placeIds: members } : item,
+        ),
+      },
+      t('common.listUpdated'),
+    );
+    return true;
   }
 
   return {
@@ -177,6 +205,62 @@ export function createAppDataStore(
       changeTravel(next, t('common.subdivisionsUpdated', { count }));
       return true;
     },
+    createList(name: string, placeIds: readonly string[] = []): string | null {
+      if (!editable()) return null;
+      const listName = validateListName(name);
+      const members = validateListPlaces(placeIds);
+      let id: string;
+      do {
+        id = `list-${Date.now().toString(36)}-${(++listSequence).toString(36)}`;
+      } while (snapshot.data.lists.some((list) => list.id === id));
+      changeTravel(
+        {
+          ...snapshot.data,
+          lists: [
+            ...snapshot.data.lists,
+            { id, name: listName, placeIds: members },
+          ],
+        },
+        t('common.listCreated'),
+      );
+      return id;
+    },
+    renameList(id: string, name: string): boolean {
+      if (!editable()) return false;
+      const list = snapshot.data.lists.find((list) => list.id === id);
+      if (!list) return false;
+      const nextName = validateListName(name);
+      if (list.name === nextName) return true;
+      changeTravel(
+        {
+          ...snapshot.data,
+          lists: snapshot.data.lists.map((item) =>
+            item.id === id ? { ...item, name: nextName } : item,
+          ),
+        },
+        t('common.listRenamed'),
+      );
+      return true;
+    },
+    setListPlaces,
+    toggleListPlace(id: string, placeId: string): boolean {
+      if (!editable()) return false;
+      const list = snapshot.data.lists.find((list) => list.id === id);
+      if (!list) return false;
+      return setListPlaces(
+        id,
+        list.placeIds.includes(placeId)
+          ? list.placeIds.filter((member) => member !== placeId)
+          : [...list.placeIds, placeId],
+      );
+    },
+    deleteList(id: string): boolean {
+      if (!editable()) return false;
+      const lists = snapshot.data.lists.filter((list) => list.id !== id);
+      if (lists.length === snapshot.data.lists.length) return false;
+      changeTravel({ ...snapshot.data, lists }, t('common.listDeleted'));
+      return true;
+    },
     setHome(id: string | null) {
       if (!editable()) return;
       if (id !== null && !countryIds.has(id))
@@ -230,6 +314,7 @@ export function createAppDataStore(
         ...snapshot.data,
         places: {},
         subdivisions: {},
+        lists: [],
         homeCountryId: null,
       });
     },

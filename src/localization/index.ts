@@ -7,9 +7,10 @@ import countries from './locales/en/countries.json';
 import settings from './locales/en/settings.json';
 import location from './locales/en/location.json';
 import subdivisions from './locales/en/subdivisions.json';
+import lists from './locales/en/lists.json';
 
 export const translations = {
-  en: { common, countries, atlas, settings, location, subdivisions },
+  en: { common, countries, atlas, settings, location, subdivisions, lists },
 };
 export const {
   t,

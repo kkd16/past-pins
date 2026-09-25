@@ -103,6 +103,7 @@ export function SettingsScreen({
           regionsWishlist: formatNumber(
             regionStatuses.filter((value) => value === 'wishlist').length,
           ),
+          lists: formatNumber(backup.lists.length),
           home,
         }),
         t('settings.replaceData'),

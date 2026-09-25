@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
-import { defaultAppData, type AppData } from '../src/data/model';
+import {
+  defaultAppData,
+  MAX_LIST_NAME_LENGTH,
+  type AppData,
+} from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
 import { subdivisionIds } from '../src/subdivisions/catalog';
 import {
@@ -69,13 +73,21 @@ describe('app data owner', () => {
       await save(data);
     };
     f.store.setHome('ca');
+    const listId = f.store.createList('Next trip', ['ca', regionOne])!;
     await f.store.setSubdivisionStatus([regionOne], 'visited');
     f.store.updatePreferences({ mapView: 'map', haptics: false });
     const undo = f.store.getSnapshot().pendingUndo!;
     const resetting = f.store.resetApp();
     expect(f.store.getSnapshot().busy).toBe(true);
     expect(await f.store.setStatus(['fr'], 'visited')).toBe(false);
-    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(false);
+    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(
+      false,
+    );
+    expect(f.store.createList('Blocked')).toBeNull();
+    expect(f.store.renameList(listId, 'Blocked')).toBe(false);
+    expect(f.store.setListPlaces(listId, ['fr'])).toBe(false);
+    expect(f.store.toggleListPlace(listId, 'fr')).toBe(false);
+    expect(f.store.deleteList(listId)).toBe(false);
     await expect(f.store.resetApp()).rejects.toThrow('not ready');
     gate.resolve();
     await resetting;
@@ -147,7 +159,14 @@ describe('app data owner', () => {
     const second = store.load();
     expect(loads).toBe(1);
     expect(await store.setStatus(['ca'], 'visited')).toBe(false);
-    expect(await store.setSubdivisionStatus([regionOne], 'visited')).toBe(false);
+    expect(await store.setSubdivisionStatus([regionOne], 'visited')).toBe(
+      false,
+    );
+    expect(store.createList('Blocked')).toBeNull();
+    expect(store.renameList('missing', 'Blocked')).toBe(false);
+    expect(store.setListPlaces('missing', ['ca'])).toBe(false);
+    expect(store.toggleListPlace('missing', 'ca')).toBe(false);
+    expect(store.deleteList('missing')).toBe(false);
     store.setHome('ca');
     store.updatePreferences({ haptics: false });
     expect(store.getSnapshot().data).toEqual(defaultAppData());
@@ -156,13 +175,151 @@ describe('app data owner', () => {
     expect(store.getSnapshot().status).toBe('ready');
   });
 
+  test('lists retain country and region membership independently from travel statuses', async () => {
+    const { store, storage } = fixture();
+    await store.load();
+    store.setHome('ca');
+    await store.setSubdivisionStatus([regionOne], 'lived');
+    const original = store.getSnapshot().data;
+    const input = ['ca', regionOne, 'ca'];
+    const id = store.createList('  Next trip  ', input)!;
+    input.push('fr');
+    expect(store.getSnapshot().data.lists).toEqual([
+      { id, name: 'Next trip', placeIds: ['ca', regionOne] },
+    ]);
+    expect(store.getSnapshot().data.places).toBe(original.places);
+    expect(store.getSnapshot().data.subdivisions).toBe(original.subdivisions);
+    const secondId = store.createList('Next trip')!;
+    expect(secondId).not.toBe(id);
+    expect(store.renameList(id, '  Summer  ')).toBe(true);
+    const nextMembers = ['fr', regionTwo];
+    expect(store.setListPlaces(id, nextMembers)).toBe(true);
+    nextMembers.push('jp');
+    expect(store.getSnapshot().data.lists).toEqual([
+      { id, name: 'Summer', placeIds: ['fr', regionTwo] },
+      { id: secondId, name: 'Next trip', placeIds: [] },
+    ]);
+    expect(store.getSnapshot().data.places).toBe(original.places);
+    expect(store.getSnapshot().data.subdivisions).toBe(original.subdivisions);
+    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
+    await settle(storage);
+    expect(await storage.load()).toEqual(store.getSnapshot().data);
+  });
+
+  test('every list edit uses shared Undo and leaves preference changes intact', async () => {
+    const { store, storage } = fixture();
+    await store.load();
+    const id = store.createList('Next trip', ['ca'])!;
+    const createdUndo = store.getSnapshot().pendingUndo!;
+    expect(createdUndo.label).toBe('List created');
+    store.updatePreferences({ haptics: false });
+    expect(store.undo(createdUndo.id)).toBe(true);
+    expect(store.getSnapshot().data.lists).toEqual([]);
+    expect(store.getSnapshot().data.preferences.haptics).toBe(false);
+    const nextId = store.createList('Next trip', ['ca'])!;
+    expect(nextId).not.toBe(id);
+    store.renameList(nextId, 'Summer');
+    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
+    expect(store.getSnapshot().data.lists[0].name).toBe('Next trip');
+    store.setListPlaces(nextId, ['fr', regionOne]);
+    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
+    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca']);
+    expect(store.deleteList(nextId)).toBe(true);
+    expect(store.getSnapshot().data.lists).toEqual([]);
+    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
+    expect(store.getSnapshot().data.lists).toEqual([
+      { id: nextId, name: 'Next trip', placeIds: ['ca'] },
+    ]);
+    await store.setStatus(['ca'], 'visited');
+    const statusUndo = store.getSnapshot().pendingUndo!;
+    expect(store.undo(statusUndo.id)).toBe(true);
+    expect(store.getSnapshot().data.lists[0].id).toBe(nextId);
+    expect(store.getSnapshot().data.places).toEqual({});
+    await settle(storage);
+    expect(await storage.load()).toEqual(store.getSnapshot().data);
+  });
+
+  test('membership toggles use the latest list and Undo restores only the last change', async () => {
+    const { store, storage } = fixture();
+    await store.load();
+    const id = store.createList('Next trip', ['ca', regionOne])!;
+    expect(store.toggleListPlace(id, 'fr')).toBe(true);
+    expect(store.toggleListPlace(id, regionOne)).toBe(true);
+    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca', 'fr']);
+    expect(store.toggleListPlace(id, 'fr')).toBe(true);
+    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca']);
+    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
+    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca', 'fr']);
+    const before = store.getSnapshot();
+    expect(() => store.toggleListPlace(id, 'unknown')).toThrow('unknown');
+    expect(store.toggleListPlace('missing', 'unknown')).toBe(false);
+    expect(store.getSnapshot()).toBe(before);
+    await settle(storage);
+    expect(await storage.load()).toEqual(before.data);
+  });
+
+  test('list edits validate atomically and stale actions or no-ops preserve Undo', async () => {
+    const { store, storage } = fixture();
+    await store.load();
+    const id = store.createList('Next trip', ['ca', regionOne])!;
+    await settle(storage);
+    const before = store.getSnapshot();
+    expect(store.renameList(id, ' Next trip ')).toBe(true);
+    expect(store.setListPlaces(id, ['ca', regionOne, 'ca'])).toBe(true);
+    expect(store.renameList('missing', '')).toBe(false);
+    expect(store.setListPlaces('missing', ['unknown'])).toBe(false);
+    expect(store.deleteList('missing')).toBe(false);
+    for (const name of [
+      '',
+      '   ',
+      'Two\nlines',
+      'x'.repeat(MAX_LIST_NAME_LENGTH + 1),
+    ]) {
+      expect(() => store.createList(name)).toThrow('list name');
+      expect(() => store.renameList(id, name)).toThrow('list name');
+    }
+    expect(() => store.createList('Invalid', ['ca', 'unknown'])).toThrow(
+      'unknown',
+    );
+    expect(() => store.setListPlaces(id, ['fr', 'unknown'])).toThrow('unknown');
+    expect(store.getSnapshot()).toBe(before);
+    expect(await storage.load()).toEqual(before.data);
+    store.deleteList(id);
+    const deleted = store.getSnapshot();
+    expect(store.renameList(id, 'Stale')).toBe(false);
+    expect(store.setListPlaces(id, ['ca'])).toBe(false);
+    expect(store.getSnapshot()).toBe(deleted);
+  });
+
+  test('list save failures keep optimistic data and retry persists the latest list', async () => {
+    const f = fixture();
+    await f.store.load();
+    f.failWrites(true);
+    const id = f.store.createList('Next trip', ['ca'])!;
+    await settle(f.storage);
+    expect(f.store.getSnapshot().saveError).toBe(true);
+    expect(f.store.getSnapshot().data.lists[0].id).toBe(id);
+    f.store.setListPlaces(id, [regionOne, 'fr']);
+    await settle(f.storage);
+    f.failWrites(false);
+    f.store.retry();
+    await settle(f.storage);
+    expect(f.store.getSnapshot().saveError).toBe(false);
+    expect((await f.storage.load()).lists).toEqual([
+      { id, name: 'Next trip', placeIds: [regionOne, 'fr'] },
+    ]);
+  });
+
   test('region changes persist, preserve country and home data, and undo with preferences intact', async () => {
     const { store, storage } = fixture();
     await store.load();
     store.setHome('ca');
     await store.setSubdivisionStatus([regionOne], 'lived');
     const initial = store.getSnapshot().data;
-    await store.setSubdivisionStatus([regionOne, regionTwo, regionThree], 'visited');
+    await store.setSubdivisionStatus(
+      [regionOne, regionTwo, regionThree],
+      'visited',
+    );
     expect(store.getSnapshot().data.subdivisions).toEqual({
       [regionOne]: 'lived',
       [regionTwo]: 'visited',
@@ -174,7 +331,9 @@ describe('app data owner', () => {
     expect(undo.label).toBe('Regions updated');
     store.updatePreferences({ haptics: false });
     expect(store.undo(undo.id)).toBe(true);
-    expect(store.getSnapshot().data.subdivisions).toEqual({ [regionOne]: 'lived' });
+    expect(store.getSnapshot().data.subdivisions).toEqual({
+      [regionOne]: 'lived',
+    });
     expect(store.getSnapshot().data.places).toBe(initial.places);
     expect(store.getSnapshot().data.homeCountryId).toBe('ca');
     expect(store.getSnapshot().data.preferences.haptics).toBe(false);
@@ -186,12 +345,17 @@ describe('app data owner', () => {
     const { store } = fixture();
     await store.load();
     await store.setSubdivisionStatus([regionOne], 'lived');
-    await store.setSubdivisionStatus([regionOne, regionTwo, regionTwo], 'visited');
+    await store.setSubdivisionStatus(
+      [regionOne, regionTwo, regionTwo],
+      'visited',
+    );
     const undo = store.getSnapshot().pendingUndo!;
     expect(undo.label).toBe('Region updated');
     await store.setSubdivisionStatus([regionOne, regionTwo], 'visited');
     expect(store.getSnapshot().pendingUndo).toBe(undo);
-    await store.setSubdivisionStatus([regionOne], 'visited', { preserveLived: false });
+    await store.setSubdivisionStatus([regionOne], 'visited', {
+      preserveLived: false,
+    });
     expect(store.getSnapshot().data.subdivisions[regionOne]).toBe('visited');
     expect(store.undo(undo.id)).toBe(false);
     expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
@@ -205,7 +369,9 @@ describe('app data owner', () => {
     await store.setStatus(['ca'], 'visited');
     expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
     expect(store.getSnapshot().data.places).toEqual({});
-    expect(store.getSnapshot().data.subdivisions).toEqual({ [regionOne]: 'wishlist' });
+    expect(store.getSnapshot().data.subdivisions).toEqual({
+      [regionOne]: 'wishlist',
+    });
     await settle(storage);
     const before = store.getSnapshot();
     await expect(
@@ -431,11 +597,18 @@ describe('app data owner', () => {
     const replacement = defaultAppData();
     replacement.places.fr = 'wishlist';
     replacement.subdivisions[regionOne] = 'lived';
+    replacement.lists.push({
+      id: 'list-restored',
+      name: 'Restored',
+      placeIds: ['fr', regionOne],
+    });
     const restore = f.store.restore(replacement);
     expect(f.store.getSnapshot().busy).toBe(true);
     expect(f.store.getSnapshot().data.places).toEqual({ ca: 'visited' });
     expect(await f.store.setStatus(['jp'], 'visited')).toBe(false);
-    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(false);
+    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(
+      false,
+    );
     gate.resolve();
     await restore;
     expect(f.store.getSnapshot().data.places).toEqual({ fr: 'wishlist' });
@@ -519,10 +692,16 @@ describe('app data owner', () => {
     await f.store.load();
     f.store.setHome('ca');
     await f.store.setSubdivisionStatus([regionOne], 'visited');
+    const listId = f.store.createList('Next trip', ['ca'])!;
     f.store.updatePreferences({ haptics: false });
     f.store.resetPreferences();
     expect(f.store.getSnapshot().data.homeCountryId).toBe('ca');
-    expect(f.store.getSnapshot().data.subdivisions).toEqual({ [regionOne]: 'visited' });
+    expect(f.store.getSnapshot().data.subdivisions).toEqual({
+      [regionOne]: 'visited',
+    });
+    expect(f.store.getSnapshot().data.lists).toEqual([
+      { id: listId, name: 'Next trip', placeIds: ['ca'] },
+    ]);
     expect(f.store.getSnapshot().data.preferences).toEqual(
       defaultAppData().preferences,
     );
@@ -531,6 +710,7 @@ describe('app data owner', () => {
     await f.store.clearTravel();
     expect(f.store.getSnapshot().data.places).toEqual({});
     expect(f.store.getSnapshot().data.subdivisions).toEqual({});
+    expect(f.store.getSnapshot().data.lists).toEqual([]);
     expect(f.store.getSnapshot().data.homeCountryId).toBeNull();
     expect(f.store.getSnapshot().data.preferences.mapView).toBe('map');
     expect(f.store.getSnapshot().pendingUndo).toBeNull();

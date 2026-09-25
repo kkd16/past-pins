@@ -41,6 +41,16 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf="globe" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger
+        name="lists"
+        disableAutomaticContentInsets
+        contentStyle={{ backgroundColor: theme.color.background }}
+      >
+        <NativeTabs.Trigger.Label>{t('lists.title')}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'rectangle.stack', selected: 'rectangle.stack.fill' }}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger
         name="stats"
         disableAutomaticContentInsets
         contentStyle={{ backgroundColor: theme.color.background }}

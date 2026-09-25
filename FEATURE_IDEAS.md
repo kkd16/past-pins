@@ -1,6 +1,6 @@
 # Offline feature ideas
 
-Ideas for expanding PastPins through map exploration, collections, and travel statistics. These are proposals, not committed features. Notes and visit dates are outside this direction.
+Ideas for expanding PastPins through map exploration, collections, and travel statistics. States/provinces and custom lists are now implemented; the remaining ideas are proposals. Notes and visit dates are outside this direction.
 
 All features should work offline on iPhone and iPad, using bundled geographic data and on-device storage. Creating an export should work offline; sending it through another app may require connectivity.
 
@@ -8,9 +8,9 @@ All features should work offline on iPhone and iPad, using bundled geographic da
 
 | Feature | What it adds |
 | --- | --- |
-| States and provinces | Track US states, Canadian provinces, and other regions within countries. Adds more detail and progress for domestic travel. Introduce coverage country by country. |
+| States and provinces — implemented | Track available regions across 211 countries and territories using bundled source data, offline maps, and separate regional progress. |
 | City pins | Mark individual cities and see travels at a finer scale. Use a bundled city catalog for offline search and selection. |
-| Custom collections | Create lists such as “Nordic countries,” “Places I’d live,” or “Next big adventure,” and highlight each collection on the map. |
+| Custom lists — implemented | Group countries and regions, see an offline map and live visited progress, and manage membership from each place or a searchable picker. |
 | Passport stamp collection | Unlock a distinctive stamp for each visited country and browse the stamps as a visual collection. |
 | Geography challenges | Guess countries from their outlines, identify flags, or find countries on the globe. Include a mode using only visited places. |
 | Map themes | Customize ocean, border, and visited-country styles. Save favorite combinations while preserving contrast and accessibility. |
@@ -19,8 +19,4 @@ All features should work offline on iPhone and iPad, using bundled geographic da
 
 ## Suggested priorities
 
-1. **States and provinces:** the largest expansion of the app’s core purpose.
-2. **Custom collections:** more ways to organize places and use the existing map.
-3. **Passport stamps:** a visual reward for marking countries visited.
-
-Suggested starting point: states and provinces, with country-by-country coverage so each map can be refined before expanding further.
+The first two priorities, states/provinces and custom lists, are implemented. Passport stamps remain the next proposed visual reward for marking countries visited.

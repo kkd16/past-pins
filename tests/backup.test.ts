@@ -2,7 +2,11 @@ import { describe, expect, test } from 'bun:test';
 
 import { countryIds } from '../src/countries/catalog';
 import { decodeBackup, encodeBackup } from '../src/data/backup';
-import { changeHome, defaultAppData } from '../src/data/model';
+import {
+  changeHome,
+  defaultAppData,
+  MAX_LIST_NAME_LENGTH,
+} from '../src/data/model';
 import { validateAppData } from '../src/data/validation';
 import { subdivisionIds } from '../src/subdivisions/catalog';
 
@@ -21,6 +25,14 @@ describe('current backup format', () => {
     for (const id of subdivisionIds) data.subdivisions[id] = 'visited';
     data.places.fr = 'wishlist';
     data.places.jp = 'visited';
+    data.lists = [
+      {
+        id: 'list-one',
+        name: 'Everywhere',
+        placeIds: [...countryIds, ...subdivisionIds],
+      },
+      { id: 'list-two', name: 'Some day', placeIds: [] },
+    ];
     data.preferences = {
       mapView: 'map',
       countryLabels: false,
@@ -35,11 +47,18 @@ describe('current backup format', () => {
 
   test('returns independent data objects', () => {
     const data = defaultAppData();
+    data.lists.push({ id: 'list-one', name: 'Next trip', placeIds: ['ca'] });
     const parsed = validateAppData(data);
     parsed.preferences.haptics = false;
     parsed.places.ca = 'wishlist';
     parsed.subdivisions[[...subdivisionIds][0]] = 'visited';
-    expect(data).toEqual(defaultAppData());
+    parsed.lists[0].name = 'Changed';
+    parsed.lists[0].placeIds.push('fr');
+    parsed.lists.push({ id: 'list-two', name: 'New', placeIds: [] });
+    expect(data).toEqual({
+      ...defaultAppData(),
+      lists: [{ id: 'list-one', name: 'Next trip', placeIds: ['ca'] }],
+    });
   });
 
   test('rejects non-JSON input', () => {
@@ -51,6 +70,37 @@ describe('current backup format', () => {
     expect(() =>
       decodeBackup(JSON.stringify({ app: 'past-pins', version: 1, data })),
     ).toThrow();
+  });
+
+  test('requires lists even when a country and region backup version matches', () => {
+    const { lists: _lists, ...data } = defaultAppData();
+    expect(() =>
+      decodeBackup(JSON.stringify({ app: 'past-pins', version: 1, data })),
+    ).toThrow();
+  });
+
+  test('rejects malformed lists, duplicate IDs or members, and unknown references', () => {
+    const valid = { id: 'list-one', name: 'Next trip', placeIds: ['ca'] };
+    for (const lists of [
+      undefined,
+      null,
+      {},
+      [null],
+      [{ ...valid, extra: true }],
+      [{ ...valid, id: '' }],
+      [{ ...valid, id: 'with space' }],
+      [valid, { ...valid, name: 'Another' }],
+      [{ ...valid, name: '' }],
+      [{ ...valid, name: '   ' }],
+      [{ ...valid, name: ' Next trip ' }],
+      [{ ...valid, name: 'Two\nlines' }],
+      [{ ...valid, name: 'x'.repeat(MAX_LIST_NAME_LENGTH + 1) }],
+      [{ ...valid, placeIds: null }],
+      [{ ...valid, placeIds: ['ca', 'ca'] }],
+      [{ ...valid, placeIds: ['ca', 'unknown'] }],
+      [{ ...valid, placeIds: ['ca', null] }],
+    ])
+      expect(() => validateAppData({ ...defaultAppData(), lists })).toThrow();
   });
 
   test('only accepts the exact current backup envelope and schema', () => {

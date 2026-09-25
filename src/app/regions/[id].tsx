@@ -6,8 +6,9 @@ import { t } from '../../localization';
 import { SubdivisionsScreen } from '../../screens/SubdivisionsScreen';
 
 export default function SubdivisionsRoute() {
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; focus?: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
+  const focus = typeof params.focus === 'string' ? params.focus : undefined;
   return (
     <>
       <Stack.Screen
@@ -23,8 +24,12 @@ export default function SubdivisionsRoute() {
         }}
       />
       <SubdivisionsScreen
-        key={id}
+        key={`${id}:${focus ?? ''}`}
         countryId={id}
+        initialSelectedId={focus}
+        onSaveToLists={(placeId) =>
+          router.push({ pathname: '/lists/add', params: { placeId } })
+        }
         onBrowse={() => router.replace('/regions')}
       />
     </>

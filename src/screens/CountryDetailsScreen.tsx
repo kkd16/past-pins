@@ -22,11 +22,13 @@ export function CountryDetailsScreen({
   onDone,
   onShowMap,
   onOpenRegions,
+  onSaveToLists,
 }: {
   id: string;
   onDone: () => void;
   onShowMap: (id: string) => void;
   onOpenRegions: (id: string) => void;
+  onSaveToLists: (id: string) => void;
 }) {
   const app = useAppData();
   const country = countryById.get(id);
@@ -85,6 +87,12 @@ export function CountryDetailsScreen({
           <Button
             label={t('countries.details.showMap')}
             onPress={() => onShowMap(id)}
+          />
+          <Button
+            label={t('lists.saveToLists')}
+            variant="quiet"
+            disabled={disabled}
+            onPress={() => onSaveToLists(id)}
           />
           {regionStats.total > 0 && (
             <Surface style={styles.regions}>

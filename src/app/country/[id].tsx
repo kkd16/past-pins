@@ -8,6 +8,9 @@ export default function CountryDetailsRoute() {
     <CountryDetailsScreen
       id={id}
       onDone={() => router.back()}
+      onSaveToLists={(placeId) =>
+        router.push({ pathname: '/lists/add', params: { placeId } })
+      }
       onOpenRegions={(countryId) =>
         router.push({ pathname: '/regions/[id]', params: { id: countryId } })
       }

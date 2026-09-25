@@ -86,6 +86,11 @@ describe('atomic snapshot storage', () => {
     data.places.ca = 'lived';
     data.homeCountryId = 'ca';
     data.subdivisions[[...subdivisionIds][0]] = 'visited';
+    data.lists.push({
+      id: 'list-one',
+      name: 'Next trip',
+      placeIds: ['ca', [...subdivisionIds][0]],
+    });
     data.preferences.mapView = 'map';
     await storage.save(data);
     expect(await createSnapshotStorage(keyValue).load()).toEqual(data);
@@ -96,7 +101,7 @@ describe('atomic snapshot storage', () => {
 
   test('rejects country-only snapshots without silently resetting them', async () => {
     const { storage, keyValue } = fixture();
-    const legacy: Omit<AppData, 'subdivisions'> = {
+    const legacy: Omit<AppData, 'subdivisions' | 'lists'> = {
       places: { ca: 'lived', fr: 'wishlist' },
       homeCountryId: 'ca',
       preferences: { ...defaultAppData().preferences, haptics: false },
@@ -107,6 +112,15 @@ describe('atomic snapshot storage', () => {
     expect(await keyValue.getItem('app-data')).toBe(original);
     await storage.clear();
     expect(await storage.load()).toEqual(defaultAppData());
+  });
+
+  test('rejects snapshots without lists and preserves the stored record until reset', async () => {
+    const { storage, keyValue } = fixture();
+    const { lists: _lists, ...data } = defaultAppData();
+    const original = JSON.stringify(data);
+    await keyValue.setItem('app-data', original);
+    await expect(storage.load()).rejects.toThrow();
+    expect(await keyValue.getItem('app-data')).toBe(original);
   });
 
   test('rejects malformed snapshots without overwriting them', async () => {
@@ -120,6 +134,7 @@ describe('atomic snapshot storage', () => {
       { ...data, places: { ca: 'visited' } },
       { ...data, subdivisions: null },
       { ...data, subdivisions: { unknown: 'visited' } },
+      { ...data, lists: null },
     ]) {
       const original = JSON.stringify(invalid);
       await keyValue.setItem('app-data', original);
@@ -144,17 +159,26 @@ describe('atomic snapshot storage', () => {
     const storage = createSnapshotStorage(keyValue);
     const data = defaultAppData();
     data.places.ca = 'visited';
+    data.lists.push({ id: 'list-one', name: 'Next trip', placeIds: ['ca'] });
     const first = storage.save(data);
     const firstRead = storage.load();
     data.places.fr = 'wishlist';
+    data.lists[0].placeIds.push('fr');
     const second = storage.save(data);
     const secondRead = storage.load();
     delete data.places.ca;
+    data.lists[0].name = 'Later edit';
     await started.promise;
     expect(calls).toBe(1);
     gate.resolve();
     await Promise.all([first, second]);
     expect((await firstRead).places).toEqual({ ca: 'visited' });
+    expect((await firstRead).lists).toEqual([
+      { id: 'list-one', name: 'Next trip', placeIds: ['ca'] },
+    ]);
+    expect((await secondRead).lists).toEqual([
+      { id: 'list-one', name: 'Next trip', placeIds: ['ca', 'fr'] },
+    ]);
     expect((await secondRead).places).toEqual({
       ca: 'visited',
       fr: 'wishlist',

@@ -34,9 +34,13 @@ const emptySelection: ReadonlySet<string> = new Set();
 export function SubdivisionsScreen({
   countryId,
   onBrowse,
+  initialSelectedId,
+  onSaveToLists,
 }: {
   countryId: string;
   onBrowse: () => void;
+  initialSelectedId?: string;
+  onSaveToLists: (id: string) => void;
 }) {
   const app = useAppData();
   const { setSubdivisionStatus } = app;
@@ -45,7 +49,12 @@ export function SubdivisionsScreen({
   const list = useRef<FlatList<Subdivision>>(null);
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<CountryScope>('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    initialSelectedId &&
+    subdivisionById.get(initialSelectedId)?.countryId === countryId
+      ? initialSelectedId
+      : null,
+  );
   const [focusRequest, setFocusRequest] = useState(0);
   const selectedRegion = selectedId
     ? subdivisionById.get(selectedId)
@@ -216,6 +225,12 @@ export function SubdivisionsScreen({
                   label={t('subdivisions.changeStatus')}
                   disabled={disabled || selecting}
                   onPress={() => changeStatus(selectedRegion.id)}
+                />
+                <Button
+                  label={t('lists.saveToLists')}
+                  variant="quiet"
+                  disabled={disabled || selecting}
+                  onPress={() => onSaveToLists(selectedRegion.id)}
                 />
               </Surface>
             )}
