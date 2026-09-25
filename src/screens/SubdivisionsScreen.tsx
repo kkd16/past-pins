@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ActionSheetIOS,
   FlatList,
   Keyboard,
   ScrollView,
@@ -108,8 +107,8 @@ export function SubdivisionsScreen({
     amount: formatNumber(selectedIds.size),
   };
   const editScope = useMemo(
-    () => ({ filterKey, selectedIds, selectedId, view }),
-    [filterKey, selectedIds, selectedId, view],
+    () => ({ filterKey, selectedIds }),
+    [filterKey, selectedIds],
   );
   const guard = useActionGuard(editScope);
   const stats = useMemo(
@@ -150,32 +149,6 @@ export function SubdivisionsScreen({
     },
     [selecting, filterKey],
   );
-
-  function showMore() {
-    if (!selectedRegion || !country || disabled) return;
-    const id = selectedRegion.id;
-    const isCurrent = guard();
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        title: selectedRegion.name,
-        options: [
-          t('common.markLived'),
-          t('lists.saveToLists'),
-          t('subdivisions.countryDetails', { country: country.name }),
-          t('common.cancel'),
-        ],
-        cancelButtonIndex: 3,
-        userInterfaceStyle: theme.appearance.colorScheme,
-      },
-      (index) => {
-        if (!isCurrent()) return;
-        if (index === 0)
-          void setSubdivisionStatus([id], 'lived', { preserveLived: false });
-        else if (index === 1) onSaveToLists(id);
-        else if (index === 2) onOpenCountry();
-      },
-    );
-  }
 
   function showAll() {
     setQuery('');
@@ -261,26 +234,27 @@ export function SubdivisionsScreen({
                       preserveLived: false,
                     });
                   }}
-                  onMore={showMore}
+                  onSaveToLists={() => onSaveToLists(selectedRegion.id)}
                   onDismiss={() => setSelectedId(null)}
                   autofocus={screenReader && view === 'map'}
-                />
+                >
+                  <Button
+                    label={t('subdivisions.countryDetails', {
+                      country: country.name,
+                    })}
+                    variant="quiet"
+                    onPress={onOpenCountry}
+                  />
+                </PlaceSelectionCard>
               )}
-              {!selectedRegion && (
-                <View style={styles.mapSummary}>
-                  {app.status === 'ready' && (
-                    <AppText variant="label" tone="visited">
-                      {t('subdivisions.visitedSummary', {
-                        ...terminology,
-                        visited: formatNumber(stats.visited),
-                        total: formatNumber(stats.total),
-                      })}
-                    </AppText>
-                  )}
-                  <AppText variant="caption" tone="muted">
-                    {t('subdivisions.mapHint')}
-                  </AppText>
-                </View>
+              {!selectedRegion && app.status === 'ready' && (
+                <AppText variant="label" tone="visited">
+                  {t('subdivisions.visitedSummary', {
+                    ...terminology,
+                    visited: formatNumber(stats.visited),
+                    total: formatNumber(stats.total),
+                  })}
+                </AppText>
               )}
             </ScrollView>
           </View>
@@ -474,7 +448,6 @@ const styles = StyleSheet.create({
   },
   mapDock: { flexGrow: 0, maxHeight: '45%' },
   mapDockContent: { padding: theme.space.lg, gap: theme.space.sm },
-  mapSummary: { gap: theme.space.sm },
   content: {
     paddingHorizontal: theme.space.lg,
     paddingBottom: theme.space.xl,

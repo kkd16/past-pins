@@ -28,7 +28,6 @@
   "selection": "Selected %{type}",
   "clearSelection": "Clear selection",
   "fitCountry": "Show whole country",
-  "mapHint": "Tap the map to see a name and mark your visit. Pinch to zoom.",
   "select": "Select %{plural}",
   "selectedCount": {
     "one": "%{amount} %{singular} selected",

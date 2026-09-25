@@ -3,8 +3,6 @@ import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
-import { Icon } from '../components/Icon';
 import { IconButton } from '../components/IconButton';
 import { Surface } from '../components/Surface';
 import { getStatusPresentation } from '../countries/status';
@@ -20,7 +18,7 @@ export function PlaceSelectionCard({
   home = false,
   disabled = false,
   onChangeStatus,
-  onMore,
+  onSaveToLists,
   onDismiss,
   onDetails,
   autofocus = false,
@@ -32,7 +30,7 @@ export function PlaceSelectionCard({
   home?: boolean;
   disabled?: boolean;
   onChangeStatus: (status: PlaceStatus) => void;
-  onMore: () => void;
+  onSaveToLists: () => void;
   onDismiss: () => void;
   onDetails?: () => void;
   autofocus?: boolean;
@@ -75,12 +73,9 @@ export function PlaceSelectionCard({
           onPress={onDetails}
           style={styles.title}
         >
-          <View style={styles.name}>
-            <AppText variant="label" style={styles.text}>
-              {title}
-            </AppText>
-            {onDetails && <Icon name="chevronRight" />}
-          </View>
+          <AppText variant="label" tone={onDetails ? 'accent' : 'default'}>
+            {title}
+          </AppText>
           {subtitle && (
             <AppText variant="caption" tone="muted">
               {subtitle}
@@ -90,6 +85,12 @@ export function PlaceSelectionCard({
             {presentation.label}
           </AppText>
         </Heading>
+        <IconButton
+          name="list"
+          accessibilityLabel={t('lists.saveToLists')}
+          disabled={disabled}
+          onPress={onSaveToLists}
+        />
         <IconButton
           name="close"
           accessibilityLabel={t('common.clearSelection')}
@@ -101,15 +102,7 @@ export function PlaceSelectionCard({
         disabled={disabled}
         onChange={onChangeStatus}
       />
-      <View style={styles.actions}>
-        {children && <View style={styles.additional}>{children}</View>}
-        <Button
-          label={t('common.more')}
-          variant="quiet"
-          disabled={disabled}
-          onPress={onMore}
-        />
-      </View>
+      {children}
     </Surface>
   );
 }
@@ -118,14 +111,4 @@ const styles = StyleSheet.create({
   card: { padding: theme.space.md, gap: theme.space.sm },
   heading: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.space.sm },
   title: { flex: 1, gap: theme.space.xs },
-  name: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
-  text: { flex: 1 },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: theme.space.xs,
-  },
-  additional: { flexGrow: 1, flexShrink: 1 },
 });

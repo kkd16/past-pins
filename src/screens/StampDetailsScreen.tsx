@@ -1,5 +1,4 @@
 import {
-  ActionSheetIOS,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -15,7 +14,6 @@ import { getStatusPresentation } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus, isVisited } from '../data/model';
 import { t } from '../localization';
-import { useActionGuard } from '../navigation/useActionGuard';
 import { PlaceStatusControl } from '../places/PlaceStatusControl';
 import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
@@ -39,31 +37,6 @@ export function StampDetailsScreen({
   const home = app.data.homeCountryId === id;
   const ready = app.status === 'ready';
   const disabled = !ready || app.busy;
-  const guard = useActionGuard(`${id}:${app.resetVersion}`);
-
-  function more() {
-    if (!country) return;
-    const isCurrent = guard();
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        title: country.name,
-        options: [
-          t('common.markLived'),
-          t('countries.details.showMap'),
-          t('common.cancel'),
-        ],
-        disabledButtonIndices: disabled ? [0] : [],
-        cancelButtonIndex: 2,
-        userInterfaceStyle: theme.appearance.colorScheme,
-      },
-      (index) => {
-        if (!isCurrent()) return;
-        if (index === 0 && !disabled)
-          void app.setStatus([id], 'lived', { preserveLived: false });
-        if (index === 1) onShowMap(id);
-      },
-    );
-  }
 
   return (
     <Screen>
@@ -129,9 +102,9 @@ export function StampDetailsScreen({
                 onPress={onShare}
               />
               <Button
-                label={t('common.more')}
+                label={t('countries.details.showMap')}
                 variant="quiet"
-                onPress={more}
+                onPress={() => onShowMap(id)}
               />
             </View>
             <AppText variant="caption" tone="muted">

@@ -7,10 +7,6 @@ export const statusOptions: { value: PlaceStatus; label: string }[] = (
   ['visited', 'wishlist', 'unvisited', 'lived'] as const
 ).map((value) => ({ value, label: getStatusPresentation(value).label }));
 
-export const commonStatusOptions = statusOptions.filter(
-  ({ value }) => value !== 'lived',
-);
-
 export function getStatusPresentation(
   status: PlaceStatus | undefined,
   isHome = false,

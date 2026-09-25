@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '../components/Button';
-import { commonStatusOptions } from '../countries/status';
+import { statusOptions } from '../countries/status';
 import type { PlaceStatus } from '../data/model';
 import { t } from '../localization';
 import { theme } from '../theme';
@@ -21,7 +21,7 @@ export function PlaceStatusControl({
       accessibilityLabel={t('countries.status.title')}
       style={styles.choices}
     >
-      {commonStatusOptions.map(({ value, label }) => (
+      {statusOptions.map(({ value, label }) => (
         <Button
           key={value}
           label={label}

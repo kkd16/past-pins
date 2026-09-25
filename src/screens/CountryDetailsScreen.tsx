@@ -1,5 +1,4 @@
-import { useMemo } from 'react';
-import { ActionSheetIOS, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
@@ -8,11 +7,11 @@ import { DataFeedback } from '../components/DataFeedback';
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { Surface } from '../components/Surface';
+import { ToggleRow } from '../components/ToggleRow';
 import { countryById } from '../countries/catalog';
 import { getStatusPresentation } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus, isVisited } from '../data/model';
-import { useActionGuard } from '../navigation/useActionGuard';
 import { PlaceStatusControl } from '../places/PlaceStatusControl';
 import { theme } from '../theme';
 import { t, formatList, formatNumber, language } from '../localization';
@@ -41,11 +40,6 @@ export function CountryDetailsScreen({
   const status = getPlaceStatus(app.data, id);
   const home = app.data.homeCountryId === id;
   const presentation = getStatusPresentation(status, home);
-  const actionScope = useMemo(
-    () => ({ id, data: app.data, resetVersion: app.resetVersion }),
-    [id, app.data, app.resetVersion],
-  );
-  const guard = useActionGuard(actionScope);
   const regionStats = getSubdivisionStatistics(app.data.subdivisions, id);
   const regionProgress =
     app.status === 'ready'
@@ -73,34 +67,6 @@ export function CountryDetailsScreen({
       ].filter(({ value }) => value)
     : [];
 
-  function showMore() {
-    if (!country || disabled) return;
-    const isCurrent = guard();
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        title: country.name,
-        message: t('countries.details.actionsHint'),
-        options: [
-          t('common.markLived'),
-          t(home ? 'countries.details.clearHome' : 'countries.details.setHome'),
-          t('lists.saveToLists'),
-          t(isVisited(status) ? 'stamps.viewStamp' : 'stamps.previewStamp'),
-          t('common.cancel'),
-        ],
-        cancelButtonIndex: 4,
-        userInterfaceStyle: theme.appearance.colorScheme,
-      },
-      (index) => {
-        if (!isCurrent()) return;
-        if (index === 0)
-          void app.setStatus([id], 'lived', { preserveLived: false });
-        else if (index === 1) app.setHome(home ? null : id);
-        else if (index === 2) onSaveToLists(id);
-        else if (index === 3) onOpenStamp(id);
-      },
-    );
-  }
-
   return (
     <Sheet
       title={country?.name ?? t('countries.details.notFound')}
@@ -110,18 +76,32 @@ export function CountryDetailsScreen({
       {country ? (
         <>
           {app.status === 'ready' && (
-            <Surface style={styles.status}>
-              <AppText variant="label" style={{ color: presentation.color }}>
-                {presentation.label}
-              </AppText>
-              <PlaceStatusControl
-                status={status}
-                disabled={disabled}
-                onChange={(next) => {
-                  void app.setStatus([id], next, { preserveLived: false });
-                }}
-              />
-            </Surface>
+            <>
+              <Surface style={styles.status}>
+                <AppText variant="label" style={{ color: presentation.color }}>
+                  {presentation.label}
+                </AppText>
+                <PlaceStatusControl
+                  status={status}
+                  disabled={disabled}
+                  onChange={(next) => {
+                    void app.setStatus([id], next, { preserveLived: false });
+                  }}
+                />
+              </Surface>
+              <Surface>
+                <ToggleRow
+                  title={t('common.currentHome')}
+                  description={t('countries.details.homeHint')}
+                  accessibilityLabel={t('countries.details.homeLabel', {
+                    name: country.name,
+                  })}
+                  value={home}
+                  disabled={disabled}
+                  onValueChange={(next) => app.setHome(next ? id : null)}
+                />
+              </Surface>
+            </>
           )}
           <DataFeedback />
           {regionStats.total > 0 && (
@@ -151,10 +131,18 @@ export function CountryDetailsScreen({
               onPress={() => onShowMap(id)}
             />
             <Button
-              label={t('common.more')}
+              label={t('lists.saveToLists')}
               variant="quiet"
               disabled={disabled}
-              onPress={showMore}
+              onPress={() => onSaveToLists(id)}
+            />
+            <Button
+              label={t(
+                isVisited(status) ? 'stamps.viewStamp' : 'stamps.previewStamp',
+              )}
+              variant="quiet"
+              disabled={disabled}
+              onPress={() => onOpenStamp(id)}
             />
           </View>
           {facts.length > 0 && (

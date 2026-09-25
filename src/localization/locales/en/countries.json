@@ -63,8 +63,6 @@
     "notInCatalog": "This place isn’t in the catalog.",
     "livedHint": "Lived counts as Visited.",
     "homeHint": "Former homes stay Lived.",
-    "setHome": "Set current home",
-    "actionsHint": "Lived counts as Visited. Former homes stay Lived.",
     "homeLabel": "%{name} is my current home",
     "showMap": "Show on map",
     "facts": "At a glance",

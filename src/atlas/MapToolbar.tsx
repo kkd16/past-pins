@@ -1,7 +1,6 @@
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '../components/Button';
 import { ChoiceRow } from '../components/ChoiceRow';
 import { IconButton } from '../components/IconButton';
 import { Surface } from '../components/Surface';
@@ -15,8 +14,10 @@ export function MapToolbar({
   disabled,
   onChangeMode,
   onSearch,
-  onMore,
+  onShare,
+  onLocation,
   locating,
+  onNorth,
   onReset,
 }: {
   mode: Preferences['mapView'];
@@ -24,8 +25,10 @@ export function MapToolbar({
   disabled: boolean;
   onChangeMode: (mode: Preferences['mapView']) => void;
   onSearch: () => void;
-  onMore: () => void;
+  onShare: () => void;
+  onLocation: () => void;
   locating: boolean;
+  onNorth: () => void;
   onReset: () => void;
 }) {
   const modes = [
@@ -78,16 +81,33 @@ export function MapToolbar({
           onPress={onSearch}
           style={styles.control}
         />
-        <Button
-          label={locating ? t('location.locating') : t('common.more')}
-          variant="quiet"
-          onPress={onMore}
-          accessibilityLabel={t('atlas.mapOptions')}
-          accessibilityState={{ busy: locating }}
-          style={styles.more}
-        />
       </View>
       <View style={styles.actions}>
+        <IconButton
+          name="share"
+          accessibilityLabel={t('sharing.worldAction')}
+          disabled={disabled}
+          onPress={onShare}
+          style={styles.control}
+        />
+        <IconButton
+          name="location"
+          accessibilityLabel={
+            locating ? t('location.locating') : t('location.goToLocation')
+          }
+          accessibilityState={{ busy: locating }}
+          disabled={disabled || locating}
+          onPress={onLocation}
+          style={styles.control}
+        />
+        {mode === 'globe' && (
+          <IconButton
+            name="north"
+            accessibilityLabel={t('atlas.northUp')}
+            onPress={onNorth}
+            style={styles.control}
+          />
+        )}
         <IconButton
           name="reset"
           accessibilityLabel={
@@ -113,5 +133,4 @@ const styles = StyleSheet.create({
   segments: { height: theme.size.touch },
   actions: { flexDirection: 'row', gap: theme.space.sm, alignSelf: 'flex-end' },
   control: { ...theme.surface.floating, borderRadius: theme.radius.pill },
-  more: { ...theme.surface.floating, paddingHorizontal: theme.space.md },
 });

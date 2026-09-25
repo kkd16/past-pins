@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useIsFocused } from 'expo-router';
 import {
-  ActionSheetIOS,
   Alert,
   AppState,
   ScrollView,
@@ -72,7 +71,6 @@ export function MapScreen({
   const [localCommand, setCommand] = useState<AtlasCommand | null>(null);
   const sequence = useRef(0);
   const guard = useActionGuard(app.resetVersion);
-  const menuGuard = useActionGuard(data);
   const [topHeight, setTopHeight] = useState(108);
   const [bottomHeight, setBottomHeight] = useState(120);
   const insets = useSafeAreaInsets();
@@ -121,83 +119,11 @@ export function MapScreen({
   );
   const command = incomingFocus ?? localCommand;
   const selectedId = incomingFocus?.id ?? selection?.id ?? null;
-  const selectionGuard = useActionGuard(selectedId);
   const selectedCountry = selectedId ? countryById.get(selectedId) : undefined;
   const regionStats = selectedCountry
     ? getSubdivisionStatistics(data.subdivisions, selectedCountry.id)
     : null;
 
-  function showCountryActions() {
-    if (!selectedCountry || !ready || app.busy) return;
-    const isCurrentData = menuGuard();
-    const isCurrentSelection = selectionGuard();
-    const id = selectedCountry.id;
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        title: selectedCountry.name,
-        options: [
-          t('common.markLived'),
-          t('lists.saveToLists'),
-          t('common.cancel'),
-        ],
-        cancelButtonIndex: 2,
-        userInterfaceStyle: theme.appearance.colorScheme,
-      },
-      (index) => {
-        if (!isCurrentData() || !isCurrentSelection()) return;
-        if (index === 0)
-          void app.setStatus([id], 'lived', { preserveLived: false });
-        if (index === 1) onSaveToLists(id);
-      },
-    );
-  }
-
-  function showMapActions() {
-    const isCurrent = menuGuard();
-    const actions = [
-      {
-        label: t('sharing.worldAction'),
-        disabled: !ready || app.busy,
-        run: onShare,
-      },
-      {
-        label: t(locating ? 'location.locating' : 'location.goToLocation'),
-        disabled: !ready || app.busy || locating,
-        run: () => void focusLocation(),
-      },
-      ...(mode === 'globe'
-        ? [{
-            label: t('atlas.northUp'),
-            disabled: !ready,
-            run: () => setCommand({ type: 'north', key: ++sequence.current }),
-          }]
-        : []),
-      {
-        label: t('atlas.gestureHelp'),
-        disabled: false,
-        run: () =>
-          Alert.alert(
-            t('atlas.gestureHelp'),
-            t(mode === 'globe' ? 'atlas.globeGestures' : 'atlas.mapGestures'),
-          ),
-      },
-    ];
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        title: t('atlas.mapOptions'),
-        options: [...actions.map(({ label }) => label), t('common.cancel')],
-        cancelButtonIndex: actions.length,
-        disabledButtonIndices: actions.flatMap(({ disabled }, index) =>
-          disabled ? [index] : [],
-        ),
-        userInterfaceStyle: theme.appearance.colorScheme,
-      },
-      (index) => {
-        const action = actions[index];
-        if (isCurrent() && action && !action.disabled) action.run();
-      },
-    );
-  }
   const commandApplied = useCallback(
     (key: string | number) => {
       if (incomingFocus?.key === key) {
@@ -278,8 +204,12 @@ export function MapScreen({
             disabled={!ready || app.busy}
             onChangeMode={(mapView) => app.updatePreferences({ mapView })}
             onSearch={onSearch}
-            onMore={showMapActions}
+            onShare={onShare}
+            onLocation={focusLocation}
             locating={locating}
+            onNorth={() =>
+              setCommand({ type: 'north', key: ++sequence.current })
+            }
             onReset={() =>
               setCommand({ type: 'reset', key: ++sequence.current })
             }
@@ -315,7 +245,7 @@ export function MapScreen({
                   preserveLived: false,
                 });
               }}
-              onMore={showCountryActions}
+              onSaveToLists={() => onSaveToLists(selectedCountry.id)}
               onDetails={() => onSelect(selectedCountry.id)}
               onDismiss={() => selectCountry(null)}
               autofocus={screenReader}

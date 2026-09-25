@@ -8,8 +8,6 @@
   "licenses": "Open-source licenses",
   "license": "License",
   "done": "Done",
-  "more": "More",
-  "markLived": "Mark lived",
   "clearSelection": "Clear selected place",
   "placeStatus": "%{place}, %{status}",
   "placeSubtitle": "%{place}, %{subtitle}",
