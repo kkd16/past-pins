@@ -108,7 +108,6 @@ const styles = StyleSheet.create({
   map: {
     ...theme.surface.panel,
     aspectRatio: 2,
-    maxHeight: 260,
     width: '100%',
     overflow: 'hidden',
     borderWidth: theme.stroke.subtle,

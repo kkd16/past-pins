@@ -120,8 +120,6 @@ export function Toast({
 const styles = StyleSheet.create({
   card: {
     ...theme.surface.floating,
-    width: '100%',
-    maxWidth: theme.size.contentMax,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.sm,

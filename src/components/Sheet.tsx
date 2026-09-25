@@ -62,9 +62,6 @@ const styles = StyleSheet.create({
   done: { marginStart: 'auto' },
   scroll: { flexGrow: 0 },
   content: {
-    width: '100%',
-    maxWidth: theme.size.contentMax,
-    alignSelf: 'center',
     paddingHorizontal: theme.space.lg,
     paddingBottom: theme.space.xl,
     gap: theme.space.lg,

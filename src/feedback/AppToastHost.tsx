@@ -40,7 +40,6 @@ export function AppToastHost() {
         style={[
           StyleSheet.absoluteFill,
           {
-            alignItems: 'center',
             paddingTop: insets.top + theme.space.md,
             paddingLeft: insets.left + theme.space.lg,
             paddingRight: insets.right + theme.space.lg,

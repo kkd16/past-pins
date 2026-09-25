@@ -45,14 +45,7 @@ export function StampsScreen({
     () => selectStampCountries(app.data.places, query, scope),
     [app.data.places, query, scope],
   );
-  const columns =
-    fontScale > theme.accessibility.largeTextScale || width < 280
-      ? 1
-      : width >= 660
-        ? 4
-        : width >= 500
-          ? 3
-          : 2;
+  const columns = fontScale > theme.accessibility.largeTextScale ? 1 : 2;
   const itemWidth = (width - theme.space.lg * (columns - 1)) / columns;
   const startCollection =
     !query.trim() && scope === 'collected' && stats.visited === 0;

@@ -14,17 +14,17 @@ import type { SubdivisionMapRegion } from '../src/subdivisions/types';
 const map = { width: 1000, height: 700 };
 
 describe('subdivision map selection focus', () => {
-  test('matches centered SVG coordinates on iPhone and short iPad layouts', () => {
+  test('centers SVG coordinates within the available map height', () => {
     const camera = new SubdivisionCamera(map);
     camera.resize(350, 280);
     expect(camera.scale).toBeCloseTo(0.35);
     const phoneTopLeft = camera.project([0, 0]);
     expect(phoneTopLeft[0]).toBeCloseTo(0);
     expect(phoneTopLeft[1]).toBeCloseTo(17.5);
-    camera.resize(720, 220);
+    camera.resize(350, 220);
     expect(camera.scale).toBeCloseTo(220 / 700);
     const topLeft = camera.project([0, 0]);
-    expect(topLeft[0]).toBeCloseTo((720 - (1000 * 220) / 700) / 2);
+    expect(topLeft[0]).toBeCloseTo((350 - (1000 * 220) / 700) / 2);
     expect(topLeft[1]).toBeCloseTo(0);
   });
 
@@ -46,7 +46,7 @@ describe('subdivision map selection focus', () => {
 
   test('tiny edge regions do not zoom past the limit or pan outside the country', () => {
     const camera = new SubdivisionCamera(map);
-    camera.resize(720, 220);
+    camera.resize(350, 220);
     for (const bounds of [
       [
         [0, 0],
@@ -200,7 +200,7 @@ describe('subdivision map gestures and picking', () => {
         expect(region.path).toMatch(/^[MLZ\d,.\-]+$/);
         for (const [width, height] of [
           [350, 280],
-          [720, 220],
+          [288, 220],
         ]) {
           camera.resize(width, height);
           camera.focus(region.bounds);

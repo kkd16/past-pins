@@ -59,19 +59,6 @@ const pinchEvent = (
 ) => ({ scale, numberOfPointers, focalX, focalY });
 
 describe.each(['globe', 'map'] as const)('%s navigation gestures', (mode) => {
-  test('iPad trackpad pan and pinch accept native events with no touch points', () => {
-    const { camera } = setup(mode);
-    camera.zoom = 4;
-    handlers.pan.onFinalize({});
-    handlers.pan.onBegin({ numberOfPointers: 0 });
-    const center = camera.geographicPoint(195, 422);
-    handlers.pan.onChange({ numberOfPointers: 0, changeX: 12, changeY: 0 });
-    expect(camera.geographicPoint(195, 422)).not.toEqual(center);
-    handlers.pinch.onStart(pinchEvent(1, 0));
-    handlers.pinch.onUpdate(pinchEvent(1.25, 0));
-    expect(camera.zoom).toBe(5);
-  });
-
   test('overlapping pan and pinch share one interaction lifecycle', () => {
     const { controller } = setup(mode);
     handlers.pan.onFinalize({});
@@ -99,7 +86,7 @@ describe.each(['globe', 'map'] as const)('%s navigation gestures', (mode) => {
     const finish = mock(controller.endInteraction.bind(controller));
     controller.beginInteraction = begin;
     controller.endInteraction = finish;
-    handlers.pinch.onStart(pinchEvent(1, 0));
+    handlers.pinch.onStart(pinchEvent(1));
     expect(begin).toHaveBeenCalledTimes(1);
     handlers.pinch.onFinalize({});
     expect(finish).toHaveBeenCalledTimes(1);

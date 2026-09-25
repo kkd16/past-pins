@@ -1,4 +1,4 @@
-This is an iOS-only Expo/React Native mobile application for iPhone and iPad. Prioritize mobile-first patterns, performance, accessibility, and native iOS conventions. Do not add Android or web support unless the user explicitly changes the supported platforms.
+This is an iPhone-only Expo/React Native mobile application. Prioritize performance, accessibility, and native iOS conventions. Do not add support for other devices or platforms unless the user explicitly changes the supported platforms.
 
 ## Command-first project changes
 
@@ -36,7 +36,7 @@ Run lint and typecheck before declaring any task done.
 - Use library defaults and iOS language preferences, with English fallback. Add a language with complete messages, library plural/formatting data, geographic names, tests, and matching native supported locales. Verify Hermes support before using new `Intl` APIs; avoid speculative adapters and language state.
 - Prefer native controls and their built-in semantics, including the `disabled` prop. Add localized labels, roles, or accessibility states only where the control does not already expose them. Hide decorative graphics, avoid duplicate VoiceOver stops, and preserve accessible alternatives to map gestures and country popups.
 - Keep targets at least 44 points, allow Dynamic Type without global font caps, honor Reduce Motion, and preserve theme contrast. Use logical spacing for RTL; never mirror geographic coordinates. Keep native layout direction tied to supported app languages rather than forcing RTL from the device language.
-- After UI changes, check long translations, large text, VoiceOver order/actions, and short iPad layouts. After Expo/React Native upgrades, verify the matching docs and repeat locale/RTL, VoiceOver, Dynamic Type, and Reduce Motion checks on iPhone and iPad. Report native checks that could not be run; JavaScript tests and export do not replace them.
+- After UI changes, check long translations, large text, VoiceOver order/actions, and small iPhone screens. After Expo/React Native upgrades, verify the matching docs and repeat locale/RTL, VoiceOver, Dynamic Type, and Reduce Motion checks on iPhone. Report native checks that could not be run; JavaScript tests and export do not replace them.
 
 ## Navigation & Routing
 

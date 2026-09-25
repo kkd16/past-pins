@@ -40,9 +40,7 @@ export function ShareScreen({
   const [options, setOptions] = useState<ShareOptions>(defaultShareOptions);
   const [sharing, setSharing] = useState(false);
   const inFlight = useRef(false);
-  const root = useRef<View>(null);
   const card = useRef<View>(null);
-  const shareButton = useRef<View>(null);
   const layoutVersion = useRef(0);
   const ready = app.status === 'ready';
   const content = useMemo(
@@ -62,9 +60,7 @@ export function ShareScreen({
   async function share() {
     if (!canShare || inFlight.current) return;
     const view = card.current;
-    const rootView = root.current;
-    const buttonView = shareButton.current;
-    if (!view || !rootView || !buttonView) return;
+    if (!view) return;
     inFlight.current = true;
     setSharing(true);
     const current = guard();
@@ -74,15 +70,7 @@ export function ShareScreen({
       version === layoutVersion.current &&
       AppState.currentState === 'active';
     try {
-      await shareCardImage(
-        view,
-        {
-          root: rootView,
-          button: buttonView,
-          pixelRatio: PixelRatio.get(),
-        },
-        isCurrent,
-      );
+      await shareCardImage(view, PixelRatio.get(), isCurrent);
     } catch (error) {
       if (isCurrent())
         Alert.alert(
@@ -98,91 +86,87 @@ export function ShareScreen({
   }
 
   return (
-    <View ref={root} collapsable={false} style={styles.root}>
-      <Screen onAccessibilityEscape={close}>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          removeClippedSubviews={false}
-          contentContainerStyle={styles.content}
-        >
-          <ScreenHeader title={t('sharing.title')} compact>
-            <Button label={t('common.done')} variant="quiet" onPress={close} />
-          </ScreenHeader>
-          <DataFeedback />
-          {content ? (
-            <>
-              <AppText tone="muted">{t('sharing.previewHint')}</AppText>
-              <View
-                ref={card}
-                collapsable={false}
-                onLayout={() => {
-                  layoutVersion.current++;
-                }}
-              >
-                <ShareCard content={content} />
-              </View>
-              {content.kind !== 'stamp' && (
-                <Surface>
+    <Screen onAccessibilityEscape={close}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        removeClippedSubviews={false}
+        contentContainerStyle={styles.content}
+      >
+        <ScreenHeader title={t('sharing.title')} compact>
+          <Button label={t('common.done')} variant="quiet" onPress={close} />
+        </ScreenHeader>
+        <DataFeedback />
+        {content ? (
+          <>
+            <AppText tone="muted">{t('sharing.previewHint')}</AppText>
+            <View
+              ref={card}
+              collapsable={false}
+              onLayout={() => {
+                layoutVersion.current++;
+              }}
+            >
+              <ShareCard content={content} />
+            </View>
+            {content.kind !== 'stamp' && (
+              <Surface>
+                <ToggleRow
+                  title={t('sharing.includeWishlist')}
+                  description={t(
+                    content.kind === 'list'
+                      ? 'sharing.listWishlistDescription'
+                      : 'sharing.wishlistDescription',
+                  )}
+                  value={options.includeWishlist}
+                  disabled={disabled}
+                  onValueChange={(includeWishlist) =>
+                    setOptions((value) => ({ ...value, includeWishlist }))
+                  }
+                />
+                {content.kind === 'world' && (
                   <ToggleRow
-                    title={t('sharing.includeWishlist')}
-                    description={t(
-                      content.kind === 'list'
-                        ? 'sharing.listWishlistDescription'
-                        : 'sharing.wishlistDescription',
-                    )}
-                    value={options.includeWishlist}
+                    title={t('sharing.includeHome')}
+                    description={t('sharing.homeDescription')}
+                    value={options.includeHome}
                     disabled={disabled}
-                    onValueChange={(includeWishlist) =>
-                      setOptions((value) => ({ ...value, includeWishlist }))
+                    onValueChange={(includeHome) =>
+                      setOptions((value) => ({ ...value, includeHome }))
                     }
                   />
-                  {content.kind === 'world' && (
-                    <ToggleRow
-                      title={t('sharing.includeHome')}
-                      description={t('sharing.homeDescription')}
-                      value={options.includeHome}
-                      disabled={disabled}
-                      onValueChange={(includeHome) =>
-                        setOptions((value) => ({ ...value, includeHome }))
-                      }
-                    />
-                  )}
-                </Surface>
-              )}
-              {content.kind !== 'world' && (
-                <AppText variant="caption" tone="muted">
-                  {t(
-                    content.kind === 'list'
-                      ? 'sharing.listPrivacy'
-                      : 'sharing.stampPrivacy',
-                  )}
-                </AppText>
-              )}
-              {empty && (
-                <AppText tone="muted">{t('sharing.emptyList')}</AppText>
-              )}
-            </>
-          ) : ready ? (
-            <AppText tone="muted">{t('sharing.unavailable')}</AppText>
-          ) : null}
-        </ScrollView>
-        <View ref={shareButton} collapsable={false} style={styles.actions}>
-          <Button
-            label={t(sharing ? 'sharing.preparing' : 'sharing.shareImage')}
-            accessibilityState={{ busy: sharing }}
-            disabled={!canShare}
-            onPress={() => {
-              void share();
-            }}
-          />
-        </View>
-      </Screen>
-    </View>
+                )}
+              </Surface>
+            )}
+            {content.kind !== 'world' && (
+              <AppText variant="caption" tone="muted">
+                {t(
+                  content.kind === 'list'
+                    ? 'sharing.listPrivacy'
+                    : 'sharing.stampPrivacy',
+                )}
+              </AppText>
+            )}
+            {empty && (
+              <AppText tone="muted">{t('sharing.emptyList')}</AppText>
+            )}
+          </>
+        ) : ready ? (
+          <AppText tone="muted">{t('sharing.unavailable')}</AppText>
+        ) : null}
+      </ScrollView>
+      <Button
+        style={styles.share}
+        label={t(sharing ? 'sharing.preparing' : 'sharing.shareImage')}
+        accessibilityState={{ busy: sharing }}
+        disabled={!canShare}
+        onPress={() => {
+          void share();
+        }}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.color.background },
   content: { paddingVertical: theme.space.lg, gap: theme.space.lg },
-  actions: { paddingVertical: theme.space.md },
+  share: { marginVertical: theme.space.md },
 });

@@ -201,7 +201,7 @@ describe('camera navigation', () => {
 
   test('home initialization happens once; camera state survives mode remount and resizing', () => {
     const camera = new FlatCamera();
-    camera.resize(1024, 768);
+    camera.resize(390, 844);
     camera.start('fr');
     expect(camera.center[0]).toBeCloseTo(
       projection(countryAnchors.get('fr')!.anchor as [number, number])![0],
@@ -210,7 +210,7 @@ describe('camera navigation', () => {
     const position = [...camera.center];
     camera.start('ca');
     expect(camera.center).toEqual(position);
-    camera.resize(1024, 768);
+    camera.resize(390, 844);
     expect(camera.center).toEqual(position);
   });
 });
@@ -286,14 +286,13 @@ describe('map callouts and sparse labels', () => {
   });
 
   test('labels cap at twelve and leave the callout and each other clear', () => {
-    const wide = { width: 1400, height: 1000, top: 20, bottom: 20 };
-    const blocked = { x: 200, y: 200, width: 240, height: 80 };
-    const candidates = Array.from({ length: 100 }, (_, index) => ({
+    const blocked = { x: 120, y: 300, width: 150, height: 60 };
+    const candidates = Array.from({ length: 30 }, (_, index) => ({
       id: String(index),
       name: 'Place',
-      point: [80 + (index % 10) * 125, 100 + Math.floor(index / 10) * 80],
+      point: [70 + (index % 3) * 125, 180 + Math.floor(index / 3) * 54],
     }));
-    const labels = placeLabels(candidates, wide, [blocked]);
+    const labels = placeLabels(candidates, bounds, [blocked]);
     expect(labels.length).toBe(12);
     // Measure the largest separating axis, independently of the collision helper.
     const separation = (a: Rect, b: Rect) =>

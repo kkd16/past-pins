@@ -179,14 +179,14 @@ describe('atlas camera transitions', () => {
     controller.setReduceMotion(false);
     controller.move(() => camera.focus('fj'));
     frames.advance();
-    controller.resize(844, 390);
+    controller.resize(390, 760);
     const position = [...camera.center];
     const zoom = camera.zoom;
     frames.advance(40);
     expect(camera.center).toEqual(position);
     expect(camera.zoom).toBe(zoom);
     expect(frames.pendingCount).toBe(0);
-    camera.resize(844, 390);
+    camera.resize(390, 760);
     expect(camera.center).toEqual(position);
   });
 

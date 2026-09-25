@@ -104,7 +104,6 @@ export const theme = {
     icon: 20,
     iconSmall: 18,
     progress: 6,
-    contentMax: 760,
   },
   motion: {
     cameraDuration: 420,

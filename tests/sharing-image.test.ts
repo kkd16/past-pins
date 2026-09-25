@@ -11,12 +11,8 @@ const capture = mock(
 const release = mock((_uri: string) => {});
 const available = mock(async () => true);
 const present = mock(async (_uri: string, _options: unknown) => {});
-const measureCard = mock<View['measureLayout']>();
-const measureButton = mock<View['measureLayout']>();
-const view = { measureLayout: measureCard } as unknown as View;
-const root = {} as View;
-const button = { measureLayout: measureButton } as unknown as View;
-const options = { root, button, pixelRatio: 3 };
+const measureCard = mock<View['measure']>();
+const view = { measure: measureCard } as unknown as View;
 
 mock.module('react-native-view-shot', () => ({
   captureRef: capture,
@@ -33,56 +29,52 @@ beforeEach(() => {
   release.mockReset();
   available.mockReset().mockResolvedValue(true);
   present.mockReset().mockResolvedValue(undefined);
-  measureCard.mockReset().mockImplementation((_, done) => done(0, 0, 360, 540));
-  measureButton
+  measureCard
     .mockReset()
-    .mockImplementation((_, done) => done(16, 500, 328, 44));
+    .mockImplementation((done) => done(0, 0, 360, 540, 0, 0));
 });
 
 describe('native image sharing', () => {
-  test('shares the captured PNG with an iPad anchor and retains it until sheet dismissal', async () => {
+  test('shares the captured PNG and retains it until sheet dismissal', async () => {
     const dismissed = Promise.withResolvers<void>();
     const opened = Promise.withResolvers<void>();
     present.mockImplementation(async () => {
       opened.resolve();
       await dismissed.promise;
     });
-    const pending = shareCardImage(view, options, () => true);
+    const pending = shareCardImage(view, 3, () => true);
     await opened.promise;
     expect(release).not.toHaveBeenCalled();
     expect(present).toHaveBeenCalledWith(
       'file:///tmp/ReactNative/capture.png',
       {
         UTI: 'public.png',
-        anchor: { x: 16, y: 500, width: 328, height: 44 },
       },
     );
-    expect(measureCard.mock.calls[0][0]).toBe(root);
-    expect(measureButton.mock.calls[0][0]).toBe(root);
     dismissed.resolve();
     await pending;
     expect(release).toHaveBeenCalledWith('/tmp/ReactNative/capture.png');
   });
 
-  test('uses fresh native dimensions at each device density', async () => {
-    for (const pixelRatio of [1, 2, 3]) {
-      await shareCardImage(view, { ...options, pixelRatio }, () => true);
+  test('uses fresh native dimensions at each iPhone display density', async () => {
+    for (const pixelRatio of [2, 3]) {
+      await shareCardImage(view, pixelRatio, () => true);
       const image = capture.mock.calls.at(-1)![1];
       expect(image).toMatchObject({ format: 'png', result: 'tmpfile' });
       expect(image.width! * pixelRatio).toBe(1440);
       expect(image.height! * pixelRatio).toBe(2160);
     }
-    measureCard.mockImplementation((_, done) => done(0, 0, 720, 540));
-    await shareCardImage(view, options, () => true);
+    measureCard.mockImplementation((done) => done(0, 0, 360, 720, 0, 0));
+    await shareCardImage(view, 3, () => true);
     expect(capture.mock.calls.at(-1)![1]).toMatchObject({
       width: 480,
-      height: 360,
+      height: 960,
     });
   });
 
   test('bounds the full large-text card without cropping or changing proportions', async () => {
-    measureCard.mockImplementation((_, done) => done(0, 0, 320, 2400));
-    await shareCardImage(view, options, () => true);
+    measureCard.mockImplementation((done) => done(0, 0, 320, 2400, 0, 0));
+    await shareCardImage(view, 3, () => true);
     const image = capture.mock.calls[0][1];
     expect(image.height! * 3).toBeCloseTo(4096);
     expect(image.width! * 3).toBeLessThanOrEqual(1440);
@@ -90,18 +82,20 @@ describe('native image sharing', () => {
   });
 
   test('rejects missing layouts and can retry after a measurement failure', async () => {
-    measureCard.mockImplementationOnce((_, done) => done(0, 0, 0, 0));
-    await expect(shareCardImage(view, options, () => true)).rejects.toThrow();
-    measureCard.mockImplementationOnce((_, __, fail) => fail!());
-    await expect(shareCardImage(view, options, () => true)).rejects.toThrow();
+    measureCard.mockImplementationOnce((done) => done(0, 0, 0, 0, 0, 0));
+    await expect(shareCardImage(view, 3, () => true)).rejects.toThrow();
+    measureCard.mockImplementationOnce(() => {
+      throw new Error('Cannot measure');
+    });
+    await expect(shareCardImage(view, 3, () => true)).rejects.toThrow();
     expect(capture).not.toHaveBeenCalled();
-    await shareCardImage(view, options, () => true);
+    await shareCardImage(view, 3, () => true);
     expect(present).toHaveBeenCalledTimes(1);
   });
 
   test('unavailable sharing never captures an image', async () => {
     available.mockResolvedValue(false);
-    await expect(shareCardImage(view, options, () => true)).rejects.toThrow(
+    await expect(shareCardImage(view, 3, () => true)).rejects.toThrow(
       t('sharing.sharingUnavailable'),
     );
     expect(measureCard).not.toHaveBeenCalled();
@@ -109,7 +103,7 @@ describe('native image sharing', () => {
   });
 
   test('a dismissed preview does not start an export', async () => {
-    await shareCardImage(view, options, () => false);
+    await shareCardImage(view, 3, () => false);
     expect(available).not.toHaveBeenCalled();
     expect(capture).not.toHaveBeenCalled();
   });
@@ -120,18 +114,18 @@ describe('native image sharing', () => {
       current = false;
       return true;
     });
-    await shareCardImage(view, options, () => current);
+    await shareCardImage(view, 3, () => current);
     expect(measureCard).not.toHaveBeenCalled();
     expect(capture).not.toHaveBeenCalled();
   });
 
   test('changed data or layout during measurement cancels capture', async () => {
     let current = true;
-    measureCard.mockImplementation((_, done) => {
+    measureCard.mockImplementation((done) => {
       current = false;
-      done(0, 0, 360, 540);
+      done(0, 0, 360, 540, 0, 0);
     });
-    await shareCardImage(view, options, () => current);
+    await shareCardImage(view, 3, () => current);
     expect(capture).not.toHaveBeenCalled();
     expect(present).not.toHaveBeenCalled();
   });
@@ -142,49 +136,33 @@ describe('native image sharing', () => {
       current = false;
       return '/tmp/ReactNative/stale.png';
     });
-    await shareCardImage(view, options, () => current);
-    expect(measureButton).not.toHaveBeenCalled();
+    await shareCardImage(view, 3, () => current);
     expect(present).not.toHaveBeenCalled();
     expect(release).toHaveBeenCalledWith('/tmp/ReactNative/stale.png');
   });
 
-  test('the last measurement cannot present after dismissal and releases the image', async () => {
-    let current = true;
-    measureButton.mockImplementation((_, done) => {
-      current = false;
-      done(16, 500, 328, 44);
-    });
-    await shareCardImage(view, options, () => current);
-    expect(present).not.toHaveBeenCalled();
-    expect(release).toHaveBeenCalledTimes(1);
-  });
-
-  test('anchor and presentation failures release the capture', async () => {
-    measureButton.mockImplementationOnce((_, __, fail) => fail!());
-    await expect(shareCardImage(view, options, () => true)).rejects.toThrow();
-    expect(release).toHaveBeenCalledTimes(1);
-    expect(present).not.toHaveBeenCalled();
+  test('presentation failures release the capture', async () => {
     present.mockRejectedValueOnce(new Error('Cannot present'));
-    await expect(shareCardImage(view, options, () => true)).rejects.toThrow(
+    await expect(shareCardImage(view, 3, () => true)).rejects.toThrow(
       'Cannot present',
     );
-    expect(release).toHaveBeenCalledTimes(2);
+    expect(release).toHaveBeenCalledTimes(1);
   });
 
   test('capture failures do not open the sheet and permit retry', async () => {
     capture.mockRejectedValueOnce(new Error('Capture failed'));
-    await expect(shareCardImage(view, options, () => true)).rejects.toThrow(
+    await expect(shareCardImage(view, 3, () => true)).rejects.toThrow(
       'Capture failed',
     );
     expect(present).not.toHaveBeenCalled();
     expect(release).not.toHaveBeenCalled();
-    await shareCardImage(view, options, () => true);
+    await shareCardImage(view, 3, () => true);
     expect(present).toHaveBeenCalledTimes(1);
   });
 
   test('normalizes file URLs for sharing and the native path-only cleanup API', async () => {
     capture.mockResolvedValue('file:///tmp/ReactNative/capture.png');
-    await shareCardImage(view, options, () => true);
+    await shareCardImage(view, 3, () => true);
     expect(present.mock.calls[0][0]).toBe(
       'file:///tmp/ReactNative/capture.png',
     );
@@ -196,7 +174,7 @@ describe('native image sharing', () => {
       throw new Error('Already gone');
     });
     await expect(
-      shareCardImage(view, options, () => true),
+      shareCardImage(view, 3, () => true),
     ).resolves.toBeUndefined();
   });
 });

@@ -18,9 +18,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.color.background },
   content: {
     flex: 1,
-    width: '100%',
-    maxWidth: theme.size.contentMax,
-    alignSelf: 'center',
     paddingHorizontal: theme.space.lg,
     paddingTop: theme.space.sm,
   },

@@ -175,24 +175,22 @@ export function MapScreen({
             setTopHeight(layout.height + theme.space.sm)
           }
         >
-          <View style={styles.overlayContent}>
-            <MapToolbar
-              mode={mode}
-              largeText={largeText}
-              disabled={!ready || app.busy}
-              onChangeMode={(mapView) => app.updatePreferences({ mapView })}
-              onSearch={onSearch}
-              onShare={onShare}
-              onLocation={focusLocation}
-              locating={locating}
-              onNorth={() =>
-                setCommand({ type: 'north', key: ++sequence.current })
-              }
-              onReset={() =>
-                setCommand({ type: 'reset', key: ++sequence.current })
-              }
-            />
-          </View>
+          <MapToolbar
+            mode={mode}
+            largeText={largeText}
+            disabled={!ready || app.busy}
+            onChangeMode={(mapView) => app.updatePreferences({ mapView })}
+            onSearch={onSearch}
+            onShare={onShare}
+            onLocation={focusLocation}
+            locating={locating}
+            onNorth={() =>
+              setCommand({ type: 'north', key: ++sequence.current })
+            }
+            onReset={() =>
+              setCommand({ type: 'reset', key: ++sequence.current })
+            }
+          />
         </ScrollView>
       </View>
       <View
@@ -209,40 +207,39 @@ export function MapScreen({
           onLayout={({ nativeEvent: { layout } }) =>
             setBottomHeight(layout.height + theme.space.sm)
           }
+          contentContainerStyle={styles.footer}
         >
-          <View style={[styles.overlayContent, styles.footer]}>
-            {ready && dockSelection && selectedId && (
-              <CountryCallout
-                key={selectedId}
-                countryId={selectedId}
-                status={data.places[selectedId]}
-                home={data.homeCountryId === selectedId}
-                onDetails={onSelect}
-                onDismiss={() => selectCountry(null)}
-                autofocus={screenReader}
+          {ready && dockSelection && selectedId && (
+            <CountryCallout
+              key={selectedId}
+              countryId={selectedId}
+              status={data.places[selectedId]}
+              home={data.homeCountryId === selectedId}
+              onDetails={onSelect}
+              onDismiss={() => selectCountry(null)}
+              autofocus={screenReader}
+            />
+          )}
+          <DataFeedback />
+          {ready &&
+            selectedId &&
+            getCountrySubdivisions(selectedId).length > 0 && (
+              <Button
+                label={t('places.countryRegions', {
+                  country: countryById.get(selectedId)!.name,
+                })}
+                variant="quiet"
+                onPress={() => onOpenRegions(selectedId)}
               />
             )}
-            <DataFeedback />
-            {ready &&
-              selectedId &&
-              getCountrySubdivisions(selectedId).length > 0 && (
-                <Button
-                  label={t('places.countryRegions', {
-                    country: countryById.get(selectedId)!.name,
-                  })}
-                  variant="quiet"
-                  onPress={() => onOpenRegions(selectedId)}
-                />
-              )}
-            {ready && data.preferences.mapSummary && (
-              <MapSummary
-                places={data.places}
-                mode={mode}
-                screenReader={screenReader}
-                onOpenCountries={onOpenCountries}
-              />
-            )}
-          </View>
+          {ready && data.preferences.mapSummary && (
+            <MapSummary
+              places={data.places}
+              mode={mode}
+              screenReader={screenReader}
+              onOpenCountries={onOpenCountries}
+            />
+          )}
         </ScrollView>
       </View>
     </View>
@@ -268,10 +265,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.space.lg,
   },
   overlayScroll: { flexGrow: 0 },
-  overlayContent: {
-    maxWidth: theme.size.contentMax,
-    width: '100%',
-    alignSelf: 'center',
-  },
   footer: { gap: theme.space.sm },
 });

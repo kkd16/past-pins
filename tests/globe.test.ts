@@ -242,8 +242,8 @@ describe('globe camera and country picking', () => {
     camera.drag(100, 100);
     camera.reset();
     expect(Array.from(camera.rotation)).toEqual(original);
-    camera.resize(1024, 768);
-    expect(camera.radius).toBeCloseTo(460.8);
+    camera.resize(430, 932);
+    expect(camera.radius).toBeCloseTo(258);
   });
 
   test('projection and picking agree after rotation; misses and the back hemisphere are excluded', () => {

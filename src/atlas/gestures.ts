@@ -18,9 +18,6 @@ type NavigationController = {
 
 type CameraGesture = 'pan' | 'pinch' | 'rotation';
 
-// UIKit reports trackpad transforms with zero direct touches.
-const isTransform = (pointers: number) => pointers === 0 || pointers === 2;
-
 export function navigationGestures(
   controller: NavigationController,
   onTap: (x: number, y: number) => void,
@@ -48,7 +45,6 @@ export function navigationGestures(
 
   const pan = Gesture.Pan()
     .runOnJS(true)
-    .enableTrackpadTwoFingerGesture(true)
     .onBegin((event) => {
       multiTouch =
         event.numberOfPointers > 1 ||
@@ -69,7 +65,7 @@ export function navigationGestures(
     .onChange((event) => {
       if (
         pointers === event.numberOfPointers &&
-        event.numberOfPointers <= 1 &&
+        event.numberOfPointers === 1 &&
         !activeGestures.has('pinch') &&
         !activeGestures.has('rotation')
       )
@@ -77,7 +73,6 @@ export function navigationGestures(
       pointers = event.numberOfPointers;
     })
     .onEnd((event, success) => {
-      // A finger lifting out of a pinch is not a fling.
       if (success && !multiTouch)
         controller.coast(event.velocityX, event.velocityY);
     })
@@ -96,8 +91,7 @@ export function navigationGestures(
     })
     .onUpdate((event) => {
       if (!(event.scale > 0) || !Number.isFinite(event.scale)) return;
-      if (!rebasePinch && isTransform(event.numberOfPointers)) {
-        // Incremental scale responds immediately when reversing at a zoom limit.
+      if (!rebasePinch && event.numberOfPointers === 2) {
         controller.zoom(
           controller.camera.zoom * (event.scale / scale),
           event.focalX,
@@ -108,7 +102,7 @@ export function navigationGestures(
       }
       scale = event.scale;
       focal = { x: event.focalX, y: event.focalY };
-      rebasePinch = !isTransform(event.numberOfPointers);
+      rebasePinch = event.numberOfPointers !== 2;
     })
     .onFinalize(() => finish('pinch'));
 
@@ -124,14 +118,14 @@ export function navigationGestures(
       rebaseRotation = false;
     })
     .onUpdate((event) => {
-      if (!rebaseRotation && isTransform(event.numberOfPointers))
+      if (!rebaseRotation && event.numberOfPointers === 2)
         controller.twist?.(
           event.rotation - rotation,
           event.anchorX,
           event.anchorY,
         );
       rotation = event.rotation;
-      rebaseRotation = !isTransform(event.numberOfPointers);
+      rebaseRotation = event.numberOfPointers !== 2;
     })
     .onFinalize(() => finish('rotation'));
 
