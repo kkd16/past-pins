@@ -34,12 +34,16 @@ const emptySelection: ReadonlySet<string> = new Set();
 export function SubdivisionsScreen({
   countryId,
   onBrowse,
+  onOpenCountry,
   initialSelectedId,
+  initialScope = 'all',
   onSaveToLists,
 }: {
   countryId: string;
   onBrowse: () => void;
+  onOpenCountry: () => void;
   initialSelectedId?: string;
+  initialScope?: CountryScope;
   onSaveToLists: (id: string) => void;
 }) {
   const app = useAppData();
@@ -48,7 +52,7 @@ export function SubdivisionsScreen({
   const country = countryById.get(countryId);
   const list = useRef<FlatList<Subdivision>>(null);
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState<CountryScope>('all');
+  const [scope, setScope] = useState<CountryScope>(initialScope);
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     initialSelectedId &&
     subdivisionById.get(initialSelectedId)?.countryId === countryId
@@ -123,7 +127,10 @@ export function SubdivisionsScreen({
   const pressRow = useCallback(
     (id: string) => {
       if (!selecting) {
-        changeStatus(id);
+        Keyboard.dismiss();
+        setSelectedId(id);
+        setFocusRequest((request) => request + 1);
+        list.current?.scrollToOffset({ offset: 0, animated: !reducedMotion });
         return;
       }
       setSelection((current) => {
@@ -133,17 +140,15 @@ export function SubdivisionsScreen({
         return { key: filterKey, ids };
       });
     },
-    [changeStatus, selecting, filterKey, setSelection],
+    [selecting, filterKey, reducedMotion],
   );
 
-  const showOnMap = useCallback(
+  const saveToLists = useCallback(
     (id: string) => {
       Keyboard.dismiss();
-      setSelectedId(id);
-      setFocusRequest((request) => request + 1);
-      list.current?.scrollToOffset({ offset: 0, animated: !reducedMotion });
+      onSaveToLists(id);
     },
-    [reducedMotion],
+    [onSaveToLists],
   );
 
   function showAll() {
@@ -188,9 +193,16 @@ export function SubdivisionsScreen({
         ItemSeparatorComponent={Separator}
         ListHeaderComponent={
           <View style={styles.header}>
-            <AppText variant="caption" tone="muted">
-              {t('subdivisions.countryTitle', { country: country.name })}
-            </AppText>
+            <Button
+              label={t('subdivisions.countryDetails', {
+                country: country.name,
+              })}
+              variant="quiet"
+              onPress={() => {
+                Keyboard.dismiss();
+                onOpenCountry();
+              }}
+            />
             <SubdivisionMap
               countryId={countryId}
               statuses={app.data.subdivisions}
@@ -230,7 +242,7 @@ export function SubdivisionsScreen({
                   label={t('lists.saveToLists')}
                   variant="quiet"
                   disabled={disabled || selecting}
-                  onPress={() => onSaveToLists(selectedRegion.id)}
+                  onPress={() => saveToLists(selectedRegion.id)}
                 />
               </Surface>
             )}
@@ -283,7 +295,8 @@ export function SubdivisionsScreen({
             selecting={selecting}
             selected={selectedIds.has(item.id)}
             onPress={pressRow}
-            onShowMap={showOnMap}
+            onChangeStatus={changeStatus}
+            onSaveToLists={saveToLists}
           />
         )}
         ListEmptyComponent={

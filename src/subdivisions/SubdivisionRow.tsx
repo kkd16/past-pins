@@ -13,22 +13,29 @@ import type { Subdivision } from './types';
 
 export const SubdivisionRow = memo(function SubdivisionRow({
   region,
+  countryName,
   status,
   disabled,
   selecting,
   selected,
   onPress,
-  onShowMap,
+  onChangeStatus,
+  onSaveToLists,
 }: {
   region: Subdivision;
+  countryName?: string;
   status: PlaceStatus;
   disabled: boolean;
   selecting: boolean;
   selected: boolean;
   onPress: (id: string) => void;
-  onShowMap: (id: string) => void;
+  onChangeStatus: (id: string) => void;
+  onSaveToLists: (id: string) => void;
 }) {
   const presentation = getStatusPresentation(status);
+  const name = countryName
+    ? t('lists.regionName', { name: region.name, country: countryName })
+    : region.name;
   return (
     <View
       style={[
@@ -38,20 +45,25 @@ export const SubdivisionRow = memo(function SubdivisionRow({
     >
       <AppPressable
         style={styles.details}
-        disabled={disabled}
+        disabled={selecting && disabled}
         accessibilityRole={selecting ? 'checkbox' : 'button'}
         accessibilityState={selecting ? { checked: selected } : undefined}
         accessibilityLabel={t('subdivisions.regionStatus', {
-          name: region.name,
+          name,
           status: presentation.label,
         })}
         accessibilityHint={
-          selecting ? undefined : t('subdivisions.changeStatusHint')
+          selecting ? undefined : t('subdivisions.openRegionHint')
         }
         onPress={() => onPress(region.id)}
       >
         <View style={styles.text}>
           <AppText>{region.name}</AppText>
+          {countryName && (
+            <AppText variant="caption" tone="muted">
+              {countryName}
+            </AppText>
+          )}
           {region.kind ? (
             <AppText variant="caption" tone="muted">
               {region.kind}
@@ -61,22 +73,31 @@ export const SubdivisionRow = memo(function SubdivisionRow({
             {presentation.label}
           </AppText>
         </View>
-        {selecting ? (
-          <Checkmark checked={selected} />
-        ) : (
-          <Icon name={presentation.icon} color={presentation.color} />
-        )}
+        {selecting && <Checkmark checked={selected} />}
       </AppPressable>
       {!selecting && (
-        <AppPressable
-          style={styles.mapButton}
-          accessibilityLabel={t('subdivisions.showRegion', {
-            name: region.name,
-          })}
-          onPress={() => onShowMap(region.id)}
-        >
-          <Icon name="location" />
-        </AppPressable>
+        <>
+          <AppPressable
+            style={styles.action}
+            accessibilityLabel={t('subdivisions.changeRegionStatus', {
+              name,
+            })}
+            disabled={disabled}
+            onPress={() => onChangeStatus(region.id)}
+          >
+            <Icon name={presentation.icon} color={presentation.color} />
+          </AppPressable>
+          <AppPressable
+            style={styles.action}
+            accessibilityLabel={t('subdivisions.saveRegionToLists', {
+              name,
+            })}
+            disabled={disabled}
+            onPress={() => onSaveToLists(region.id)}
+          >
+            <Icon name="list" />
+          </AppPressable>
+        </>
       )}
     </View>
   );
@@ -99,7 +120,7 @@ const styles = StyleSheet.create({
     gap: theme.space.md,
   },
   text: { flex: 1, gap: theme.space.xs },
-  mapButton: {
+  action: {
     width: theme.size.touch,
     alignSelf: 'stretch',
     justifyContent: 'center',

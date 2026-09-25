@@ -2,7 +2,7 @@ import { t } from '../../localization';
 import { router } from 'expo-router';
 
 import { useAppData } from '../../data/AppDataProvider';
-import { CountrySearchScreen } from '../../screens/CountrySearchScreen';
+import { PlaceSearchScreen } from '../../screens/PlaceSearchScreen';
 
 export default function HomeRoute() {
   const { data, setHome } = useAppData();
@@ -11,7 +11,8 @@ export default function HomeRoute() {
     router.back();
   }
   return (
-    <CountrySearchScreen
+    <PlaceSearchScreen
+      countriesOnly
       title={t('common.currentHome')}
       onSelect={choose}
       onClear={data.homeCountryId ? () => choose(null) : undefined}

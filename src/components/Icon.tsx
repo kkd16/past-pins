@@ -9,6 +9,7 @@ const paths = {
   search: 'm16 16 4 4',
   reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6',
   filter: 'M4 6h16M7 12h10M10 18h4',
+  list: 'M4 5h2M10 5h10M4 11h2M10 11h10M4 17h2M10 17h5M19 14v6M16 17h6',
   chevronRight: 'm9 5 7 7-7 7',
   north: 'm12 3 7 17-7-4-7 4Z M12 3v13',
   home: 'm3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10',

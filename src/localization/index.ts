@@ -9,6 +9,7 @@ import location from './locales/en/location.json';
 import subdivisions from './locales/en/subdivisions.json';
 import lists from './locales/en/lists.json';
 import stamps from './locales/en/stamps.json';
+import places from './locales/en/places.json';
 
 export const translations = {
   en: {
@@ -20,6 +21,7 @@ export const translations = {
     subdivisions,
     lists,
     stamps,
+    places,
   },
 };
 export const {

@@ -25,41 +25,83 @@ import { t, formatNumber, formatPercent } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
 import { StampCollectionLink } from '../stamps/StampCollectionLink';
 
-function Statistic({
-  value,
-  label,
+function StatusTotals({
+  stats,
+  kind,
   largeText,
-  color,
-  disabled,
+  loading,
   onPress,
 }: {
-  value: string;
-  label: string;
+  stats: { wishlist: number; lived: number; remaining: number };
+  kind: 'countries' | 'regions';
   largeText: boolean;
-  color: string;
-  disabled: boolean;
-  onPress: () => void;
+  loading: boolean;
+  onPress: (scope: CountryScope) => void;
 }) {
   return (
-    <AppPressable
-      accessibilityLabel={t('countries.stats.summary', { label, value })}
-      accessibilityHint={t('countries.stats.matchingHint')}
-      disabled={disabled}
-      onPress={onPress}
-      style={[styles.statistic, largeText && styles.fullWidth]}
-    >
-      <Surface style={styles.statisticContent}>
-        <AppText variant={largeText ? 'heading' : 'number'} style={{ color }}>
-          {value}
-        </AppText>
-        <View style={styles.cardHeading}>
-          <AppText variant="caption" tone="muted" style={styles.cardLabel}>
-            {label}
-          </AppText>
-          <Icon name="chevronRight" />
-        </View>
-      </Surface>
-    </AppPressable>
+    <View style={styles.totals}>
+      {[
+        {
+          scope: 'wishlist' as const,
+          label: t('countries.status.wishlist'),
+          count: stats.wishlist,
+          color: theme.color.wishlist,
+        },
+        {
+          scope: 'lived' as const,
+          label: t('countries.status.lived'),
+          count: stats.lived,
+          color: theme.color.lived,
+        },
+        {
+          scope: 'not-visited' as const,
+          label: t('countries.stats.remaining'),
+          count: stats.remaining,
+          color: theme.color.accent,
+        },
+      ].map(({ scope, label, count, color }) => {
+        const value = loading ? '—' : formatNumber(count);
+        return (
+          <AppPressable
+            key={scope}
+            accessibilityLabel={t('places.statisticLabel', {
+              kind: t(
+                kind === 'regions' ? 'places.regions' : 'places.countries',
+              ),
+              label,
+              value,
+            })}
+            accessibilityHint={t(
+              kind === 'regions'
+                ? 'places.matchingRegions'
+                : 'countries.stats.matchingHint',
+            )}
+            disabled={loading}
+            onPress={() => onPress(scope)}
+            style={[styles.statistic, largeText && styles.fullWidth]}
+          >
+            <Surface style={styles.statisticContent}>
+              <AppText
+                variant={largeText ? 'heading' : 'number'}
+                style={{ color }}
+              >
+                {value}
+              </AppText>
+              <View style={styles.cardHeading}>
+                <AppText
+                  variant="caption"
+                  tone="muted"
+                  style={styles.cardLabel}
+                >
+                  {label}
+                </AppText>
+                <Icon name="chevronRight" />
+              </View>
+            </Surface>
+          </AppPressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -75,7 +117,7 @@ export function StatsScreen({
   onChooseHome: () => void;
   onOpenCountries: (scope: CountryScope, continent?: string) => void;
   onOpenCountry: (id: string) => void;
-  onOpenRegions: () => void;
+  onOpenRegions: (scope: CountryScope) => void;
   onOpenStamps: () => void;
 }) {
   const { fontScale } = useWindowDimensions();
@@ -143,39 +185,49 @@ export function StatsScreen({
             </AppText>
           </Surface>
         </AppPressable>
+        <StatusTotals
+          stats={stats}
+          kind="countries"
+          largeText={largeText}
+          loading={loading}
+          onPress={onOpenCountries}
+        />
+        <AppPressable
+          accessibilityLabel={
+            loading
+              ? loadingMessage
+              : t('places.regionsProgress', {
+                  visited: formatNumber(regionStats.visited),
+                  total: formatNumber(regionStats.total),
+                })
+          }
+          accessibilityHint={t('places.matchingRegions')}
+          disabled={loading}
+          onPress={() => onOpenRegions('visited')}
+        >
+          <Surface style={styles.regionJourney}>
+            <View accessibilityElementsHidden style={styles.cardHeading}>
+              <View style={styles.cardLabel}>
+                <ProgressSummary
+                  kind="subdivisions"
+                  label={t('subdivisions.title')}
+                  visited={regionStats.visited}
+                  total={regionStats.total}
+                  loading={loading}
+                />
+              </View>
+              <Icon name="chevronRight" />
+            </View>
+          </Surface>
+        </AppPressable>
+        <StatusTotals
+          stats={regionStats}
+          kind="regions"
+          largeText={largeText}
+          loading={loading}
+          onPress={onOpenRegions}
+        />
         <StampCollectionLink onPress={onOpenStamps} />
-        <View style={styles.totals}>
-          {[
-            {
-              scope: 'wishlist' as const,
-              label: t('countries.status.wishlist'),
-              value: stats.wishlist,
-              color: theme.color.wishlist,
-            },
-            {
-              scope: 'lived' as const,
-              label: t('countries.status.lived'),
-              value: stats.lived,
-              color: theme.color.lived,
-            },
-            {
-              scope: 'not-visited' as const,
-              label: t('countries.stats.remaining'),
-              value: stats.remaining,
-              color: theme.color.accent,
-            },
-          ].map(({ scope, label, value, color }) => (
-            <Statistic
-              key={scope}
-              value={loading ? '—' : formatNumber(value)}
-              label={label}
-              largeText={largeText}
-              color={color}
-              disabled={loading}
-              onPress={() => onOpenCountries(scope)}
-            />
-          ))}
-        </View>
         <Surface style={styles.home}>
           <View style={styles.homeLabel}>
             <Icon name="home" color={theme.color.lived} />
@@ -239,31 +291,6 @@ export function StatsScreen({
         <AppText variant="caption" tone="muted" style={styles.explanation}>
           {t('countries.stats.explanation')}
         </AppText>
-        <AppPressable
-          accessibilityLabel={
-            loading
-              ? loadingMessage
-              : t('subdivisions.visitedCount', {
-                  count: regionStats.visited,
-                  amount: formatNumber(regionStats.visited),
-                })
-          }
-          accessibilityHint={t('subdivisions.explore')}
-          onPress={onOpenRegions}
-        >
-          <Surface style={styles.journey}>
-            <View style={styles.cardHeading}>
-              <AppText variant="heading" style={styles.cardLabel}>
-                {t('subdivisions.title')}
-              </AppText>
-              <Icon name="chevronRight" />
-            </View>
-            <AppText variant="number" tone="visited">
-              {loading ? '—' : formatNumber(regionStats.visited)}
-            </AppText>
-            <AppText tone="muted">{t('subdivisions.visited')}</AppText>
-          </Surface>
-        </AppPressable>
       </ScrollView>
     </Screen>
   );
@@ -272,6 +299,7 @@ export function StatsScreen({
 const styles = StyleSheet.create({
   content: { paddingBottom: theme.space.xl, gap: theme.space.lg },
   journey: { padding: theme.space.xl, gap: theme.space.sm },
+  regionJourney: { paddingHorizontal: theme.space.lg },
   cardHeading: {
     flexDirection: 'row',
     alignItems: 'center',

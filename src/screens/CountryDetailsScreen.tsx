@@ -57,6 +57,21 @@ export function CountryDetailsScreen({
     >
       {country ? (
         <>
+          {regionStats.total > 0 && (
+            <Surface style={styles.regions}>
+              <ProgressSummary
+                kind="subdivisions"
+                label={t('subdivisions.title')}
+                visited={regionStats.visited}
+                total={regionStats.total}
+                loading={app.status !== 'ready'}
+              />
+              <Button
+                label={t('subdivisions.explore')}
+                onPress={() => onOpenRegions(id)}
+              />
+            </Surface>
+          )}
           <ChoiceSection
             title={t('countries.status.title')}
             description={t('countries.details.livedHint')}
@@ -106,21 +121,6 @@ export function CountryDetailsScreen({
             disabled={disabled}
             onPress={() => onSaveToLists(id)}
           />
-          {regionStats.total > 0 && (
-            <Surface style={styles.regions}>
-              <ProgressSummary
-                kind="subdivisions"
-                label={t('subdivisions.title')}
-                visited={regionStats.visited}
-                total={regionStats.total}
-                loading={app.status !== 'ready'}
-              />
-              <Button
-                label={t('subdivisions.explore')}
-                onPress={() => onOpenRegions(id)}
-              />
-            </Surface>
-          )}
           {facts.length > 0 && (
             <Surface style={styles.facts}>
               <AppText variant="heading" accessibilityRole="header">

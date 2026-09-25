@@ -31,8 +31,12 @@
   "noListsFound": "No matching lists",
   "noListsFoundHint": "Try another list name.",
   "searchPlaces": "Search countries or regions",
-  "countries": "Countries",
-  "regions": "Regions",
+  "allPlaces": "All places",
+  "exploreRegions": {
+    "one": "Explore %{amount} region",
+    "other": "Explore %{amount} regions"
+  },
+  "exploreCountryRegions": "Explore regions in %{country}",
   "selected": "Selected",
   "noSelectedPlaces": "No places selected yet. Choose countries or regions to add them.",
   "noPlacesFound": "No places found",
@@ -45,5 +49,6 @@
   "membershipHint": "Choose the lists that should include %{name}.",
   "membershipEmpty": "Create a list to save this place.",
   "mapCountries": "Countries in this list",
+  "mapCountryRegions": "Regions in this list · %{country}",
   "mapRegions": "Countries containing regions in this list"
 }

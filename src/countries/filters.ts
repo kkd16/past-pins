@@ -1,5 +1,4 @@
-import type { AppData } from '../data/model';
-import { isVisited } from '../data/model';
+import { isVisited, type AppData, type PlaceStatus } from '../data/model';
 import { t } from '../localization';
 import { continents } from './catalog';
 import { searchCountries } from './search';
@@ -30,6 +29,15 @@ export function readCountryScope(value: unknown): CountryScope {
   return countryScopes.find((scope) => scope.value === value)?.value ?? 'all';
 }
 
+export function matchesCountryScope(
+  status: PlaceStatus | undefined,
+  scope: CountryScope,
+) {
+  if (scope === 'visited') return isVisited(status);
+  if (scope === 'not-visited') return !isVisited(status);
+  return scope === 'all' || status === scope;
+}
+
 export function readCountryFilters(params: {
   continent?: string | string[];
   grouping?: string | string[];
@@ -54,19 +62,7 @@ export function selectCountrySections(
       country.continent.id !== filters.continent
     )
       return false;
-    const status = places[country.id];
-    switch (scope) {
-      case 'visited':
-        return isVisited(status);
-      case 'not-visited':
-        return !isVisited(status);
-      case 'wishlist':
-        return status === 'wishlist';
-      case 'lived':
-        return status === 'lived';
-      default:
-        return true;
-    }
+    return matchesCountryScope(places[country.id], scope);
   });
   if (filters.grouping === 'alphabetical') {
     return results.length

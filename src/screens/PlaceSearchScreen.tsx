@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
@@ -9,27 +9,41 @@ import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { searchCountries } from '../countries/search';
+import { countryById } from '../countries/catalog';
 import { getStatusPresentation } from '../countries/status';
-import type { Country } from '../countries/types';
+import {
+  formatPlaceName,
+  getPlaceStatus,
+  searchPlaces,
+  type Place,
+} from '../places/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
 import { t } from '../localization';
 
-export function CountrySearchScreen({
+export function PlaceSearchScreen({
   title,
+  countriesOnly = false,
   onSelect,
   onCancel,
   onClear,
 }: {
   title: string;
+  countriesOnly?: boolean;
   onSelect: (id: string) => void;
   onCancel?: () => void;
   onClear?: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const list = useRef<FlatList<Country>>(null);
+  const list = useRef<FlatList<Place>>(null);
   const { data, status, busy } = useAppData();
+  const matches = useMemo(
+    () => searchPlaces(query, countriesOnly ? 'country' : 'all'),
+    [query, countriesOnly],
+  );
+  const searchLabel = t(
+    countriesOnly ? 'countries.search' : 'places.searchAll',
+  );
   return (
     <Screen onAccessibilityEscape={onCancel}>
       <View style={styles.header}>
@@ -52,14 +66,15 @@ export function CountrySearchScreen({
             setQuery(value);
             list.current?.scrollToOffset({ offset: 0, animated: false });
           }}
-          placeholder={t('countries.search')}
-          accessibilityLabel={t('countries.searchLabel')}
+          placeholder={searchLabel}
+          accessibilityLabel={searchLabel}
         />
         <DataFeedback />
       </View>
       <FlatList
         ref={list}
-        data={searchCountries(query)}
+        data={matches}
+        extraData={{ data, status, busy }}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustKeyboardInsets
@@ -80,13 +95,22 @@ export function CountrySearchScreen({
           )
         }
         ListEmptyComponent={
-          <AppText tone="muted" style={styles.empty}>
-            {t('countries.empty.noSearchResults')}
-          </AppText>
+          <View style={styles.empty}>
+            <AppText tone="muted">
+              {t(
+                countriesOnly
+                  ? 'countries.empty.noSearchResults'
+                  : 'places.noSearchResults',
+              )}
+            </AppText>
+            {!countriesOnly && (
+              <AppText tone="muted">{t('places.noSearchResultsHint')}</AppText>
+            )}
+          </View>
         }
         renderItem={({ item }) => {
           const presentation = getStatusPresentation(
-            data.places[item.id],
+            getPlaceStatus(data, item),
             data.homeCountryId === item.id,
           );
           return (
@@ -97,7 +121,7 @@ export function CountrySearchScreen({
               }}
               disabled={busy || status !== 'ready'}
               accessibilityLabel={t('countries.countryStatus', {
-                name: item.name,
+                name: formatPlaceName(item),
                 status: presentation.label,
               })}
               style={styles.row}
@@ -106,7 +130,10 @@ export function CountrySearchScreen({
                 <AppText>{item.name}</AppText>
                 <AppText variant="caption" tone="muted">
                   {t('countries.countrySubtitle', {
-                    continent: item.continent.name,
+                    continent:
+                      item.kind === 'region'
+                        ? item.countryName
+                        : countryById.get(item.id)!.continent.name,
                     status: presentation.label,
                   })}
                 </AppText>
@@ -131,5 +158,5 @@ const styles = StyleSheet.create({
     gap: theme.space.md,
   },
   name: { flex: 1, gap: theme.space.xs },
-  empty: { padding: theme.space.xl, textAlign: 'center' },
+  empty: { padding: theme.space.xl, alignItems: 'center', gap: theme.space.sm },
 });

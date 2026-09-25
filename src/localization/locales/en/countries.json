@@ -77,18 +77,17 @@
     "matchingHint": "Opens matching countries",
     "visitedHint": "Opens visited countries",
     "continentHint": "Opens visited countries in this continent",
-    "visited": "Places visited",
+    "visited": "Countries visited",
     "visitedCount": {
-      "one": "%{amount} place visited",
-      "other": "%{amount} places visited"
+      "one": "%{amount} country visited",
+      "other": "%{amount} countries visited"
     },
     "percentVisited": "%{percent} visited",
     "remaining": "Remaining",
     "chooseHome": "Choose home",
-    "continentProgress": "%{name}: %{visited} of %{total} places visited",
-    "progress": "%{visited} of %{total} places",
-    "progressValue": "%{visited} of %{total} places, %{percent}",
-    "summary": "%{label}: %{value}",
+    "continentProgress": "%{name}: %{visited} of %{total} countries visited",
+    "progress": "%{visited} of %{total} countries",
+    "progressValue": "%{visited} of %{total} countries, %{percent}",
     "explanation": "Counts countries and territories, not land area. Lived counts as Visited."
   },
   "loadingPlaces": "Loading your places",

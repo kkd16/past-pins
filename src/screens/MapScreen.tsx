@@ -17,6 +17,7 @@ import type { AtlasCommand } from '../atlas/types';
 import { useScreenReaderEnabled } from '../accessibility/useScreenReaderEnabled';
 import { WorldMapViewport } from '../atlas/WorldMapViewport';
 import { DataFeedback } from '../components/DataFeedback';
+import { Button } from '../components/Button';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { UserFacingError } from '../data/errors';
@@ -25,10 +26,12 @@ import { getCurrentLocation } from '../location/current-location';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
+import { getCountrySubdivisions } from '../subdivisions/catalog';
 
 export function MapScreen({
   onSelect,
   onOpenCountries,
+  onOpenRegions,
   onSearch,
   focus,
   focusRequest,
@@ -36,6 +39,7 @@ export function MapScreen({
 }: {
   onSelect: (id: string) => void;
   onOpenCountries: () => void;
+  onOpenRegions: (countryId: string) => void;
   onSearch: () => void;
   focus?: string;
   focusRequest?: string;
@@ -216,6 +220,17 @@ export function MapScreen({
               />
             )}
             <DataFeedback />
+            {ready &&
+              selectedId &&
+              getCountrySubdivisions(selectedId).length > 0 && (
+                <Button
+                  label={t('places.countryRegions', {
+                    country: countryById.get(selectedId)!.name,
+                  })}
+                  variant="quiet"
+                  onPress={() => onOpenRegions(selectedId)}
+                />
+              )}
             {ready && data.preferences.mapSummary && (
               <MapSummary
                 places={data.places}

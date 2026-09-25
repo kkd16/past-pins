@@ -5,15 +5,17 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { flatCountries, flatMarkers, mapSize } from '../atlas/geography';
 import { AppText } from '../components/AppText';
 import { t } from '../localization';
+import type { Place } from '../places/catalog';
 import { theme } from '../theme';
-import type { ListPlace } from './places';
+import { getListRegionPreview } from './map-preview';
 
 /** The rows below the map provide the precise, accessible list of places. */
 export const ListMap = memo(function ListMap({
   places,
 }: {
-  places: readonly ListPlace[];
+  places: readonly Place[];
 }) {
+  const regional = getListRegionPreview(places);
   const countries = new Set<string>();
   const regionCountries = new Set<string>();
   for (const place of places)
@@ -24,58 +26,71 @@ export const ListMap = memo(function ListMap({
 
   if (!countries.size && !regionCountries.size) return null;
 
+  const shapes = regional?.regions ?? flatCountries;
+  const selected = regional?.ids ?? countries;
+  const borderWidth = regional ? 0.7 : 0.4;
+  const markers =
+    regional?.markers ??
+    flatMarkers.filter(
+      ({ id }) => countries.has(id) || regionCountries.has(id),
+    );
+
   return (
     <View style={styles.container}>
       <View style={styles.map} accessible={false} accessibilityElementsHidden>
         <Svg
           width="100%"
           height="100%"
-          viewBox={`0 0 ${mapSize.width} ${mapSize.height}`}
+          viewBox={
+            regional?.viewBox.join(' ') ??
+            `0 0 ${mapSize.width} ${mapSize.height}`
+          }
           accessible={false}
           accessibilityElementsHidden
         >
-          {flatCountries.map(({ id, path }) => {
-            const included = countries.has(id);
-            const outlined = regionCountries.has(id);
+          {shapes.map(({ id, path }) => {
+            const included = selected.has(id);
+            const outlined = !regional && regionCountries.has(id);
             return (
               <Path
                 key={id}
                 d={path}
+                fillRule={regional ? 'evenodd' : 'nonzero'}
                 fill={included ? theme.color.accent : theme.color.border}
                 stroke={outlined ? theme.color.accent : theme.globe.border}
-                strokeWidth={outlined ? 1.5 : 0.4}
+                strokeWidth={outlined ? 1.5 : borderWidth}
                 vectorEffect="non-scaling-stroke"
               />
             );
           })}
-          {flatMarkers
-            .filter(({ id }) => countries.has(id) || regionCountries.has(id))
-            .map(({ id, point }) => (
-              <Circle
-                key={id}
-                cx={point[0]}
-                cy={point[1]}
-                r={6}
-                fill={
-                  countries.has(id) ? theme.color.accent : theme.globe.ocean
-                }
-                stroke={theme.color.accent}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
+          {markers.map(({ id, point }) => (
+            <Circle
+              key={id}
+              cx={point[0]}
+              cy={point[1]}
+              r={regional?.markerRadius ?? 6}
+              fill={selected.has(id) ? theme.color.accent : theme.globe.ocean}
+              stroke={regional ? theme.globe.border : theme.color.accent}
+              strokeWidth={regional ? 0.7 : 1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
         </Svg>
       </View>
       <View style={styles.legend}>
-        {countries.size > 0 && (
+        {(regional || countries.size > 0) && (
           <View style={styles.legendItem}>
             <View style={[styles.swatch, styles.filled]} />
             <AppText variant="caption" tone="muted" style={styles.legendText}>
-              {t('lists.mapCountries')}
+              {regional
+                ? t('lists.mapCountryRegions', {
+                    country: regional.countryName,
+                  })
+                : t('lists.mapCountries')}
             </AppText>
           </View>
         )}
-        {regionCountries.size > 0 && (
+        {!regional && regionCountries.size > 0 && (
           <View style={styles.legendItem}>
             <View style={styles.swatch} />
             <AppText variant="caption" tone="muted" style={styles.legendText}>

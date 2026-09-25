@@ -3,7 +3,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { CountryDetailsScreen } from '../../screens/CountryDetailsScreen';
 
 export default function CountryDetailsRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = typeof params.id === 'string' ? params.id : '';
   return (
     <CountryDetailsScreen
       id={id}

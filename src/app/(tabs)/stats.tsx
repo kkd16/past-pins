@@ -1,19 +1,19 @@
 import { router } from 'expo-router';
 
+import { placesHref } from '../../places/navigation';
 import { StatsScreen } from '../../screens/StatsScreen';
 
 export default function StatsRoute() {
   return (
     <StatsScreen
       onOpenSettings={() => router.push('/settings')}
-      onOpenRegions={() => router.push('/regions')}
+      onOpenRegions={(scope) =>
+        router.navigate(placesHref('regions', scope))
+      }
       onOpenStamps={() => router.push('/stamps')}
       onChooseHome={() => router.push('/settings/home')}
-      onOpenCountries={(scope, continent = 'all') =>
-        router.navigate({
-          pathname: '/countries',
-          params: { scope, continent, query: '', intent: String(Date.now()) },
-        })
+      onOpenCountries={(scope, continent) =>
+        router.navigate(placesHref('countries', scope, continent))
       }
       onOpenCountry={(id) =>
         router.push({ pathname: '/country/[id]', params: { id } })

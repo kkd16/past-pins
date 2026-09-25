@@ -1,9 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { Keyboard } from 'react-native';
 
-import { readCountryFilters, readCountryScope } from '../../countries/filters';
+import {
+  readCountryFilters,
+  readCountryScope,
+  type CountryScope,
+} from '../../countries/filters';
 import { useAppData } from '../../data/AppDataProvider';
 import { CountriesScreen } from '../../screens/CountriesScreen';
+import { RegionsScreen } from '../../screens/RegionsScreen';
+import { getPlace } from '../../places/catalog';
+import type { PlacesMode } from '../../places/PlaceKindControl';
 
 export default function CountriesRoute() {
   const params = useLocalSearchParams<{
@@ -11,6 +19,7 @@ export default function CountriesRoute() {
     scope?: string;
     query?: string;
     intent?: string;
+    mode?: string;
   }>();
   const { data } = useAppData();
   const requestedQuery =
@@ -37,30 +46,64 @@ export default function CountriesRoute() {
     continent: params.continent,
     grouping: data.preferences.countryGrouping,
   });
+  const mode = params.mode === 'regions' ? 'regions' : 'countries';
+  const scope = readCountryScope(params.scope);
+  const sharedProps = {
+    scope,
+    query: search.value,
+    intent,
+    onQueryChange: (value: string) =>
+      setSearch({ request: requestedQuery, value }),
+    onScopeChange: (scope: CountryScope) => router.setParams({ scope }),
+    onModeChange: (mode: PlacesMode) => {
+      Keyboard.dismiss();
+      router.setParams({ mode });
+    },
+    onOpenFilters: () =>
+      router.push({
+        pathname: '/filters',
+        params: {
+          ...filters,
+          mode,
+          scope,
+          query: search.value,
+        },
+      }),
+    onResetFilters: () => {
+      setSearch({ request: requestedQuery, value: '' });
+      router.setParams({ continent: 'all', scope: 'all', query: undefined });
+    },
+  };
+  if (mode === 'regions')
+    return (
+      <RegionsScreen
+        {...sharedProps}
+        continent={filters.continent}
+        onSelect={(id) => {
+          const region = getPlace(id);
+          if (region)
+            router.push({
+              pathname: '/regions/[id]',
+              params: {
+                id: region.countryId,
+                focus: id,
+                scope,
+              },
+            });
+        }}
+        onSaveToLists={(placeId) =>
+          router.push({ pathname: '/lists/add', params: { placeId } })
+        }
+      />
+    );
   return (
     <CountriesScreen
+      {...sharedProps}
       filters={filters}
-      scope={readCountryScope(params.scope)}
-      query={search.value}
-      intent={intent}
-      onQueryChange={(value) => setSearch({ request: requestedQuery, value })}
-      onScopeChange={(scope) => router.setParams({ scope })}
-      onOpenFilters={() =>
-        router.push({
-          pathname: '/filters',
-          params: {
-            ...filters,
-            scope: readCountryScope(params.scope),
-            query: search.value,
-          },
-        })
-      }
-      onResetFilters={() => {
-        setSearch({ request: requestedQuery, value: '' });
-        router.setParams({ continent: 'all', scope: 'all', query: undefined });
-      }}
       onSelect={selectCountry}
-      onOpenRegions={() => router.push('/regions')}
+      onOpenRegions={(id) =>
+        router.push({ pathname: '/regions/[id]', params: { id } })
+      }
     />
   );
 }

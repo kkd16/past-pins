@@ -1,0 +1,16 @@
+{
+  "title": "Places",
+  "modeLabel": "Place type",
+  "countries": "Countries",
+  "regions": "Regions",
+  "regionSubtitle": "States, provinces & other regions",
+  "searchRegions": "Search regions or their country",
+  "searchAll": "Search countries or regions",
+  "searchTitle": "Find a place",
+  "noSearchResults": "No matching places",
+  "noSearchResultsHint": "Try a country, state, or province.",
+  "countryRegions": "Regions in %{country}",
+  "regionsProgress": "%{visited} of %{total} regions visited",
+  "statisticLabel": "%{kind}, %{label}: %{value}",
+  "matchingRegions": "Open matching regions"
+}

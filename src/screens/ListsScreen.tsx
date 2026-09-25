@@ -11,11 +11,8 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
 import { normalizeSearch } from '../countries/search';
 import { useAppData } from '../data/AppDataProvider';
-import {
-  formatListPlaceName,
-  getListPlace,
-  getListStatistics,
-} from '../lists/places';
+import { getListStatistics } from '../lists/places';
+import { formatPlaceName, getPlace } from '../places/catalog';
 import { promptListName } from '../lists/prompt';
 import { useListActionGuard } from '../lists/useListActionGuard';
 import { compareNames, formatList, formatNumber, t } from '../localization';
@@ -104,7 +101,7 @@ export function ListsScreen({ onOpen }: { onOpen: (id: string) => void }) {
           };
           const preview = item.placeIds
             .slice(0, 3)
-            .map((id) => formatListPlaceName(getListPlace(id)!));
+            .map((id) => formatPlaceName(getPlace(id)!));
           return (
             <AppPressable
               style={styles.card}

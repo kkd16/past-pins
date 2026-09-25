@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 
+import { placesHref } from '../../places/navigation';
 import { MapScreen } from '../../screens/MapScreen';
 
 export default function MapRoute() {
@@ -20,7 +21,10 @@ export default function MapRoute() {
       onSelect={(id) =>
         router.push({ pathname: '/country/[id]', params: { id } })
       }
-      onOpenCountries={() => router.navigate('/countries')}
+      onOpenCountries={() => router.navigate(placesHref('countries'))}
+      onOpenRegions={(id) =>
+        router.push({ pathname: '/regions/[id]', params: { id } })
+      }
       onSearch={() => router.push('/map-search')}
     />
   );

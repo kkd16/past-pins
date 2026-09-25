@@ -13,10 +13,12 @@ import { t } from '../localization';
 
 export function CountryFiltersScreen({
   initialFilters,
+  showGrouping = true,
   onApply,
   onCancel,
 }: {
   initialFilters: CountryFilters;
+  showGrouping?: boolean;
   onApply: (filters: CountryFilters) => void;
   onCancel: () => void;
 }) {
@@ -28,18 +30,20 @@ export function CountryFiltersScreen({
       onCancel={onCancel}
       onDone={() => onApply(filters)}
     >
-      <ChoiceSection title={t('countries.organization')}>
-        <ChoiceRow
-          label={t('countries.byContinent')}
-          selected={filters.grouping === 'continent'}
-          onPress={() => setFilters({ ...filters, grouping: 'continent' })}
-        />
-        <ChoiceRow
-          label={t('countries.alphabetical')}
-          selected={filters.grouping === 'alphabetical'}
-          onPress={() => setFilters({ ...filters, grouping: 'alphabetical' })}
-        />
-      </ChoiceSection>
+      {showGrouping && (
+        <ChoiceSection title={t('countries.organization')}>
+          <ChoiceRow
+            label={t('countries.byContinent')}
+            selected={filters.grouping === 'continent'}
+            onPress={() => setFilters({ ...filters, grouping: 'continent' })}
+          />
+          <ChoiceRow
+            label={t('countries.alphabetical')}
+            selected={filters.grouping === 'alphabetical'}
+            onPress={() => setFilters({ ...filters, grouping: 'alphabetical' })}
+          />
+        </ChoiceSection>
+      )}
       <ChoiceSection title={t('countries.continent')}>
         {[{ id: 'all', name: t('countries.allContinents') }, ...continents].map(
           (continent) => (

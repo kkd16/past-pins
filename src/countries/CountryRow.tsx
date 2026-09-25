@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
@@ -7,7 +7,7 @@ import { Checkmark } from '../components/Checkmark';
 import { Icon } from '../components/Icon';
 import { isVisited, type PlaceStatus } from '../data/model';
 import { theme } from '../theme';
-import { t } from '../localization';
+import { formatNumber, t } from '../localization';
 import { getStatusPresentation } from './status';
 import type { Country, CountryId } from './types';
 
@@ -20,6 +20,9 @@ export const CountryRow = memo(function CountryRow({
   selected,
   onChangeStatus,
   onSelect,
+  regionsVisited,
+  regionsTotal,
+  onOpenRegions,
 }: {
   country: Country;
   status: PlaceStatus;
@@ -29,6 +32,9 @@ export const CountryRow = memo(function CountryRow({
   selected: boolean;
   onChangeStatus: (id: CountryId) => void;
   onSelect: (id: CountryId) => void;
+  regionsVisited: number;
+  regionsTotal: number;
+  onOpenRegions: (countryId: string) => void;
 }) {
   const presentation = getStatusPresentation(status, home);
   return (
@@ -38,49 +44,76 @@ export const CountryRow = memo(function CountryRow({
         (selecting ? selected : isVisited(status)) && styles.highlight,
       ]}
     >
-      <AppPressable
-        accessibilityRole={selecting ? 'checkbox' : 'button'}
-        accessibilityLabel={t('countries.countryStatus', {
-          name: country.name,
-          status: presentation.label,
-        })}
-        accessibilityHint={selecting ? undefined : t('countries.detailsHint')}
-        accessibilityState={selecting ? { checked: selected } : undefined}
-        disabled={selecting && disabled}
-        onPress={() => onSelect(country.id)}
-        style={styles.details}
-      >
-        <View style={styles.label}>
-          <AppText>{country.name}</AppText>
-          {status !== 'unvisited' && (
-            <AppText variant="caption" style={{ color: presentation.color }}>
-              {presentation.label}
-            </AppText>
-          )}
-        </View>
-        {selecting && <Checkmark checked={selected} />}
-      </AppPressable>
-      {!selecting && (
+      <View style={styles.main}>
         <AppPressable
-          accessibilityLabel={t('countries.changeStatus', {
+          accessibilityRole={selecting ? 'checkbox' : 'button'}
+          accessibilityLabel={t('countries.countryStatus', {
             name: country.name,
             status: presentation.label,
           })}
-          disabled={disabled}
-          onPress={() => onChangeStatus(country.id)}
-          style={styles.toggle}
+          accessibilityHint={selecting ? undefined : t('countries.detailsHint')}
+          accessibilityState={selecting ? { checked: selected } : undefined}
+          disabled={selecting && disabled}
+          onPress={() => onSelect(country.id)}
+          style={styles.details}
         >
-          {status === 'wishlist' || status === 'lived' || home ? (
-            <View style={[styles.status, { borderColor: presentation.color }]}>
-              <Icon
-                name={presentation.icon}
-                color={presentation.color}
-                size={theme.size.iconSmall}
-              />
-            </View>
-          ) : (
-            <Checkmark checked={status === 'visited'} />
-          )}
+          <View style={styles.label}>
+            <AppText>{country.name}</AppText>
+            {status !== 'unvisited' && (
+              <AppText variant="caption" style={{ color: presentation.color }}>
+                {presentation.label}
+              </AppText>
+            )}
+          </View>
+          {selecting && <Checkmark checked={selected} />}
+        </AppPressable>
+        {!selecting && (
+          <AppPressable
+            accessibilityLabel={t('countries.changeStatus', {
+              name: country.name,
+              status: presentation.label,
+            })}
+            disabled={disabled}
+            onPress={() => onChangeStatus(country.id)}
+            style={styles.toggle}
+          >
+            {status === 'wishlist' || status === 'lived' || home ? (
+              <View
+                style={[styles.status, { borderColor: presentation.color }]}
+              >
+                <Icon
+                  name={presentation.icon}
+                  color={presentation.color}
+                  size={theme.size.iconSmall}
+                />
+              </View>
+            ) : (
+              <Checkmark checked={status === 'visited'} />
+            )}
+          </AppPressable>
+        )}
+      </View>
+      {!selecting && regionsTotal > 0 && (
+        <AppPressable
+          accessibilityLabel={t('subdivisions.countryProgress', {
+            country: country.name,
+            visited: formatNumber(regionsVisited),
+            total: formatNumber(regionsTotal),
+          })}
+          accessibilityHint={t('subdivisions.openCountry')}
+          onPress={() => {
+            Keyboard.dismiss();
+            onOpenRegions(country.id);
+          }}
+          style={styles.regions}
+        >
+          <AppText variant="caption" tone="accent" style={styles.regionLabel}>
+            {t('places.regionsProgress', {
+              visited: formatNumber(regionsVisited),
+              total: formatNumber(regionsTotal),
+            })}
+          </AppText>
+          <Icon name="chevronRight" size={theme.size.iconSmall} />
         </AppPressable>
       )}
     </View>
@@ -89,11 +122,20 @@ export const CountryRow = memo(function CountryRow({
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
     borderRadius: theme.radius.sm,
     backgroundColor: theme.color.surface,
   },
+  main: { flexDirection: 'row', alignItems: 'center' },
+  regions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.md,
+    marginHorizontal: theme.space.lg,
+    paddingVertical: theme.space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.color.border,
+  },
+  regionLabel: { flex: 1 },
   highlight: { backgroundColor: theme.color.visitedSurface },
   details: {
     flex: 1,

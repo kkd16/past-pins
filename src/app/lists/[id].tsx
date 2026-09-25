@@ -13,6 +13,9 @@ export default function ListDetailsRoute() {
       id={id}
       onEdit={() => router.push({ pathname: '/lists/places', params: { id } })}
       onBrowse={() => router.dismissTo('/lists')}
+      onOpenRegions={(countryId) =>
+        router.push({ pathname: '/regions/[id]', params: { id: countryId } })
+      }
       onOpenPlace={(place) =>
         place.kind === 'country'
           ? router.push({ pathname: '/country/[id]', params: { id: place.id } })

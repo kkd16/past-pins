@@ -16,12 +16,15 @@ import { Button } from '../components/Button';
 import { Checkmark } from '../components/Checkmark';
 import { ChoiceRow } from '../components/ChoiceRow';
 import { DataFeedback } from '../components/DataFeedback';
+import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { SearchField } from '../components/SearchField';
+import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import type { TravelList } from '../data/model';
-import { searchListPlaces, type ListPlace } from '../lists/places';
 import { formatNumber, language, t } from '../localization';
+import { searchPlaces, type Place } from '../places/catalog';
+import { getCountrySubdivisions } from '../subdivisions/catalog';
 import { theme } from '../theme';
 
 type Props = {
@@ -72,10 +75,9 @@ function ListPlacesEditor({
   const [originalPlaces] = useState(list.placeIds);
   const [selected, setSelected] = useState(() => new Set(originalPlaces));
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState<ListPlace['kind'] | 'selected'>(
-    originalPlaces.length > 0 ? 'selected' : 'country',
-  );
-  const results = useRef<FlatList<ListPlace>>(null);
+  const [scope, setScope] = useState<'all' | 'selected'>('all');
+  const [countryId, setCountryId] = useState<string>();
+  const results = useRef<FlatList<Place>>(null);
   const exited = useRef(false);
   const stale = list.placeIds !== originalPlaces;
   const disabled = stale || app.busy || app.status !== 'ready';
@@ -83,14 +85,14 @@ function ListPlacesEditor({
     selected.size !== originalPlaces.length ||
     originalPlaces.some((placeId) => !selected.has(placeId));
   const scopes = [
-    { value: 'country', label: t('lists.countries') },
-    { value: 'region', label: t('lists.regions') },
+    { value: 'all', label: t('lists.allPlaces') },
     { value: 'selected', label: t('lists.selected') },
   ] as const;
-  const searchScope = scope === 'selected' ? selected : scope;
+  const searchScope =
+    scope === 'selected' ? selected : countryId ? 'region' : 'all';
   const matches = useMemo(
-    () => searchListPlaces(query, searchScope),
-    [query, searchScope],
+    () => searchPlaces(query, searchScope, countryId),
+    [query, searchScope, countryId],
   );
 
   const toggle = useCallback((placeId: string) => {
@@ -104,8 +106,17 @@ function ListPlacesEditor({
 
   function changeScope(value: typeof scope) {
     setScope(value);
+    setCountryId(undefined);
     results.current?.scrollToOffset({ offset: 0, animated: false });
   }
+
+  const browseCountry = useCallback((nextCountryId?: string) => {
+    setCountryId(nextCountryId);
+    setQuery('');
+    setScope('all');
+    Keyboard.dismiss();
+    results.current?.scrollToOffset({ offset: 0, animated: false });
+  }, []);
 
   function cancel() {
     if (exited.current) return;
@@ -171,6 +182,20 @@ function ListPlacesEditor({
             {stale && (
               <AppText tone="muted">{t('lists.changedElsewhere')}</AppText>
             )}
+            {countryId && (
+              <View style={styles.breadcrumb}>
+                <Button
+                  label={t('lists.allPlaces')}
+                  variant="quiet"
+                  onPress={() => browseCountry()}
+                />
+                <AppText variant="heading" accessibilityRole="header">
+                  {t('subdivisions.countryTitle', {
+                    country: countryById.get(countryId)!.name,
+                  })}
+                </AppText>
+              </View>
+            )}
             <SearchField
               value={query}
               onChangeText={(value) => {
@@ -228,6 +253,7 @@ function ListPlacesEditor({
             selected={selected.has(item.id)}
             disabled={disabled}
             onToggle={toggle}
+            onBrowseCountry={browseCountry}
           />
         )}
       />
@@ -240,30 +266,53 @@ const PlaceRow = memo(function PlaceRow({
   selected,
   disabled,
   onToggle,
+  onBrowseCountry,
 }: {
-  place: ListPlace;
+  place: Place;
   selected: boolean;
   disabled: boolean;
   onToggle: (id: string) => void;
+  onBrowseCountry: (id: string) => void;
 }) {
+  const regions =
+    place.kind === 'country' ? getCountrySubdivisions(place.id) : [];
   return (
-    <AppPressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: selected }}
-      disabled={disabled}
-      onPress={() => onToggle(place.id)}
-      style={[styles.row, selected && styles.selectedRow]}
-    >
-      <View style={styles.name}>
-        <AppText>{place.name}</AppText>
-        {place.kind === 'region' && (
-          <AppText variant="caption" tone="muted">
-            {place.countryName}
+    <View style={[styles.card, selected && styles.selectedRow]}>
+      <AppPressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: selected }}
+        disabled={disabled}
+        onPress={() => onToggle(place.id)}
+        style={styles.row}
+      >
+        <View style={styles.name}>
+          <AppText>{place.name}</AppText>
+          {place.kind === 'region' && (
+            <AppText variant="caption" tone="muted">
+              {place.countryName}
+            </AppText>
+          )}
+        </View>
+        <Checkmark checked={selected} />
+      </AppPressable>
+      {regions.length > 0 && (
+        <AppPressable
+          style={styles.regions}
+          accessibilityLabel={t('lists.exploreCountryRegions', {
+            country: place.name,
+          })}
+          onPress={() => onBrowseCountry(place.id)}
+        >
+          <AppText tone="accent" variant="caption" style={styles.name}>
+            {t('lists.exploreRegions', {
+              count: regions.length,
+              amount: formatNumber(regions.length),
+            })}
           </AppText>
-        )}
-      </View>
-      <Checkmark checked={selected} />
-    </AppPressable>
+          <Icon name="chevronRight" color={theme.color.accent} />
+        </AppPressable>
+      )}
+    </View>
   );
 });
 
@@ -274,15 +323,25 @@ function Separator() {
 const styles = StyleSheet.create({
   content: { paddingVertical: theme.space.md, paddingBottom: theme.space.xl },
   header: { gap: theme.space.md, paddingBottom: theme.space.lg },
+  breadcrumb: { alignItems: 'flex-start', gap: theme.space.xs },
   segments: { height: theme.size.touch },
+  card: { borderRadius: theme.radius.sm, backgroundColor: theme.color.surface },
   row: {
     minHeight: theme.size.row,
     flexDirection: 'row',
     alignItems: 'center',
     padding: theme.space.lg,
     gap: theme.space.lg,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.color.surface,
+  },
+  regions: {
+    minHeight: theme.size.touch,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.sm,
+    gap: theme.space.md,
+    borderTopWidth: theme.stroke.subtle,
+    borderTopColor: theme.color.border,
   },
   selectedRow: { backgroundColor: theme.color.selectedSurface },
   name: { flex: 1, gap: theme.space.xs },

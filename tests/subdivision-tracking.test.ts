@@ -4,7 +4,6 @@ import type { AppData } from '../src/data/model';
 import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import {
   getSubdivisionStatistics,
-  searchSubdivisionCountries,
   selectSubdivisions,
 } from '../src/subdivisions/tracking';
 
@@ -73,9 +72,18 @@ describe('region browsing and progress', () => {
       wishlist: 0,
       remaining: 0,
     });
-    expect(searchSubdivisionCountries('Canada').map(({ id }) => id)).toEqual([
-      'ca',
+  });
+
+  test('keeps parent-country and multi-word searches consistent with Places', () => {
+    expect(
+      selectSubdivisions('ca', 'Canada QUÉBEC', 'lived', statuses),
+    ).toEqual([quebec]);
+    expect(
+      selectSubdivisions('ca', 'Canada Upper', 'visited', statuses),
+    ).toEqual([ontario]);
+    expect(selectSubdivisions('jp', 'Canada', 'all', statuses)).toEqual([]);
+    expect(selectSubdivisions('ca', 'Canada', 'all', statuses)).toEqual([
+      ...canada,
     ]);
-    expect(searchSubdivisionCountries('no-such-country')).toEqual([]);
   });
 });

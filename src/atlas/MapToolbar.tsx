@@ -75,7 +75,7 @@ export function MapToolbar({
         </Surface>
         <IconButton
           name="search"
-          accessibilityLabel={t('atlas.findCountry')}
+          accessibilityLabel={t('places.searchTitle')}
           onPress={onSearch}
           style={styles.control}
         />

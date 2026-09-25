@@ -1,15 +1,7 @@
-import type { CountryScope } from '../countries/filters';
-import { normalizeSearch, searchCountries } from '../countries/search';
+import { matchesCountryScope, type CountryScope } from '../countries/filters';
 import { isVisited, type AppData } from '../data/model';
-import { getCountrySubdivisions, subdivisions } from './catalog';
-
-export const subdivisionCountries = searchSubdivisionCountries('');
-
-export function searchSubdivisionCountries(query: string) {
-  return searchCountries(query).filter(
-    (country) => getCountrySubdivisions(country.id).length > 0,
-  );
-}
+import { searchPlaces } from '../places/catalog';
+import { getCountrySubdivisions, subdivisionById, subdivisions } from './catalog';
 
 export function selectSubdivisions(
   countryId: string,
@@ -17,28 +9,9 @@ export function selectSubdivisions(
   scope: CountryScope,
   statuses: AppData['subdivisions'],
 ) {
-  const term = normalizeSearch(query);
-  return getCountrySubdivisions(countryId).filter((region) => {
-    if (
-      !normalizeSearch(
-        `${region.name} ${region.nativeName} ${region.code} ${region.aliases.join(' ')}`,
-      ).includes(term)
-    )
-      return false;
-    const status = statuses[region.id];
-    switch (scope) {
-      case 'visited':
-        return isVisited(status);
-      case 'not-visited':
-        return !isVisited(status);
-      case 'wishlist':
-        return status === 'wishlist';
-      case 'lived':
-        return status === 'lived';
-      default:
-        return true;
-    }
-  });
+  return searchPlaces(query, 'region', countryId)
+    .filter((region) => matchesCountryScope(statuses[region.id], scope))
+    .map(({ id }) => subdivisionById.get(id)!);
 }
 
 export function getSubdivisionStatistics(

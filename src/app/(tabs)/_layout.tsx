@@ -27,7 +27,7 @@ export default function TabsLayout() {
         contentStyle={{ backgroundColor: theme.color.background }}
       >
         <NativeTabs.Trigger.Label>
-          {t('common.countries')}
+          {t('places.title')}
         </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="list.bullet" />
       </NativeTabs.Trigger>

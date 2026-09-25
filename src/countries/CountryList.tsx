@@ -4,6 +4,7 @@ import { SectionList, StyleSheet, View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import type { AppData } from '../data/model';
+import type { RegionProgress } from '../places/filter';
 import { theme } from '../theme';
 import { t, formatNumber, language } from '../localization';
 import { CountryRow } from './CountryRow';
@@ -27,6 +28,8 @@ export function CountryList({
   disabled,
   onChangeStatus,
   onSelect,
+  regionProgress,
+  onOpenRegions,
   onReset,
   scrollResetKey,
   scope,
@@ -43,6 +46,8 @@ export function CountryList({
   disabled: boolean;
   onChangeStatus: (id: CountryId) => void;
   onSelect: (id: CountryId) => void;
+  regionProgress: ReadonlyMap<string, RegionProgress>;
+  onOpenRegions: (countryId: string) => void;
   onReset: () => void;
   scrollResetKey: string;
   scope: CountryScope;
@@ -65,7 +70,14 @@ export function CountryList({
       ref={list}
       style={styles.list}
       sections={ready ? sections : []}
-      extraData={{ places, homeCountryId, disabled, selecting, selectedIds }}
+      extraData={{
+        places,
+        homeCountryId,
+        disabled,
+        selecting,
+        selectedIds,
+        regionProgress,
+      }}
       keyExtractor={(country) => country.id}
       stickySectionHeadersEnabled
       contentInsetAdjustmentBehavior="never"
@@ -81,6 +93,9 @@ export function CountryList({
           disabled={disabled}
           onChangeStatus={onChangeStatus}
           onSelect={onSelect}
+          regionsVisited={regionProgress.get(item.id)?.visited ?? 0}
+          regionsTotal={regionProgress.get(item.id)?.total ?? 0}
+          onOpenRegions={onOpenRegions}
           selecting={selecting}
           selected={selectedIds.has(item.id)}
         />
@@ -112,7 +127,11 @@ export function CountryList({
           {header}
           {ready && (
             <View style={styles.results}>
-              <AppText variant="caption" tone="muted" style={styles.resultCount}>
+              <AppText
+                variant="caption"
+                tone="muted"
+                style={styles.resultCount}
+              >
                 {t('countries.placeCount', {
                   count: resultCount,
                   amount: formatNumber(resultCount),

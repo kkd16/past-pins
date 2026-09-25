@@ -90,10 +90,6 @@ export default function RootLayout() {
                 }}
               />
               <Stack.Screen
-                name="regions/index"
-                options={{ title: t('subdivisions.title') }}
-              />
-              <Stack.Screen
                 name="regions/[id]"
                 options={{
                   title: t('subdivisions.title'),

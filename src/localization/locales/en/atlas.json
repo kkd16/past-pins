@@ -2,11 +2,10 @@
   "globe": "Globe",
   "worldMap": "World map",
   "mapView": "Map view",
-  "findCountry": "Find a country on the map",
   "northUp": "Turn globe north up",
   "resetGlobe": "Reset globe",
   "fitWorld": "Fit entire world map",
-  "placesVisited": "Places visited",
+  "placesVisited": "Countries visited",
   "globeGestures": "Drag, pinch & twist to explore",
   "mapGestures": "Drag & pinch to explore",
   "addPlace": "Add a place",
@@ -16,9 +15,9 @@
   "openDetails": "Opens country details",
   "dismissSelection": "Clear selected country",
   "globeError": "The globe couldn’t load.",
-  "globeErrorHint": "Try the world map, or browse Countries.",
+  "globeErrorHint": "Try the world map, or browse Places.",
   "zoom": "%{value} zoom",
-  "exploreHint": "Use actions to zoom or move. Search to select a country.",
+  "exploreHint": "Use actions to zoom or move. Search to find a country or region.",
   "zoomIn": "Zoom in",
   "zoomOut": "Zoom out",
   "moveLeft": "Move map left",
@@ -26,7 +25,7 @@
   "moveUp": "Move map up",
   "moveDown": "Move map down",
   "visitedCount": {
-    "one": "%{total} place visited",
-    "other": "%{total} places visited"
+    "one": "%{total} country visited",
+    "other": "%{total} countries visited"
   }
 }

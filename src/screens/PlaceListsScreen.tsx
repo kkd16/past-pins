@@ -8,7 +8,7 @@ import { Checkmark } from '../components/Checkmark';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { useAppData } from '../data/AppDataProvider';
-import { formatListPlaceName, getListPlace } from '../lists/places';
+import { formatPlaceName, getPlace } from '../places/catalog';
 import { promptListName } from '../lists/prompt';
 import { useListActionGuard } from '../lists/useListActionGuard';
 import { compareNames, formatNumber, t } from '../localization';
@@ -23,7 +23,7 @@ export function PlaceListsScreen({
 }) {
   const app = useAppData();
   const guard = useListActionGuard(app.data.lists);
-  const place = getListPlace(placeId);
+  const place = getPlace(placeId);
   const disabled = app.status !== 'ready' || app.busy || !place;
   const lists = [...app.data.lists].sort((a, b) =>
     compareNames(a.name, b.name),
@@ -50,7 +50,7 @@ export function PlaceListsScreen({
             <AppText tone="muted">
               {place
                 ? t('lists.membershipHint', {
-                    name: formatListPlaceName(place),
+                    name: formatPlaceName(place),
                   })
                 : t('lists.placeUnavailable')}
             </AppText>

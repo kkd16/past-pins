@@ -13,16 +13,17 @@ import { getStatusPresentation } from '../countries/status';
 import { showStatusPicker } from '../countries/StatusPicker';
 import { useAppData } from '../data/AppDataProvider';
 import { ListMap } from '../lists/ListMap';
+import { getListStatistics } from '../lists/places';
 import {
-  formatListPlaceName,
-  getListPlace,
-  getListPlaceStatus,
-  getListStatistics,
-  type ListPlace,
-} from '../lists/places';
+  formatPlaceName,
+  getPlace,
+  getPlaceStatus,
+  type Place,
+} from '../places/catalog';
 import { promptListName } from '../lists/prompt';
 import { useListActionGuard } from '../lists/useListActionGuard';
 import { formatNumber, t } from '../localization';
+import { getCountrySubdivisions } from '../subdivisions/catalog';
 import { theme } from '../theme';
 
 export function ListDetailsScreen({
@@ -30,11 +31,13 @@ export function ListDetailsScreen({
   onEdit,
   onBrowse,
   onOpenPlace,
+  onOpenRegions,
 }: {
   id: string;
   onEdit: () => void;
   onBrowse: () => void;
-  onOpenPlace: (place: ListPlace) => void;
+  onOpenPlace: (place: Place) => void;
+  onOpenRegions: (countryId: string) => void;
 }) {
   const app = useAppData();
   const list = app.data.lists.find((item) => item.id === id);
@@ -63,9 +66,9 @@ export function ListDetailsScreen({
     );
   }
 
-  function changeStatus(place: ListPlace) {
+  function changeStatus(place: Place) {
     const isCurrent = guard();
-    showStatusPicker(formatListPlaceName(place), (status) => {
+    showStatusPicker(formatPlaceName(place), (status) => {
       if (!isCurrent()) return;
       if (place.kind === 'country')
         void app.setStatus([place.id], status, { preserveLived: false });
@@ -77,7 +80,7 @@ export function ListDetailsScreen({
   }
 
   const places = useMemo(
-    () => list?.placeIds.map((placeId) => getListPlace(placeId)!) ?? [],
+    () => list?.placeIds.map((placeId) => getPlace(placeId)!) ?? [],
     [list?.placeIds],
   );
   const stats = list
@@ -156,43 +159,64 @@ export function ListDetailsScreen({
         }
         renderItem={({ item }) => {
           const presentation = getStatusPresentation(
-            getListPlaceStatus(app.data, item),
+            getPlaceStatus(app.data, item),
           );
-          const name = formatListPlaceName(item);
+          const name = formatPlaceName(item);
+          const regions =
+            item.kind === 'country' ? getCountrySubdivisions(item.id) : [];
           return (
-            <View style={styles.row}>
-              <AppPressable
-                style={styles.place}
-                accessibilityLabel={t('lists.placeStatus', {
-                  name,
-                  status: presentation.label,
-                })}
-                accessibilityHint={t('lists.openPlace')}
-                onPress={() => onOpenPlace(item)}
-              >
-                <View style={styles.grow}>
-                  <AppText>{item.name}</AppText>
-                  {item.kind === 'region' && (
-                    <AppText variant="caption" tone="muted">
-                      {item.countryName}
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <AppPressable
+                  style={styles.place}
+                  accessibilityLabel={t('lists.placeStatus', {
+                    name,
+                    status: presentation.label,
+                  })}
+                  accessibilityHint={t('lists.openPlace')}
+                  onPress={() => onOpenPlace(item)}
+                >
+                  <View style={styles.grow}>
+                    <AppText>{item.name}</AppText>
+                    {item.kind === 'region' && (
+                      <AppText variant="caption" tone="muted">
+                        {item.countryName}
+                      </AppText>
+                    )}
+                    <AppText
+                      variant="caption"
+                      style={{ color: presentation.color }}
+                    >
+                      {presentation.label}
                     </AppText>
-                  )}
-                  <AppText
-                    variant="caption"
-                    style={{ color: presentation.color }}
-                  >
-                    {presentation.label}
+                  </View>
+                  <Icon name="chevronRight" />
+                </AppPressable>
+                <IconButton
+                  name={presentation.icon}
+                  color={presentation.color}
+                  accessibilityLabel={t('lists.changePlaceStatus', { name })}
+                  disabled={disabled}
+                  onPress={() => changeStatus(item)}
+                />
+              </View>
+              {regions.length > 0 && (
+                <AppPressable
+                  style={styles.regions}
+                  accessibilityLabel={t('lists.exploreCountryRegions', {
+                    country: item.name,
+                  })}
+                  onPress={() => onOpenRegions(item.id)}
+                >
+                  <AppText variant="caption" tone="accent" style={styles.grow}>
+                    {t('lists.exploreRegions', {
+                      count: regions.length,
+                      amount: formatNumber(regions.length),
+                    })}
                   </AppText>
-                </View>
-                <Icon name="chevronRight" />
-              </AppPressable>
-              <IconButton
-                name={presentation.icon}
-                color={presentation.color}
-                accessibilityLabel={t('lists.changePlaceStatus', { name })}
-                disabled={disabled}
-                onPress={() => changeStatus(item)}
-              />
+                  <Icon name="chevronRight" color={theme.color.accent} />
+                </AppPressable>
+              )}
             </View>
           );
         }}
@@ -213,12 +237,24 @@ const styles = StyleSheet.create({
     paddingBottom: theme.space.lg,
   },
   empty: { paddingVertical: theme.space.xl, gap: theme.space.lg },
+  card: {
+    backgroundColor: theme.color.surface,
+    borderRadius: theme.radius.sm,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.color.surface,
-    borderRadius: theme.radius.sm,
     paddingEnd: theme.space.sm,
+  },
+  regions: {
+    minHeight: theme.size.touch,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.md,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.sm,
+    borderTopWidth: theme.stroke.subtle,
+    borderTopColor: theme.color.border,
   },
   place: {
     flex: 1,

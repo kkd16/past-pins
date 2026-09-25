@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
   LayoutAnimation,
@@ -8,7 +9,6 @@ import {
 } from 'react-native';
 
 import { DataFeedback } from '../components/DataFeedback';
-import { Button } from '../components/Button';
 import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -26,6 +26,8 @@ import { showStatusPicker } from '../countries/StatusPicker';
 import type { CountryId } from '../countries/types';
 import { useAppData } from '../data/AppDataProvider';
 import { useReducedMotion } from '../motion/ReducedMotion';
+import { getCountryRegionProgress } from '../places/filter';
+import { PlaceKindControl, type PlacesMode } from '../places/PlaceKindControl';
 import { theme } from '../theme';
 import { t } from '../localization';
 
@@ -42,6 +44,7 @@ export function CountriesScreen({
   onResetFilters,
   onSelect,
   onOpenRegions,
+  onModeChange,
 }: {
   filters: CountryFilters;
   query: string;
@@ -52,12 +55,26 @@ export function CountriesScreen({
   onOpenFilters: () => void;
   onResetFilters: () => void;
   onSelect: (id: CountryId) => void;
-  onOpenRegions: () => void;
+  onOpenRegions: (countryId: string) => void;
+  onModeChange: (mode: PlacesMode) => void;
 }) {
   const app = useAppData();
   const reducedMotion = useReducedMotion();
-  const { setStatus } = app;
+  const { setStatus, resetVersion } = app;
+  const session = useRef<object | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      session.current = { resetVersion };
+      return () => {
+        session.current = null;
+      };
+    }, [resetVersion]),
+  );
   const { continent, grouping } = filters;
+  const regionProgress = useMemo(
+    () => getCountryRegionProgress(app.data.subdivisions),
+    [app.data.subdivisions],
+  );
   const sections = useMemo(
     () =>
       selectCountrySections(
@@ -79,6 +96,7 @@ export function CountriesScreen({
     grouping,
     intent,
     resultIds,
+    resetVersion,
   ]);
   const [selection, setSelection] = useState<{
     filterKey: string;
@@ -109,8 +127,10 @@ export function CountriesScreen({
   const changeStatus = useCallback(
     (id: CountryId) => {
       Keyboard.dismiss();
+      const current = session.current;
       showStatusPicker(countryById.get(id)!.name, (status) => {
-        void setStatus([id], status, { preserveLived: false });
+        if (current && current === session.current)
+          void setStatus([id], status, { preserveLived: false });
       });
     },
     [setStatus],
@@ -127,7 +147,7 @@ export function CountriesScreen({
         header={
           <>
             <ScreenHeader
-              title={t('countries.title')}
+              title={t('places.title')}
               subtitle={continentName ?? t('countries.subtitle')}
             >
               <IconButton
@@ -146,6 +166,7 @@ export function CountriesScreen({
               />
             </ScreenHeader>
             <View style={styles.controls}>
+              <PlaceKindControl value="countries" onChange={onModeChange} />
               <SearchField
                 value={query}
                 onChangeText={onQueryChange}
@@ -153,14 +174,6 @@ export function CountriesScreen({
                 accessibilityLabel={t('countries.searchLabel')}
               />
               <CountryScopeControl value={scope} onChange={onScopeChange} />
-              <Button
-                label={t('subdivisions.explore')}
-                variant="quiet"
-                onPress={() => {
-                  Keyboard.dismiss();
-                  onOpenRegions();
-                }}
-              />
             </View>
             <DataFeedback />
           </>
@@ -173,6 +186,8 @@ export function CountriesScreen({
         disabled={disabled}
         onChangeStatus={changeStatus}
         onSelect={select}
+        regionProgress={regionProgress}
+        onOpenRegions={onOpenRegions}
         onReset={onResetFilters}
         scope={scope}
         narrowed={query.trim() !== '' || continent !== 'all'}

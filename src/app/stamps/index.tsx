@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 
 import { useAppData } from '../../data/AppDataProvider';
+import { placesHref } from '../../places/navigation';
 import { StampsScreen } from '../../screens/StampsScreen';
 
 export default function StampsRoute() {
@@ -12,15 +13,7 @@ export default function StampsRoute() {
         router.push({ pathname: '/stamps/[id]', params: { id } })
       }
       onBrowseCountries={() =>
-        router.dismissTo({
-          pathname: '/countries',
-          params: {
-            scope: 'all',
-            continent: 'all',
-            query: '',
-            intent: String(Date.now()),
-          },
-        })
+        router.dismissTo(placesHref('countries'))
       }
     />
   );
