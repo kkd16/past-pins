@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
@@ -11,6 +12,7 @@ import { countryById } from './catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus, isVisited } from '../data/model';
 import { PlaceSelectionContent } from '../places/PlaceSelectionCard';
+import { regionsHref, worldMapHref } from '../places/navigation';
 import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
 import { t, formatList, formatNumber, language } from '../localization';
@@ -19,27 +21,17 @@ import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 
 export function CountryDetailsContent({
   id,
-  onShowMap,
-  onOpenRegions,
-  onSaveToLists,
-  onShareStamp,
-  onEnlargeStamp,
-  onDismiss,
+  onShowMap = () => router.dismissTo(worldMapHref(id)),
+  onDismiss = router.back,
   onToggleDetails,
-  onEscape = onDismiss,
   onPreviewLayout,
   expanded = true,
   autofocus = false,
 }: {
   id: string;
-  onShowMap: (id: string) => void;
-  onOpenRegions: (id: string) => void;
-  onSaveToLists: (id: string) => void;
-  onShareStamp: () => void;
-  onEnlargeStamp: () => void;
-  onDismiss: () => void;
+  onShowMap?: () => void;
+  onDismiss?: () => void;
   onToggleDetails?: () => void;
-  onEscape?: () => void;
   onPreviewLayout?: ViewProps['onLayout'];
   expanded?: boolean;
   autofocus?: boolean;
@@ -55,6 +47,7 @@ export function CountryDetailsContent({
     );
 
   const ready = app.status === 'ready';
+  const onEscape = expanded && onToggleDetails ? onToggleDetails : onDismiss;
   const terminology = getCountrySubdivisionTerminology(id);
   const disabled = !ready || app.busy;
   const status = getPlaceStatus(app.data, id);
@@ -98,7 +91,9 @@ export function CountryDetailsContent({
           onChangeStatus={(next) => {
             void app.setStatus([id], next, { preserveLived: false });
           }}
-          onSaveToLists={() => onSaveToLists(id)}
+          onSaveToLists={() =>
+            router.push({ pathname: '/lists/add', params: { placeId: id } })
+          }
           onDismiss={onDismiss}
           onDetails={onToggleDetails}
           onEscape={onEscape}
@@ -114,7 +109,7 @@ export function CountryDetailsContent({
               })}
               accessibilityValue={{ text: regionProgress }}
               accessibilityHint={t('subdivisions.openCountry', terminology)}
-              onPress={() => onOpenRegions(id)}
+              onPress={() => router.push(regionsHref(id))}
               style={styles.regions}
             >
               <View style={styles.regionLabel}>
@@ -143,20 +138,21 @@ export function CountryDetailsContent({
             />
           </Surface>
         )}
-        <View style={styles.actions}>
-          <Button
-            label={t('countries.details.showMap')}
-            variant="quiet"
-            onPress={() => onShowMap(id)}
-          />
-        </View>
+        <Button
+          label={t('countries.details.showMap')}
+          variant="quiet"
+          style={styles.mapAction}
+          onPress={onShowMap}
+        />
         {ready && (
           <Surface style={styles.stamp}>
             <AppPressable
               accessibilityLabel={t('stamps.enlargeStamp', {
                 country: country.name,
               })}
-              onPress={onEnlargeStamp}
+              onPress={() =>
+                router.push({ pathname: '/stamps/[id]', params: { id } })
+              }
               style={styles.stampArtwork}
             >
               <CountryStamp
@@ -172,7 +168,9 @@ export function CountryDetailsContent({
               label={t('sharing.stampAction')}
               variant="quiet"
               disabled={disabled}
-              onPress={onShareStamp}
+              onPress={() =>
+                router.push({ pathname: '/share', params: { kind: 'stamp', id } })
+              }
               style={styles.shareStamp}
             />
           </Surface>
@@ -231,7 +229,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     backgroundColor: theme.color.surfaceRaised,
   },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm },
+  mapAction: { alignSelf: 'flex-start' },
   facts: { padding: theme.space.lg, gap: theme.space.lg },
   fact: { gap: theme.space.xs },
   regions: {

@@ -1,26 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { ScrollView } from 'react-native';
 
-import { CountryDetailsScreen } from '../../screens/CountryDetailsScreen';
-import { regionsHref, worldMapHref } from '../../places/navigation';
+import { CountryDetailsContent } from '../../countries/CountryDetailsContent';
 
 export default function CountryDetailsRoute() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
   return (
-    <CountryDetailsScreen
-      id={id}
-      onDismiss={() => router.back()}
-      onShareStamp={() =>
-        router.push({ pathname: '/share', params: { kind: 'stamp', id } })
-      }
-      onEnlargeStamp={() =>
-        router.push({ pathname: '/stamps/[id]', params: { id } })
-      }
-      onSaveToLists={(placeId) =>
-        router.push({ pathname: '/lists/add', params: { placeId } })
-      }
-      onOpenRegions={(countryId) => router.push(regionsHref(countryId))}
-      onShowMap={(focus) => router.dismissTo(worldMapHref(focus))}
-    />
+    <ScrollView
+      style={{ flex: 1 }}
+      contentInsetAdjustmentBehavior="automatic"
+      onAccessibilityEscape={router.back}
+    >
+      <CountryDetailsContent id={id} />
+    </ScrollView>
   );
 }

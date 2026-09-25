@@ -15,7 +15,6 @@ import { AppPressable } from '../components/AppPressable';
 import { useReducedMotion } from '../motion/ReducedMotion';
 import { theme } from '../theme';
 import { CountryDetailsContent } from './CountryDetailsContent';
-import type { Country } from './types';
 
 function Handle(props: BottomSheetHandleProps) {
   const { animatedIndex, expand, collapse } = useBottomSheet();
@@ -45,7 +44,7 @@ function Backdrop(props: BottomSheetBackdropProps) {
 }
 
 export function CountryMapSheet({
-  country,
+  id,
   containerHeight,
   topInset,
   bottomInset,
@@ -53,12 +52,8 @@ export function CountryMapSheet({
   focusRequest,
   onDismiss,
   onPreviewHeightChange,
-  onOpenRegions,
-  onSaveToLists,
-  onShareStamp,
-  onEnlargeStamp,
 }: {
-  country: Country;
+  id: string;
   containerHeight: number;
   topInset: number;
   bottomInset: number;
@@ -66,10 +61,6 @@ export function CountryMapSheet({
   focusRequest?: string;
   onDismiss: () => void;
   onPreviewHeightChange: (height: number) => void;
-  onOpenRegions: (id: string) => void;
-  onSaveToLists: (id: string) => void;
-  onShareStamp: (id: string) => void;
-  onEnlargeStamp: (id: string) => void;
 }) {
   const sheet = useRef<BottomSheet>(null);
   const scroll = useRef<BottomSheetScrollViewMethods>(null);
@@ -133,20 +124,15 @@ export function CountryMapSheet({
           onAccessibilityEscape={onEscape}
         >
           <CountryDetailsContent
-            id={country.id}
+            id={id}
             onPreviewLayout={({ nativeEvent: { layout } }) =>
               setPreviewHeight(layout.height)
             }
             onToggleDetails={toggle}
             expanded={expanded}
             onDismiss={onDismiss}
-            onEscape={onEscape}
             autofocus={autofocus && sheetIndex >= 0}
             onShowMap={collapse}
-            onOpenRegions={onOpenRegions}
-            onSaveToLists={onSaveToLists}
-            onShareStamp={() => onShareStamp(country.id)}
-            onEnlargeStamp={() => onEnlargeStamp(country.id)}
           />
         </BottomSheetScrollView>
       </BottomSheet>

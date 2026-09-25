@@ -33,23 +33,15 @@ import { theme } from '../theme';
 
 export function MapScreen({
   onOpenCountries,
-  onOpenRegions,
   onSearch,
   onShare,
-  onSaveToLists,
-  onShareStamp,
-  onEnlargeStamp,
   focus,
   focusRequest,
   onFocusConsumed,
 }: {
   onOpenCountries: () => void;
-  onOpenRegions: (countryId: string) => void;
   onSearch: () => void;
   onShare: () => void;
-  onSaveToLists: (id: string) => void;
-  onShareStamp: (id: string) => void;
-  onEnlargeStamp: (id: string) => void;
   focus?: string;
   focusRequest?: string;
   onFocusConsumed: () => void;
@@ -248,7 +240,7 @@ export function MapScreen({
       {ready && selectedCountry && height > 0 && (
         <CountryMapSheet
           key={`${selectedCountry.id}:${app.resetVersion}`}
-          country={selectedCountry}
+          id={selectedCountry.id}
           containerHeight={height}
           topInset={insets.top + theme.space.sm}
           bottomInset={insets.bottom + theme.space.sm}
@@ -256,10 +248,6 @@ export function MapScreen({
           focusRequest={incomingFocus?.key}
           onDismiss={() => selectCountry(null)}
           onPreviewHeightChange={setBottomHeight}
-          onOpenRegions={onOpenRegions}
-          onSaveToLists={onSaveToLists}
-          onShareStamp={onShareStamp}
-          onEnlargeStamp={onEnlargeStamp}
         />
       )}
     </View>

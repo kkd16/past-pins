@@ -21,9 +21,15 @@ const expand = mock();
 const scrollTo = mock();
 const setStatus = mock();
 const setHome = mock();
+const router = { push: mock(), dismissTo: mock(), back: mock() };
+let routeId = 'ca';
 let reducedMotion = false;
 let appStatus: 'ready' | 'loading' | 'load-error' = 'ready';
 
+mock.module('expo-router', () => ({
+  router,
+  useLocalSearchParams: () => ({ id: routeId }),
+}));
 mock.module('react-native-reanimated', () => ({
   ReduceMotion: { Always: 'always', Never: 'never' },
 }));
@@ -74,7 +80,7 @@ mock.module('../src/places/PlaceSelectionCard', () => ({
   PlaceSelectionContent: 'PlaceSelection',
 }));
 const { CountryMapSheet } = await import('../src/countries/CountryMapSheet');
-const { CountryDetailsScreen } = await import('../src/screens/CountryDetailsScreen');
+const { default: CountryDetailsRoute } = await import('../src/app/country/[id]');
 type Props = ComponentProps<typeof CountryMapSheet>;
 let root: Root;
 let props: Props;
@@ -85,21 +91,18 @@ beforeEach(() => {
   scrollTo.mockClear();
   setStatus.mockClear();
   setHome.mockClear();
+  for (const action of Object.values(router)) action.mockClear();
   reducedMotion = false;
   appStatus = 'ready';
   root = createRoot({ isStrictMode: true });
   props = {
-    country: countryById.get('ca')!,
+    id: 'ca',
     containerHeight: 700,
     topInset: 60,
     bottomInset: 20,
     autofocus: false,
     onDismiss: mock(),
     onPreviewHeightChange: mock(),
-    onOpenRegions: mock(),
-    onSaveToLists: mock(),
-    onShareStamp: mock(),
-    onEnlargeStamp: mock(),
   };
 });
 
@@ -110,7 +113,7 @@ afterEach(async () => {
 async function render(changes: Partial<Props> = {}) {
   props = { ...props, ...changes };
   await act(async () => {
-    root.render(<CountryMapSheet key={props.country.id} {...props} />);
+    root.render(<CountryMapSheet key={props.id} {...props} />);
   });
 }
 
@@ -130,22 +133,11 @@ function detailsHidden() {
   return views[0].props.accessibilityElementsHidden;
 }
 
-async function renderDetails(id = props.country.id) {
-  const showMap = mock();
+async function renderDetails(id = props.id) {
+  routeId = id;
   await act(async () => {
-    root.render(
-      <CountryDetailsScreen
-        id={id}
-        onDismiss={props.onDismiss}
-        onShowMap={showMap}
-        onOpenRegions={props.onOpenRegions}
-        onSaveToLists={props.onSaveToLists}
-        onShareStamp={() => props.onShareStamp(id)}
-        onEnlargeStamp={() => props.onEnlargeStamp(id)}
-      />,
-    );
+    root.render(<CountryDetailsRoute />);
   });
-  return showMap;
 }
 
 async function settle(index: number) {
@@ -183,7 +175,7 @@ test('a queued close from the previous country cannot dismiss its replacement', 
   await render();
   const oldClose = element('BottomSheet').props.onClose;
   const oldChange = element('BottomSheet').props.onChange;
-  await render({ country: countryById.get('fr')! });
+  await render({ id: 'fr' });
   await settle(1);
   scrollTo.mockClear();
 
@@ -216,7 +208,7 @@ test('each Show on map request collapses the existing card for the same country'
   expect(props.onDismiss).not.toHaveBeenCalled();
 });
 
-test('VoiceOver waits for the card to appear and follows screen focus', async () => {
+test('VoiceOver follows screen focus and collapses before dismissing', async () => {
   await render({ autofocus: true });
   expect(element('PlaceSelection').props.autofocus).toBe(false);
   await settle(0);
@@ -224,21 +216,27 @@ test('VoiceOver waits for the card to appear and follows screen focus', async ()
   await render({ autofocus: false });
   await settle(1);
   expect(element('PlaceSelection').props.autofocus).toBe(false);
+  await act(async () => element('PlaceSelection').props.onEscape());
+  expect(collapse).toHaveBeenCalledTimes(1);
+  expect(props.onDismiss).not.toHaveBeenCalled();
+  await settle(0);
+  await act(async () => element('PlaceSelection').props.onEscape());
+  expect(props.onDismiss).toHaveBeenCalledTimes(1);
 });
 
 test.each(['map', 'list'])('country actions work from the %s card', async (entry) => {
-  let showMap;
   if (entry === 'map') {
     await render();
     await settle(1);
   } else {
-    showMap = await renderDetails();
+    await renderDetails();
   }
+  const country = countryById.get(props.id)!;
   const header = element('PlaceSelection');
-  expect(header.props.title).toBe(props.country.name);
-  expect(header.props.subtitle).toBe(props.country.continent.name);
+  expect(header.props.title).toBe(country.name);
+  expect(header.props.subtitle).toBe(country.continent.name);
   expect(detailsHidden()).toBe(false);
-  expect(element('CountryStamp').props.country.id).toBe(props.country.id);
+  expect(element('CountryStamp').props.country.id).toBe(props.id);
 
   await act(async () => {
     header.props.onChangeStatus('visited');
@@ -255,17 +253,28 @@ test.each(['map', 'list'])('country actions work from the %s card', async (entry
     header.props.onDismiss();
   });
 
-  expect(setStatus).toHaveBeenCalledWith([props.country.id], 'visited', {
+  expect(setStatus).toHaveBeenCalledWith([props.id], 'visited', {
     preserveLived: false,
   });
-  expect(setHome).toHaveBeenCalledWith(props.country.id);
-  expect(props.onSaveToLists).toHaveBeenCalledWith(props.country.id);
-  expect(props.onOpenRegions).toHaveBeenCalledWith(props.country.id);
-  expect(props.onShareStamp).toHaveBeenCalledWith(props.country.id);
-  expect(props.onEnlargeStamp).toHaveBeenCalledWith(props.country.id);
-  expect(props.onDismiss).toHaveBeenCalledTimes(1);
-  if (entry === 'map') expect(collapse).toHaveBeenCalledTimes(1);
-  else expect(showMap).toHaveBeenCalledWith(props.country.id);
+  expect(setHome).toHaveBeenCalledWith(props.id);
+  expect(router.push.mock.calls).toEqual([
+    [{ pathname: '/lists/add', params: { placeId: props.id } }],
+    [{ pathname: '/share', params: { kind: 'stamp', id: props.id } }],
+    [{ pathname: '/stamps/[id]', params: { id: props.id } }],
+    [{ pathname: '/regions/[id]', params: { id: props.id, focus: undefined, scope: 'all' } }],
+  ]);
+  if (entry === 'map') {
+    expect(collapse).toHaveBeenCalledTimes(1);
+    expect(props.onDismiss).toHaveBeenCalledTimes(1);
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.dismissTo).not.toHaveBeenCalled();
+  } else {
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).toHaveBeenCalledWith({
+      pathname: '/',
+      params: { focus: props.id, focusRequest: expect.any(String) },
+    });
+  }
 });
 
 test.each(['loading', 'load-error'] as const)(
@@ -279,12 +288,12 @@ test.each(['loading', 'load-error'] as const)(
     expect(root.container.queryAll((node) => node.type === 'CountryStamp')).toHaveLength(0);
     expect(root.container.queryAll((node) => node.type === 'ToggleRow')).toHaveLength(0);
     await act(async () => header.props.onDismiss());
-    expect(props.onDismiss).toHaveBeenCalledTimes(1);
+    expect(router.back).toHaveBeenCalledTimes(1);
   },
 );
 
 test('an invalid country route can still be dismissed', async () => {
   await renderDetails('missing-country');
   await act(async () => element('Button', t('common.done')).props.onPress());
-  expect(props.onDismiss).toHaveBeenCalledTimes(1);
+  expect(router.back).toHaveBeenCalledTimes(1);
 });
