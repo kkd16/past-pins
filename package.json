@@ -70,7 +70,8 @@
     "subdivisions:generate": "bun scripts/generate-subdivisions.ts",
     "subdivisions:refresh": "bun scripts/generate-subdivisions.ts --refresh",
     "subdivisions:check": "bun scripts/generate-subdivisions.ts --check",
-    "verify": "bash scripts/verify.sh"
+    "verify": "bash scripts/verify.sh",
+    "worklets:check": "expo export --platform ios --dev --no-bytecode --output-dir dist/dev && bun scripts/check-worklets.ts"
   },
   "private": true,
   "overrides": {

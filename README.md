@@ -14,12 +14,15 @@ bun run ios
 
 The app targets Expo SDK 57 and uses its bundled native modules. Use the Bun version in `package.json` and Node.js 22.13 or newer. `bun run typecheck` refreshes Expo Router's generated types before checking the app, scripts, and tests, including on a fresh checkout. Rebuild an existing development client after changing native dependencies.
 
+After changing Reanimated, Worklets, or Babel dependencies, stop Metro and run `bun run dev --clear` once to rebuild its cached transforms. Old transforms can retain a different Worklets plugin version even when the installed dependencies are correct. This is the [documented recovery for a Worklets plugin mismatch](https://docs.swmansion.com/react-native-worklets/docs/guides/troubleshooting/#mismatch-between-javascript-code-version-and-worklets-babel-plugin-version); subsequent starts can use `bun run dev` normally.
+
 `bun run` lists the available commands. The Makefile is a short set of aliases for the same Bun scripts.
 
 | Command | Purpose |
 | --- | --- |
 | `bun run check` | Lint all code, typecheck, run tests with coverage, and check generated assets |
-| `bun run verify` | Run the complete shared CI gate before pushing: locked install, all checks, Expo Doctor, and production iOS export |
+| `bun run verify` | Run the complete shared CI gate before pushing: locked install, all checks, Expo Doctor, and production/development iOS bundles |
+| `bun run worklets:check` | Export the development iOS bundle and reject compiled worklets that differ from the installed runtime |
 | `bun test --watch` | Rerun tests as files change |
 | `bun test backup` | Run tests whose filenames match a pattern |
 | `bun run test:coverage` | Inspect coverage of the code loaded by tests |
@@ -104,7 +107,7 @@ Accessibility uses native iOS controls, scalable text, semantic control states, 
 bun run verify  # required before pushing; includes network-based Expo diagnostics
 ```
 
-GitHub Actions calls this same command on pull requests, pushes to `main`, and manual runs. `scripts/verify.sh` installs locked dependencies, runs `check`, Expo Doctor, and the iOS export in noninteractive CI mode, stopping on the first failure. The workflow only sets up Node.js and Bun before invoking it. `bun run check` remains the shorter development check; `bun run check:all` is an alias for `verify`.
+GitHub Actions calls this same command on pull requests, pushes to `main`, and manual runs. `scripts/verify.sh` installs locked dependencies, runs `check`, Expo Doctor, and production/development iOS exports in noninteractive CI mode, stopping on the first failure. The development bundle's Worklets plugin metadata must match its runtime version; production bundles omit that diagnostic metadata. The workflow only sets up Node.js and Bun before invoking it. `bun run check` remains the shorter development check; `bun run check:all` is an alias for `verify`.
 
 CI uses current stable action releases, the latest stable Node.js, and the project's Bun version. The workflow has read-only repository access and cancels superseded runs. It does not sign, submit, deploy, or publish the app. Agents must follow the pre-push verification requirement in `AGENTS.md`.
 

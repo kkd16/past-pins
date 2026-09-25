@@ -8,3 +8,4 @@ bun install --frozen-lockfile
 bun run check
 bun run doctor
 bun run export:ios
+bun run worklets:check
