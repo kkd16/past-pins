@@ -83,6 +83,10 @@ describe('map accessibility actions', () => {
     for (let index = 0; index < 40; index++) perform('decrement');
     expect(camera.zoom).toBe(1);
     for (let index = 0; index < 40; index++) perform('left');
-    expect(camera.center).toEqual([500, 250]);
+    expect(camera.center[0]).toBe(500);
+    for (let index = 0; index < 40; index++) perform('up');
+    expect(camera.projectPoint([500, 500])[1]).toBeCloseTo(422);
+    for (let index = 0; index < 40; index++) perform('down');
+    expect(camera.projectPoint([500, 0])[1]).toBeCloseTo(422);
   });
 });

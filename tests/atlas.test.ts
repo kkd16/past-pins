@@ -154,7 +154,7 @@ describe('camera navigation', () => {
     expect(after[1]).toBeCloseTo(410, 4);
     camera.drag(1e5, -1e5);
     expect(camera.center[0]).toBeGreaterThan(0);
-    expect(camera.center[1]).toBeLessThan(500);
+    expect(camera.center[1]).toBeLessThanOrEqual(500);
     camera.zoomAt(1e9, 195, 422);
     expect(camera.zoom).toBe(20);
     camera.fitWorld();
@@ -170,6 +170,33 @@ describe('camera navigation', () => {
     expect(camera.scale * 500).toBeCloseTo(844 * 0.8);
     camera.fitWorld();
     expect(camera.scale * 1000).toBeCloseTo(390);
+  });
+
+  test.each([
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ])('vertical map edges can reach the middle on a $width-point iPhone', ({ width, height }) => {
+    const camera = new FlatCamera();
+    camera.resize(width, height);
+    camera.start(null);
+    for (const zoom of [1, camera.zoom, 20]) {
+      camera.zoomAt(zoom, width / 2, height / 2);
+      camera.drag(0, 1e6);
+      expect(camera.projectPoint([500, 0])[1]).toBeCloseTo(height / 2);
+      camera.drag(0, 100);
+      expect(camera.projectPoint([500, 0])[1]).toBeCloseTo(height / 2);
+
+      camera.drag(0, -1e6);
+      expect(camera.projectPoint([500, 500])[1]).toBeCloseTo(height / 2);
+      camera.drag(0, -100);
+      expect(camera.projectPoint([500, 500])[1]).toBeCloseTo(height / 2);
+    }
+    camera.resize(width, height - 40);
+    expect(camera.projectPoint([500, 500])[1]).toBeCloseTo((height - 40) / 2);
+    camera.fitWorld();
+    expect(camera.center).toEqual([500, 250]);
+    expect(camera.zoom).toBe(1);
   });
 
   test('a local tap anchor keeps a large country callout visible without moving the globe', () => {

@@ -124,12 +124,11 @@ export class FlatCamera {
 
   private clamp() {
     if (!this.scale) return;
-    this.center = this.center.map((value, index) => {
-      const size = index ? mapSize.height : mapSize.width;
-      const extent = (index ? this.height : this.width) / this.scale;
-      return extent >= size
-        ? size / 2
-        : Math.max(extent / 2, Math.min(size - extent / 2, value));
-    });
+    const halfWidth = Math.min(mapSize.width, this.width / this.scale) / 2;
+    this.center = [
+      Math.max(halfWidth, Math.min(mapSize.width - halfWidth, this.center[0])),
+      // Bring either vertical edge to mid-screen, clear of the map controls.
+      Math.max(0, Math.min(mapSize.height, this.center[1])),
+    ];
   }
 }
