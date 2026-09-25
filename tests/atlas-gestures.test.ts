@@ -37,7 +37,6 @@ mock.module('react-native-gesture-handler', () => ({
   },
 }));
 const { navigationGestures } = await import('../src/atlas/gestures');
-const { countryDetailsGesture } = await import('../src/places/details-gesture');
 
 test('hidden and read-only maps disable every native gesture recognizer', () => {
   const controller = new GlobeController(mock());
@@ -220,51 +219,4 @@ test('rotation passes its moving pivot to the globe and rebases after finger cha
     anchorY: 30,
   });
   expect(twist).toHaveBeenCalledTimes(1);
-});
-
-describe('country preview expansion', () => {
-  function preview() {
-    let current = true;
-    const open = mock();
-    countryDetailsGesture(open, () => () => current);
-    handlers.pan.onBegin({ numberOfPointers: 1 });
-    return {
-      open,
-      leave: () => {
-        current = false;
-      },
-    };
-  }
-
-  test('a deliberate upward swipe opens details once', () => {
-    const { open } = preview();
-    handlers.pan.onEnd({ translationX: 6, translationY: -60 }, true);
-    expect(open).toHaveBeenCalledTimes(1);
-  });
-
-  test('short, horizontal, downward, and cancelled gestures do not open details', () => {
-    const { open } = preview();
-    handlers.pan.onEnd({ translationX: 0, translationY: -10 }, true);
-    handlers.pan.onEnd({ translationX: 100, translationY: -40 }, true);
-    handlers.pan.onEnd({ translationX: 0, translationY: 60 }, true);
-    handlers.pan.onEnd({ translationX: 0, translationY: -60 }, false);
-    expect(open).not.toHaveBeenCalled();
-  });
-
-  test('changing selection or leaving the map invalidates an unfinished swipe', () => {
-    const { open, leave } = preview();
-    leave();
-    handlers.pan.onEnd({ translationX: 0, translationY: -60 }, true);
-    expect(open).not.toHaveBeenCalled();
-  });
-
-  test('adding another finger cancels expansion until a fresh swipe', () => {
-    const { open } = preview();
-    handlers.pan.onTouchesDown({ numberOfTouches: 2 });
-    handlers.pan.onEnd({ translationX: 0, translationY: -60 }, true);
-    expect(open).not.toHaveBeenCalled();
-    handlers.pan.onBegin({ numberOfPointers: 1 });
-    handlers.pan.onEnd({ translationX: 0, translationY: -60 }, true);
-    expect(open).toHaveBeenCalledTimes(1);
-  });
 });

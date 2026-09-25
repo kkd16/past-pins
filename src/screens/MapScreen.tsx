@@ -9,7 +9,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { FlatCamera } from '../atlas/FlatCamera';
 import { MapSummary } from '../atlas/MapSummary';
@@ -18,38 +17,39 @@ import type { AtlasCommand } from '../atlas/types';
 import { useScreenReaderEnabled } from '../accessibility/useScreenReaderEnabled';
 import { WorldMapViewport } from '../atlas/WorldMapViewport';
 import { DataFeedback } from '../components/DataFeedback';
-import { Button } from '../components/Button';
 import { countryById } from '../countries/catalog';
+import { CountryMapSheet } from '../countries/CountryMapSheet';
 import { useAppData } from '../data/AppDataProvider';
 import { UserFacingError } from '../data/errors';
-import { getPlaceStatus } from '../data/model';
-import { formatNumber, t } from '../localization';
-import { getCurrentCountry, getCurrentLocation } from '../location/current-location';
+import { t } from '../localization';
+import {
+  getCurrentCountry,
+  getCurrentLocation,
+} from '../location/current-location';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
-import { PlaceSelectionCard } from '../places/PlaceSelectionCard';
-import { getSubdivisionStatistics } from '../subdivisions/tracking';
-import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 
 export function MapScreen({
-  onSelect,
   onOpenCountries,
   onOpenRegions,
   onSearch,
   onShare,
   onSaveToLists,
+  onShareStamp,
+  onEnlargeStamp,
   focus,
   focusRequest,
   onFocusConsumed,
 }: {
-  onSelect: (id: string) => void;
   onOpenCountries: () => void;
   onOpenRegions: (countryId: string) => void;
   onSearch: () => void;
   onShare: () => void;
   onSaveToLists: (id: string) => void;
+  onShareStamp: (id: string) => void;
+  onEnlargeStamp: (id: string) => void;
   focus?: string;
   focusRequest?: string;
   onFocusConsumed: () => void;
@@ -74,6 +74,7 @@ export function MapScreen({
   const guard = useActionGuard(app.resetVersion);
   const [topHeight, setTopHeight] = useState(108);
   const [bottomHeight, setBottomHeight] = useState(120);
+  const [height, setHeight] = useState(0);
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
@@ -121,13 +122,6 @@ export function MapScreen({
   const command = incomingFocus ?? localCommand;
   const selectedId = incomingFocus?.id ?? selection?.id ?? null;
   const selectedCountry = selectedId ? countryById.get(selectedId) : undefined;
-  const selectionScrollGesture = useMemo(() => Gesture.Native(), []);
-  const openSelectedCountry = useCallback(() => {
-    if (selectedId) onSelect(selectedId);
-  }, [onSelect, selectedId]);
-  const regionStats = selectedCountry
-    ? getSubdivisionStatistics(data.subdivisions, selectedCountry.id)
-    : null;
 
   const commandApplied = useCallback(
     (key: string | number) => {
@@ -161,7 +155,10 @@ export function MapScreen({
   };
 
   return (
-    <View style={styles.screen}>
+    <View
+      style={styles.screen}
+      onLayout={({ nativeEvent: { layout } }) => setHeight(layout.height)}
+    >
       {ready && loaded.globe && (
         <View
           style={[
@@ -221,16 +218,13 @@ export function MapScreen({
           />
         </ScrollView>
       </View>
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.bottom,
-          { paddingBottom: insets.bottom + theme.space.sm },
-        ]}
-      >
-        <GestureDetector
-          key={selectedId ?? 'summary'}
-          gesture={selectionScrollGesture}
+      {!selectedCountry && (
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.bottom,
+            { paddingBottom: insets.bottom + theme.space.sm },
+          ]}
         >
           <ScrollView
             style={styles.overlayScroll}
@@ -242,49 +236,32 @@ export function MapScreen({
             contentContainerStyle={styles.footer}
           >
             <DataFeedback />
-            {ready && selectedCountry && (
-              <PlaceSelectionCard
-                title={selectedCountry.name}
-                status={getPlaceStatus(data, selectedCountry.id)}
-                home={data.homeCountryId === selectedCountry.id}
-                disabled={app.busy}
-                onChangeStatus={(status) => {
-                  void app.setStatus([selectedCountry.id], status, {
-                    preserveLived: false,
-                  });
-                }}
-                onSaveToLists={() => onSaveToLists(selectedCountry.id)}
-                onDetails={openSelectedCountry}
-                scrollGesture={selectionScrollGesture}
-                onDismiss={() => selectCountry(null)}
-                autofocus={screenReader}
-              >
-                {regionStats && regionStats.total > 0 && (
-                  <Button
-                    label={t('subdivisions.progress', {
-                      ...getCountrySubdivisionTerminology(selectedCountry.id),
-                      visited: formatNumber(regionStats.visited),
-                      total: formatNumber(regionStats.total),
-                    })}
-                    accessibilityHint={t(
-                      'subdivisions.openCountry',
-                      getCountrySubdivisionTerminology(selectedCountry.id),
-                    )}
-                    variant="quiet"
-                    onPress={() => onOpenRegions(selectedCountry.id)}
-                  />
-                )}
-              </PlaceSelectionCard>
-            )}
-            {ready && !selectedCountry && data.preferences.mapSummary && (
+            {ready && data.preferences.mapSummary && (
               <MapSummary
                 places={data.places}
                 onOpenCountries={onOpenCountries}
               />
             )}
           </ScrollView>
-        </GestureDetector>
-      </View>
+        </View>
+      )}
+      {ready && selectedCountry && height > 0 && (
+        <CountryMapSheet
+          key={`${selectedCountry.id}:${app.resetVersion}`}
+          country={selectedCountry}
+          containerHeight={height}
+          topInset={insets.top + theme.space.sm}
+          bottomInset={insets.bottom + theme.space.sm}
+          autofocus={focused && screenReader}
+          focusRequest={incomingFocus?.key}
+          onDismiss={() => selectCountry(null)}
+          onPreviewHeightChange={setBottomHeight}
+          onOpenRegions={onOpenRegions}
+          onSaveToLists={onSaveToLists}
+          onShareStamp={onShareStamp}
+          onEnlargeStamp={onEnlargeStamp}
+        />
+      )}
     </View>
   );
 }

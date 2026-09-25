@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import type { Alert, AlertButton } from 'react-native';
+import type { AlertButton } from 'react-native';
 
 import { MAX_LIST_NAME_LENGTH } from '../src/data/model';
 import { validateListName } from '../src/data/validation';
 import { t } from '../src/localization';
+import { native } from './setup';
 
-const prompt = mock<typeof Alert.prompt>();
-const alert = mock<typeof Alert.alert>();
-mock.module('react-native', () => ({ Alert: { prompt, alert } }));
+const { prompt, alert } = native.Alert;
 const { promptListName } = await import('../src/lists/prompt');
 
 function promptButtons(): AlertButton[] {
