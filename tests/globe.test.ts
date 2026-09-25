@@ -250,6 +250,22 @@ describe('globe camera and country picking', () => {
     expect(Math.hypot(...camera.rotation)).toBeCloseTo(1, 5);
   });
 
+  test('deep zoom keeps a moving pinch anchored to the same place', () => {
+    const camera = new GlobeCamera();
+    camera.resize(390, 844);
+    camera.setZoom(40);
+    const point = camera.geographicPoint(210, 400)!;
+    camera.zoomAt(80, 230, 410, 210, 400);
+    const after = camera.project(toCartesian(point))!;
+    expect(after[0]).toBeCloseTo(230, 1);
+    expect(after[1]).toBeCloseTo(410, 1);
+    camera.drag(15, -10);
+    const screen = camera.project(toCartesian(point))!;
+    const picked = camera.geographicPoint(screen[0], screen[1])!;
+    expect(picked[0]).toBeCloseTo(point[0], 3);
+    expect(picked[1]).toBeCloseTo(point[1], 3);
+  });
+
   test('launch is immersive; zoom clamps and reset restores the original view', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);
@@ -258,7 +274,7 @@ describe('globe camera and country picking', () => {
     camera.setZoom(0.01);
     expect(camera.radius).toBe(175.5);
     camera.setZoom(100);
-    expect(camera.zoom).toBe(8);
+    expect(camera.zoom).toBe(80);
     camera.drag(100, 100);
     camera.reset();
     expect(Array.from(camera.rotation)).toEqual(original);

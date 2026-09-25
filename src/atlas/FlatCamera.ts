@@ -12,7 +12,7 @@ export class FlatCamera extends ProjectedCamera {
   initialized = false;
 
   constructor() {
-    super(mapSize, 20, 'center');
+    super(mapSize, 200, 'center');
   }
 
   start(home: string | null) {

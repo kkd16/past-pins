@@ -4,13 +4,11 @@ import type { SubdivisionMapRegion } from './types';
 type Bounds = readonly (readonly number[])[];
 type MapSize = { width: number; height: number; focusBounds?: Bounds };
 
-export const subdivisionMapMaxZoom = 60;
-
 export class SubdivisionCamera extends ProjectedCamera {
   initialized = false;
 
   constructor(readonly map: MapSize) {
-    super(map, subdivisionMapMaxZoom);
+    super(map, 600);
   }
 
   start() {
@@ -26,7 +24,7 @@ export class SubdivisionCamera extends ProjectedCamera {
     this.zoom = Math.max(
       1,
       Math.min(
-        subdivisionMapMaxZoom,
+        60, // Keep automatic framing wider than the manual zoom limit.
         (this.width * 0.72) / Math.max((right - left) * this.fitScale, 0.01),
         (this.height * 0.72) / Math.max((bottom - top) * this.fitScale, 0.01),
       ),

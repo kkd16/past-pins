@@ -4,7 +4,6 @@ import {
   SubdivisionCamera,
   pickSubdivision,
   subdivisionPickShapes,
-  subdivisionMapMaxZoom,
 } from '../src/subdivisions/map-layout';
 import { getSubdivisionMap } from '../src/subdivisions/geography';
 import { subdivisionsByCountry } from '../src/subdivisions/catalog';
@@ -61,7 +60,7 @@ describe('subdivision map selection focus', () => {
       ],
     ]) {
       camera.focus(bounds);
-      expect(camera.zoom).toBe(subdivisionMapMaxZoom);
+      expect(camera.zoom).toBe(60);
       const topLeft = camera.unprojectScreen(0, 0);
       const bottomRight = camera.unprojectScreen(camera.width, camera.height);
       expect(topLeft[0]).toBeGreaterThanOrEqual(0);
@@ -120,6 +119,23 @@ describe('subdivision map selection focus', () => {
 });
 
 describe('subdivision map gestures and picking', () => {
+  test('deep pinches preserve the focal point, clamp, and reset', () => {
+    const camera = new SubdivisionCamera(map);
+    camera.resize(350, 280);
+    camera.zoomAt(300, 175, 140);
+    expect(camera.zoom).toBe(300);
+    const point = camera.unprojectScreen(190, 130);
+    camera.zoomAt(600, 210, 150, 190, 130);
+    const after = camera.projectPoint(point);
+    expect(after[0]).toBeCloseTo(210);
+    expect(after[1]).toBeCloseTo(150);
+    camera.zoomAt(1e9, 175, 140);
+    expect(camera.zoom).toBe(600);
+    camera.fit();
+    expect(camera.zoom).toBe(1);
+    expect(camera.center).toEqual([500, 350]);
+  });
+
   test('pinching follows a moving focal point without mirroring geographic coordinates', () => {
     const camera = new SubdivisionCamera(map);
     camera.resize(350, 280);

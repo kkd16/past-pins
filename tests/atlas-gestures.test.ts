@@ -106,7 +106,7 @@ describe.each(['globe', 'map'] as const)('%s navigation gestures', (mode) => {
 
   test('pinching reverses immediately after overshooting either zoom limit', () => {
     const { camera } = setup(mode);
-    const maximum = mode === 'globe' ? 8 : 20;
+    const maximum = mode === 'globe' ? 80 : 200;
     const minimum = mode === 'globe' ? 0.9 : 1;
     handlers.pinch.onStart(pinchEvent(1));
     handlers.pinch.onUpdate(pinchEvent(100));

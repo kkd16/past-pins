@@ -52,7 +52,7 @@ describe('map accessibility actions', () => {
     perform('right');
     expect(camera.geographicPoint(195, 422)![0]).toBeCloseTo(center[0], 4);
     for (let index = 0; index < 40; index++) perform('increment');
-    expect(camera.zoom).toBe(8);
+    expect(camera.zoom).toBe(80);
     for (let index = 0; index < 40; index++) perform('decrement');
     expect(camera.zoom).toBe(0.9);
   });
@@ -77,9 +77,10 @@ describe('map accessibility actions', () => {
     perform('down');
     expect(camera.center[1]).toBeCloseTo(before);
     for (let index = 0; index < 40; index++) perform('increment');
-    expect(camera.zoom).toBe(20);
-    for (let index = 0; index < 40; index++) perform('left');
-    expect(camera.center[0]).toBe(975);
+    expect(camera.zoom).toBe(200);
+    camera.drag(-1e6, 0);
+    perform('left');
+    expect(camera.center[0]).toBe(997.5);
     for (let index = 0; index < 40; index++) perform('decrement');
     expect(camera.zoom).toBe(1);
     for (let index = 0; index < 40; index++) perform('left');

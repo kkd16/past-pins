@@ -29,14 +29,14 @@ export class GlobeCamera {
   }
 
   setZoom(zoom: number) {
-    this.zoom = Math.max(0.9, Math.min(8, zoom));
+    this.zoom = Math.max(0.9, Math.min(80, zoom));
   }
 
   focus(anchor: readonly number[], angularRadius: number) {
     this.orient(anchor);
-    this.setZoom(
-      Math.max(1.2, 0.68 / Math.sin(Math.min(Math.PI / 2, angularRadius))),
-    );
+    const zoom = 0.68 / Math.sin(Math.min(Math.PI / 2, angularRadius));
+    // Automatic framing leaves room to explore closer with a pinch.
+    this.setZoom(Math.max(1.2, Math.min(8, zoom)));
   }
 
   northUp() {

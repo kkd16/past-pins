@@ -166,11 +166,17 @@ describe('camera navigation', () => {
     const after = camera.project(point)!;
     expect(after[0]).toBeCloseTo(240, 4);
     expect(after[1]).toBeCloseTo(410, 4);
+    camera.zoomAt(100, 195, 422);
+    const closePoint = camera.geographicPoint(210, 400)!;
+    camera.zoomAt(200, 230, 410, 210, 400);
+    const closeScreen = camera.project(closePoint)!;
+    expect(closeScreen[0]).toBeCloseTo(230, 4);
+    expect(closeScreen[1]).toBeCloseTo(410, 4);
     camera.drag(1e5, -1e5);
     expect(camera.center[0]).toBeGreaterThan(0);
     expect(camera.center[1]).toBeLessThanOrEqual(500);
     camera.zoomAt(1e9, 195, 422);
-    expect(camera.zoom).toBe(20);
+    expect(camera.zoom).toBe(200);
     camera.fit();
     expect(camera.zoom).toBe(1);
     expect(camera.center).toEqual([500, 250]);
@@ -194,7 +200,7 @@ describe('camera navigation', () => {
     const camera = new FlatCamera();
     camera.resize(width, height);
     camera.start(null);
-    for (const zoom of [1, camera.zoom, 20]) {
+    for (const zoom of [1, camera.zoom, 20, 200]) {
       camera.zoomAt(zoom, width / 2, height / 2);
       camera.drag(0, 1e6);
       expect(camera.projectPoint([500, 0])[1]).toBeCloseTo(height / 2);
