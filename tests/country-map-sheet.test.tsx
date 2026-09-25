@@ -13,6 +13,7 @@ import { countryById } from '../src/countries/catalog';
 import { defaultAppData } from '../src/data/model';
 import { t } from '../src/localization';
 import { navigation } from './setup';
+import './native-location';
 
 // Keep React's real effects/unmount lifecycle. Native animation and scrolling
 // are boundaries here; recognition and finger tracking still need an iPhone.

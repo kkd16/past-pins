@@ -38,6 +38,7 @@ describe('current backup format', () => {
       countryLabels: false,
       mapSummary: false,
       haptics: false,
+      countryArrivalAlerts: true,
       countryGrouping: 'alphabetical',
     };
     const encoded = encodeBackup(data);
@@ -157,6 +158,8 @@ describe('current backup format', () => {
       { countryLabels: undefined },
       { countryGrouping: 'recent' },
       { mapSummary: null },
+      { countryArrivalAlerts: undefined },
+      { countryArrivalAlerts: 'true' },
       { extra: true },
     ])
       expect(() =>

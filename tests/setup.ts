@@ -11,6 +11,11 @@ import type { AccessibilityInfo, Alert } from 'react-native';
 
 // One native module boundary keeps independently run and combined tests alike.
 export const native = {
+  AppState: {
+    currentState: 'active',
+    addEventListener: mock((_event: string, _listener: (state: string) => void) => ({ remove() {} })),
+  },
+  Linking: { openSettings: mock(async () => {}) },
   AccessibilityInfo: {
     addEventListener: mock(
       (_event: string, _listener: (enabled: boolean) => void) => ({
@@ -62,6 +67,7 @@ export const navigation = {
 mock.module('expo-router', () => ({
   router: navigation.router,
   useLocalSearchParams: () => ({ id: navigation.routeId }),
+  useRootNavigationState: () => ({ key: 'root' }),
   useFocusEffect: (effect: EffectCallback) => {
     const focused = navigation.focused;
     useEffect(() => (focused ? effect() : undefined), [effect, focused]);

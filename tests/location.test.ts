@@ -1,26 +1,22 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 
 import { FlatCamera } from '../src/atlas/FlatCamera';
 import { GlobeCamera } from '../src/globe/camera';
 import { t } from '../src/localization';
+import { location } from './native-location';
 
-const services = mock(async () => true);
-const permission = mock(async () => ({ granted: true }));
-const position = mock(async () => ({ coords: { longitude: -75.69, latitude: 45.42 } }));
-const geocode = mock(async (): Promise<{ isoCountryCode: string | null }[]> => [{ isoCountryCode: 'CA' }]);
-mock.module('expo-location', () => ({
+const {
   hasServicesEnabledAsync: services,
   requestForegroundPermissionsAsync: permission,
   getCurrentPositionAsync: position,
   reverseGeocodeAsync: geocode,
-  Accuracy: { Balanced: 3 },
-}));
+} = location;
 const { getCurrentCountry, getCurrentLocation } = await import('../src/location/current-location');
 
 beforeEach(() => {
   services.mockReset().mockResolvedValue(true);
   permission.mockReset().mockResolvedValue({ granted: true });
-  position.mockReset().mockResolvedValue({ coords: { longitude: -75.69, latitude: 45.42 } });
+  position.mockReset().mockResolvedValue({ timestamp: Date.now(), coords: { longitude: -75.69, latitude: 45.42 } });
   geocode.mockReset().mockResolvedValue([{ isoCountryCode: 'CA' }]);
 });
 
@@ -30,7 +26,7 @@ describe('current location', () => {
     expect(points).toEqual([[-75.69, 45.42], [-75.69, 45.42]]);
     expect(permission).toHaveBeenCalledTimes(1);
     expect(position).toHaveBeenCalledTimes(1);
-    position.mockResolvedValue({ coords: { longitude: 2.35, latitude: 48.86 } });
+    position.mockResolvedValue({ timestamp: Date.now(), coords: { longitude: 2.35, latitude: 48.86 } });
     expect(await getCurrentLocation()).toEqual([2.35, 48.86]);
     expect(position).toHaveBeenCalledTimes(2);
   });

@@ -13,7 +13,9 @@ export interface KeyValueStorage {
   clear(): Promise<void>;
 }
 
-export function createSnapshotStorage(storage: KeyValueStorage): AppStorage {
+export function createSnapshotStorage(
+  storage: KeyValueStorage,
+): AppStorage & Pick<KeyValueStorage, 'getItem' | 'setItem'> {
   let queue = Promise.resolve();
   function enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const result = queue.then(operation);
@@ -24,6 +26,12 @@ export function createSnapshotStorage(storage: KeyValueStorage): AppStorage {
     return result;
   }
   return {
+    getItem(key) {
+      return enqueue(() => storage.getItem(key));
+    },
+    setItem(key, value) {
+      return enqueue(() => storage.setItem(key, value));
+    },
     clear() {
       return enqueue(() => storage.clear());
     },

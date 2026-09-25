@@ -14,6 +14,7 @@ export type Preferences = {
   countryLabels: boolean;
   mapSummary: boolean;
   haptics: boolean;
+  countryArrivalAlerts: boolean;
   countryGrouping: 'continent' | 'alphabetical';
 };
 
@@ -30,6 +31,7 @@ export const defaultPreferences: Readonly<Preferences> = {
   countryLabels: true,
   mapSummary: true,
   haptics: true,
+  countryArrivalAlerts: false,
   countryGrouping: 'continent',
 };
 

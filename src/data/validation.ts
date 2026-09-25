@@ -114,6 +114,7 @@ export function validateAppData(value: unknown): AppData {
       prefs.countryGrouping !== 'alphabetical') ||
     typeof prefs.countryLabels !== 'boolean' ||
     typeof prefs.mapSummary !== 'boolean' ||
+    typeof prefs.countryArrivalAlerts !== 'boolean' ||
     typeof prefs.haptics !== 'boolean'
   )
     throw new UserFacingError(t('common.errors.invalidPreferences'));
@@ -128,6 +129,7 @@ export function validateAppData(value: unknown): AppData {
       countryLabels: prefs.countryLabels,
       mapSummary: prefs.mapSummary,
       haptics: prefs.haptics,
+      countryArrivalAlerts: prefs.countryArrivalAlerts,
     },
   };
 }

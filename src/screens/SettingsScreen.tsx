@@ -12,6 +12,7 @@ import { isVisited } from '../data/model';
 import { UserFacingError } from '../data/errors';
 import { useToast } from '../feedback/ToastProvider';
 import { formatNumber, t } from '../localization';
+import { ArrivalAlertsSetting } from '../location/ArrivalAlertsSetting';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
@@ -195,6 +196,7 @@ export function SettingsScreen({
             onValueChange={(haptics) => updatePreferences({ haptics })}
           />
         </SettingsSection>
+        <ArrivalAlertsSetting disabled={disabled} />
         <SettingsSection
           title={t('settings.yourData')}
           description={t('settings.dataDescription')}
