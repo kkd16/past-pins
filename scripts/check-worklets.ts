@@ -9,20 +9,14 @@ const bundlePath = process.argv[2] ?? resolve(
   (await Bun.file(resolve(output, 'metadata.json')).json()).fileMetadata.ios.bundle,
 );
 const bundle = await Bun.file(bundlePath).text();
-const versions = new Map<string, number>();
-for (const match of bundle.matchAll(/\.__pluginVersion\s*=\s*["']([^"']+)["']/g)) {
-  versions.set(match[1], (versions.get(match[1]) ?? 0) + 1);
+let count = 0;
+for (const [, pluginVersion] of bundle.matchAll(/\.__pluginVersion\s*=\s*["']([^"']+)["']/g)) {
+  if (pluginVersion !== version)
+    throw new Error(`Worklets runtime ${version} does not match compiled plugin ${pluginVersion}.`);
+  count++;
 }
 
-if (!versions.size)
+if (!count)
   throw new Error('No Worklets metadata found. Check a development JavaScript bundle.');
 
-const incompatible = [...versions].filter(([compiledVersion]) => compiledVersion !== version);
-if (incompatible.length)
-  throw new Error(
-    `Worklets runtime ${version} has incompatible compiled functions: ${incompatible
-      .map(([compiledVersion, count]) => `${count} from plugin ${compiledVersion}`)
-      .join(', ')}.`,
-  );
-
-console.log(`All ${versions.get(version)} compiled worklets match runtime ${version}.`);
+console.log(`All ${count} compiled worklets match runtime ${version}.`);

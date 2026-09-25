@@ -14,7 +14,7 @@ bun run ios
 
 The app targets Expo SDK 57 and uses its bundled native modules. Use the Bun version in `package.json` and Node.js 22.13 or newer. `bun run typecheck` refreshes Expo Router's generated types before checking the app, scripts, and tests, including on a fresh checkout. Rebuild an existing development client after changing native dependencies.
 
-After changing Reanimated, Worklets, or Babel dependencies, stop Metro and run `bun run dev --clear` once to rebuild its cached transforms. Old transforms can retain a different Worklets plugin version even when the installed dependencies are correct. This is the [documented recovery for a Worklets plugin mismatch](https://docs.swmansion.com/react-native-worklets/docs/guides/troubleshooting/#mismatch-between-javascript-code-version-and-worklets-babel-plugin-version); subsequent starts can use `bun run dev` normally.
+After changing Reanimated, Worklets, or Babel dependencies, restart Metro once with `bun run dev --clear`. This [clears stale compiled worklets](https://docs.swmansion.com/react-native-worklets/docs/guides/troubleshooting/#mismatch-between-javascript-code-version-and-worklets-babel-plugin-version) that can cause version mismatches.
 
 `bun run` lists the available commands. The Makefile is a short set of aliases for the same Bun scripts.
 
