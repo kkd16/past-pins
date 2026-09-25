@@ -1,7 +1,8 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg from 'react-native-svg';
 
 import { flatCountries, flatMarkers, mapSize } from '../atlas/geography';
+import { MapMarker, MapPaths } from '../atlas/MapShapes';
 import type { AppData } from '../data/model';
 import { language } from '../localization';
 import { theme } from '../theme';
@@ -32,20 +33,16 @@ export function TravelMap({
         accessible={false}
         accessibilityElementsHidden
       >
-        {flatCountries.map(({ id, path }) => (
-          <Path
-            key={id}
-            d={path}
-            fill={fill(id)}
-            stroke={theme.globe.ocean}
-            strokeWidth={0.5}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
+        <MapPaths
+          shapes={flatCountries}
+          appearance={(id) => ({ fill: fill(id) })}
+          stroke={theme.globe.ocean}
+          strokeWidth={0.5}
+        />
         {flatMarkers
           .filter(({ id }) => places[id])
           .map(({ id, point }) => (
-            <Circle
+            <MapMarker
               key={id}
               cx={point[0]}
               cy={point[1]}
@@ -53,7 +50,6 @@ export function TravelMap({
               fill={fill(id)}
               stroke={theme.globe.ocean}
               strokeWidth={0.5}
-              vectorEffect="non-scaling-stroke"
             />
           ))}
       </Svg>

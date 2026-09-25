@@ -1,10 +1,13 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Circle, G, Path } from 'react-native-svg';
+import Svg, { Circle, G } from 'react-native-svg';
 
 import { countryColor } from '../atlas/colors';
+import { FlatController } from '../atlas/FlatController';
 import { navigationGestures } from '../atlas/gestures';
+import { MapMarker, MapPath, MapPaths } from '../atlas/MapShapes';
+import { useViewportLifecycle } from '../atlas/useViewportLifecycle';
 import { IconButton } from '../components/IconButton';
 import type { AppData } from '../data/model';
 import { t } from '../localization';
@@ -12,7 +15,6 @@ import { theme } from '../theme';
 import { getSubdivisionMap } from './geography';
 import {
   SubdivisionCamera,
-  SubdivisionController,
   needsSubdivisionMarker,
   pickSubdivision,
   subdivisionPickShapes,
@@ -24,6 +26,8 @@ type SubdivisionMapProps = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   disabled?: boolean;
+  active?: boolean;
+  focusRequest?: number;
 };
 
 /** The screen's region list supplies the accessible equivalent to map gestures. */
@@ -33,13 +37,15 @@ export function SubdivisionMap({
   selectedId,
   onSelect,
   disabled = false,
+  active = true,
+  focusRequest = 0,
 }: SubdivisionMapProps) {
   const map = getSubdivisionMap(countryId);
   const camera = useMemo(
     () => new SubdivisionCamera(map ?? { width: 1, height: 1 }),
     [map],
   );
-  const controller = useMemo(() => new SubdivisionController(camera), [camera]);
+  const controller = useMemo(() => new FlatController(camera), [camera]);
   const shapes = useMemo(() => subdivisionPickShapes(map?.regions ?? []), [map]);
   const land = useRef<G<unknown>>(null);
   const marker = useRef<Circle>(null);
@@ -68,29 +74,33 @@ export function SubdivisionMap({
     }
   }, [camera, tinyRegions]);
   useLayoutEffect(() => {
-    controller.configure(!disabled, draw);
-    return () => controller.configure(false, () => undefined);
-  }, [controller, disabled, draw]);
+    controller.setFrameHandler(draw);
+    return () => controller.setFrameHandler(() => undefined);
+  }, [controller, draw]);
+  useViewportLifecycle(controller, active && !disabled);
   useLayoutEffect(() => {
-    camera.resize(viewport.width, viewport.height);
-    if (map) camera.focus(map.focusBounds);
-    draw();
-  }, [camera, draw, map, viewport]);
+    controller.resize(viewport.width, viewport.height);
+    camera.start();
+  }, [camera, controller, viewport]);
   useLayoutEffect(() => {
-    if (!selected) return;
-    camera.focus(selected.bounds);
-    draw();
-  }, [camera, draw, selected, viewport]);
+    // View toggles preserve pan and zoom; explicit selections and layout changes
+    // reframe the region in the usable area, even while the map is hidden.
+    if (selected && camera.scale)
+      controller.move(() => camera.focus(selected.bounds));
+  }, [camera, controller, focusRequest, selected, viewport]);
   useLayoutEffect(draw);
 
   const gesture = useMemo(
     () =>
-      navigationGestures(controller, (x, y) => {
-        if (disabled) return;
-        const id = pickSubdivision(camera, shapes, x, y);
-        if (id) onSelect(id);
-      }),
-    [camera, controller, disabled, onSelect, shapes],
+      navigationGestures(
+        controller,
+        (x, y) => {
+          const id = pickSubdivision(camera, shapes, x, y);
+          if (id) onSelect(id);
+        },
+        active && !disabled,
+      ),
+    [active, camera, controller, disabled, onSelect, shapes],
   );
 
   if (!map) return null;
@@ -98,6 +108,7 @@ export function SubdivisionMap({
     <View
       style={styles.map}
       onLayout={({ nativeEvent: { layout } }) => {
+        if (layout.width <= 0 || layout.height <= 0) return;
         setViewport((previous) =>
           previous.width === layout.width && previous.height === layout.height
             ? previous
@@ -119,19 +130,14 @@ export function SubdivisionMap({
             accessibilityElementsHidden
           >
             <G ref={land}>
-              {map.regions.map(({ id, path }) => (
-                <Path
-                  key={id}
-                  d={path}
-                  fillRule="evenodd"
-                  fill={countryColor(statuses[id], false)}
-                  stroke={theme.globe.border}
-                  strokeWidth={0.7}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
+              <MapPaths
+                shapes={map.regions}
+                fillRule="evenodd"
+                strokeWidth={0.7}
+                appearance={(id) => ({ fill: countryColor(statuses[id], false) })}
+              />
               {tinyRegions.map(({ id, point }) => (
-                <Circle
+                <MapMarker
                   key={id}
                   ref={(node) => {
                     if (node) dots.current.set(id, node);
@@ -143,20 +149,18 @@ export function SubdivisionMap({
                   fill={countryColor(statuses[id], false)}
                   stroke={theme.globe.border}
                   strokeWidth={0.7}
-                  vectorEffect="non-scaling-stroke"
                 />
               ))}
               {selected && (
                 <G>
-                  <Path
+                  <MapPath
                     d={selected.path}
                     fill="none"
                     stroke={theme.globe.selected}
                     strokeWidth={2}
                     strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
                   />
-                  <Circle
+                  <MapMarker
                     ref={marker}
                     cx={selected.point[0]}
                     cy={selected.point[1]}
@@ -164,7 +168,6 @@ export function SubdivisionMap({
                     fill={theme.globe.selected}
                     stroke={theme.globe.border}
                     strokeWidth={1.5}
-                    vectorEffect="non-scaling-stroke"
                   />
                 </G>
               )}
@@ -177,10 +180,7 @@ export function SubdivisionMap({
         accessibilityLabel={t('subdivisions.fitCountry')}
         disabled={disabled}
         style={styles.reset}
-        onPress={() => {
-          camera.fit();
-          draw();
-        }}
+        onPress={() => controller.move(() => camera.fit())}
       />
     </View>
   );

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 
-import { placesHref } from '../../places/navigation';
+import { countryHref, placesHref } from '../../places/navigation';
 import { StatsScreen } from '../../screens/StatsScreen';
 
 export default function StatsRoute() {
@@ -16,9 +16,7 @@ export default function StatsRoute() {
       onOpenCountries={(scope, continent) =>
         router.navigate(placesHref('countries', scope, continent))
       }
-      onOpenCountry={(id) =>
-        router.push({ pathname: '/country/[id]', params: { id } })
-      }
+      onOpenCountry={(id) => router.push(countryHref(id))}
     />
   );
 }

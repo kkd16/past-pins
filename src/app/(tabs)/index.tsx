@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 
-import { placesHref } from '../../places/navigation';
+import { countryHref, placesHref, regionsHref } from '../../places/navigation';
 import { MapScreen } from '../../screens/MapScreen';
 
 export default function MapRoute() {
-  const { focus, focusRequest } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     focus?: string;
     focusRequest?: string;
   }>();
@@ -15,16 +15,14 @@ export default function MapRoute() {
   );
   return (
     <MapScreen
-      focus={focus}
-      focusRequest={focusRequest}
+      focus={typeof params.focus === 'string' ? params.focus : undefined}
+      focusRequest={
+        typeof params.focusRequest === 'string' ? params.focusRequest : undefined
+      }
       onFocusConsumed={consumeFocus}
-      onSelect={(id) =>
-        router.push({ pathname: '/country/[id]', params: { id } })
-      }
+      onSelect={(id) => router.push(countryHref(id))}
       onOpenCountries={() => router.navigate(placesHref('countries'))}
-      onOpenRegions={(id) =>
-        router.push({ pathname: '/regions/[id]', params: { id } })
-      }
+      onOpenRegions={(id) => router.push(regionsHref(id))}
       onSearch={() => router.push('/map-search')}
       onShare={() => router.push({ pathname: '/share', params: { kind: 'world' } })}
     />

@@ -50,7 +50,7 @@ describe('source-derived atlas', () => {
   test('flat picking respects holes, tiny source markers, Antarctica and antimeridian islands', () => {
     const camera = new FlatCamera();
     camera.resize(390, 844);
-    camera.fitWorld();
+    camera.fit();
     for (const id of [
       'ca',
       'fr',
@@ -65,7 +65,7 @@ describe('source-derived atlas', () => {
       const point = camera.project(countryAnchors.get(id)!.anchor)!;
       expect(pickFlatCountry(camera, point[0], point[1])).toBe(id);
     }
-    camera.fitWorld();
+    camera.fit();
     expect(pickFlatCountry(camera, 0, 0)).toBeNull();
     const ocean = camera.project([-30, 0])!;
     expect(pickFlatCountry(camera, ...(ocean as [number, number]))).toBeNull();
@@ -73,6 +73,20 @@ describe('source-derived atlas', () => {
 });
 
 describe('camera navigation', () => {
+  test('location focus at either map edge does not jump on the first gesture', () => {
+    const camera = new FlatCamera();
+    camera.resize(390, 844);
+    for (const longitude of [-179.9, 179.9]) {
+      camera.focusLocation([longitude, 0]);
+      const center = [...camera.center];
+      camera.drag(0, 0);
+      expect(camera.center).toEqual(center);
+      const point = camera.project([longitude, 0])!;
+      expect(point[0]).toBeGreaterThan(0);
+      expect(point[0]).toBeLessThan(camera.width);
+    }
+  });
+
   test('globe rotation keeps an off-center pinch anchor under the fingers', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);
@@ -157,7 +171,7 @@ describe('camera navigation', () => {
     expect(camera.center[1]).toBeLessThanOrEqual(500);
     camera.zoomAt(1e9, 195, 422);
     expect(camera.zoom).toBe(20);
-    camera.fitWorld();
+    camera.fit();
     expect(camera.zoom).toBe(1);
     expect(camera.center).toEqual([500, 250]);
     expect(camera.project([0, 0])![0]).toBeCloseTo(195);
@@ -168,7 +182,7 @@ describe('camera navigation', () => {
     camera.resize(390, 844);
     camera.start(null);
     expect(camera.scale * 500).toBeCloseTo(844 * 0.8);
-    camera.fitWorld();
+    camera.fit();
     expect(camera.scale * 1000).toBeCloseTo(390);
   });
 
@@ -194,7 +208,7 @@ describe('camera navigation', () => {
     }
     camera.resize(width, height - 40);
     expect(camera.projectPoint([500, 500])[1]).toBeCloseTo((height - 40) / 2);
-    camera.fitWorld();
+    camera.fit();
     expect(camera.center).toEqual([500, 250]);
     expect(camera.zoom).toBe(1);
   });

@@ -5,7 +5,7 @@ import { countryById } from '../../countries/catalog';
 import { readCountryScope } from '../../countries/filters';
 import { useAppData } from '../../data/AppDataProvider';
 import { t } from '../../localization';
-import { placesHref } from '../../places/navigation';
+import { countryHref, placesHref } from '../../places/navigation';
 import { SubdivisionsScreen } from '../../screens/SubdivisionsScreen';
 
 export default function SubdivisionsRoute() {
@@ -37,9 +37,7 @@ export default function SubdivisionsRoute() {
         countryId={id}
         initialSelectedId={focus}
         initialScope={scope}
-        onOpenCountry={() =>
-          router.dismissTo({ pathname: '/country/[id]', params: { id } })
-        }
+        onOpenCountry={() => router.dismissTo(countryHref(id))}
         onSaveToLists={(placeId) =>
           router.push({ pathname: '/lists/add', params: { placeId } })
         }

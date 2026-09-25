@@ -11,6 +11,7 @@ import { theme } from '../theme';
 import { countryColor } from './colors';
 import type { FlatCamera } from './FlatCamera';
 import { flatCountries, flatMarkers, oceanPath } from './geography';
+import { MapMarker, MapPaths } from './MapShapes';
 import type { AtlasViewportProps } from './types';
 
 export type FlatSurfaceHandle = { draw: () => void };
@@ -27,17 +28,8 @@ export const FlatSurface = memo(function FlatSurface({
   const land = useRef<G<unknown>>(null);
   const points = useRef(new Map<string, Circle>());
   const draw = () => {
-    const scale = camera.scale || 1;
-    land.current?.setNativeProps({
-      matrix: [
-        scale,
-        0,
-        0,
-        scale,
-        camera.width / 2 - camera.center[0] * scale,
-        camera.height / 2 - camera.center[1] * scale,
-      ],
-    });
+    if (!camera.scale) return;
+    land.current?.setNativeProps({ matrix: camera.matrix });
     for (const { id, point } of flatMarkers) {
       const [cx, cy] = camera.projectPoint(point);
       points.current.get(id)?.setNativeProps({ cx, cy });
@@ -55,19 +47,15 @@ export const FlatSurface = memo(function FlatSurface({
     >
       <G ref={land}>
         <Path d={oceanPath} fill={theme.globe.ocean} />
-        {flatCountries.map(({ id, path }) => (
-          <Path
-            key={id}
-            d={path}
-            fill={countryColor(places[id], selectedId === id)}
-            stroke={theme.globe.border}
-            strokeWidth={0.4}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
+        <MapPaths
+          shapes={flatCountries}
+          appearance={(id) => ({
+            fill: countryColor(places[id], selectedId === id),
+          })}
+        />
       </G>
       {flatMarkers.map(({ id }) => (
-        <Circle
+        <MapMarker
           key={id}
           ref={(circle) => {
             if (circle) points.current.set(id, circle);

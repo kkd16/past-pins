@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useIsFocused } from 'expo-router';
 import {
   Alert,
   AppState,
@@ -50,6 +51,7 @@ export function MapScreen({
   onFocusConsumed: () => void;
 }) {
   const app = useAppData();
+  const focused = useIsFocused();
   const { data } = app;
   const ready = app.status === 'ready';
   const mode = data.preferences.mapView;
@@ -162,7 +164,7 @@ export function MapScreen({
           <GlobeViewport
             {...viewport}
             camera={globe}
-            active={mode === 'globe'}
+            active={focused && mode === 'globe'}
           />
         </View>
       )}
@@ -175,7 +177,7 @@ export function MapScreen({
           <WorldMapViewport
             {...viewport}
             camera={flat}
-            active={mode === 'map'}
+            active={focused && mode === 'map'}
           />
         </View>
       )}

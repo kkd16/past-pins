@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import { useAppData } from '../../data/AppDataProvider';
 import { ListDetailsScreen } from '../../screens/ListDetailsScreen';
+import { placeHref, regionsHref } from '../../places/navigation';
 
 export default function ListDetailsRoute() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -14,17 +15,8 @@ export default function ListDetailsRoute() {
       onEdit={() => router.push({ pathname: '/lists/places', params: { id } })}
       onBrowse={() => router.dismissTo('/lists')}
       onShare={() => router.push({ pathname: '/share', params: { kind: 'list', id } })}
-      onOpenRegions={(countryId) =>
-        router.push({ pathname: '/regions/[id]', params: { id: countryId } })
-      }
-      onOpenPlace={(place) =>
-        place.kind === 'country'
-          ? router.push({ pathname: '/country/[id]', params: { id: place.id } })
-          : router.push({
-              pathname: '/regions/[id]',
-              params: { id: place.countryId, focus: place.id },
-            })
-      }
+      onOpenRegions={(countryId) => router.push(regionsHref(countryId))}
+      onOpenPlace={(place) => router.push(placeHref(place))}
     />
   );
 }

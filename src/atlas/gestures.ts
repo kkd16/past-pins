@@ -21,6 +21,7 @@ type CameraGesture = 'pan' | 'pinch' | 'rotation';
 export function navigationGestures(
   controller: NavigationController,
   onTap: (x: number, y: number) => void,
+  enabled = true,
 ) {
   let pointers: number | null = null;
   let multiTouch = false;
@@ -44,6 +45,7 @@ export function navigationGestures(
   };
 
   const pan = Gesture.Pan()
+    .enabled(enabled)
     .runOnJS(true)
     .onBegin((event) => {
       multiTouch =
@@ -79,6 +81,7 @@ export function navigationGestures(
     .onFinalize(() => finish('pan'));
 
   const pinch = Gesture.Pinch()
+    .enabled(enabled)
     .runOnJS(true)
     .onTouchesDown(touchesChanged)
     .onTouchesUp(touchesChanged)
@@ -108,7 +111,7 @@ export function navigationGestures(
 
   const twist = Gesture.Rotation()
     .runOnJS(true)
-    .enabled(!!controller.twist)
+    .enabled(enabled && !!controller.twist)
     .onTouchesDown(touchesChanged)
     .onTouchesUp(touchesChanged)
     .onStart((event) => {
@@ -130,6 +133,7 @@ export function navigationGestures(
     .onFinalize(() => finish('rotation'));
 
   const tap = Gesture.Tap()
+    .enabled(enabled)
     .runOnJS(true)
     .onEnd((event, success) => {
       if (success && !multiTouch) onTap(event.x, event.y);

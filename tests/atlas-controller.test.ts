@@ -3,6 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { FlatCamera } from '../src/atlas/FlatCamera';
 import { FlatController } from '../src/atlas/FlatController';
 import { GlobeController } from '../src/globe/controller';
+import { SubdivisionCamera } from '../src/subdivisions/map-layout';
 import { mockAnimationFrames } from './helpers/animation-frames';
 
 describe('atlas camera transitions', () => {
@@ -156,7 +157,7 @@ describe('atlas camera transitions', () => {
     expect(camera.center).toEqual(before);
     controller.setActive(true);
     controller.setReduceMotion(true);
-    controller.move(() => camera.fitWorld());
+    controller.move(() => camera.fit());
     expect(camera.center).toEqual([500, 250]);
     frames.advance();
     expect(frames.pendingCount).toBe(0);
@@ -240,6 +241,83 @@ describe('atlas camera transitions', () => {
     const interrupted = Array.from(controller.camera.rotation);
     frames.advance();
     expect(Array.from(controller.camera.rotation)).toEqual(interrupted);
+    expect(frames.pendingCount).toBe(0);
+  });
+});
+
+describe.each(['world', 'subdivision'] as const)('%s shared flat-map motion', (kind) => {
+  const frames = mockAnimationFrames();
+  const createCamera = () =>
+    kind === 'world'
+      ? new FlatCamera()
+      : new SubdivisionCamera({ width: 1000, height: 500 });
+
+  test('coalesces gesture updates into one frame and stops work when hidden', () => {
+    const camera = createCamera();
+    const draw = mock();
+    const controller = new FlatController(camera, draw);
+    controller.resize(390, 400);
+    camera.zoomAt(4, 195, 200);
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    frames.advance();
+    draw.mockClear();
+    controller.beginInteraction();
+    for (let index = 0; index < 10; index++) controller.drag(1, 1);
+    controller.zoom(5, 195, 200, 195, 200);
+    expect(draw).not.toHaveBeenCalled();
+    expect(frames.pendingCount).toBe(1);
+    frames.advance();
+    expect(draw).toHaveBeenCalledTimes(1);
+    controller.coast(600, 200);
+    controller.endInteraction();
+    const before = [...camera.center];
+    frames.advance();
+    expect(camera.center).not.toEqual(before);
+    controller.setActive(false);
+    const stopped = [...camera.center];
+    expect(frames.pendingCount).toBe(0);
+    frames.advance(30);
+    expect(camera.center).toEqual(stopped);
+  });
+
+  test('a repeated layout leaves focus animating and a changed layout preserves its destination', () => {
+    const camera = createCamera();
+    const controller = new FlatController(camera);
+    controller.resize(390, 400);
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    controller.move(() => {
+      camera.center = [650, 250];
+      camera.zoom = 5;
+    });
+    frames.advance(3);
+    const intermediate = [...camera.center];
+    controller.resize(390, 400);
+    frames.advance(3);
+    expect(camera.center).not.toEqual(intermediate);
+    expect(camera.center).not.toEqual([650, 250]);
+    controller.resize(390, 380);
+    expect(camera.center).toEqual([650, 250]);
+    expect(camera.zoom).toBe(5);
+    frames.advance(30);
+    expect(camera.center).toEqual([650, 250]);
+    expect(frames.pendingCount).toBe(0);
+  });
+
+  test('Reduce Motion applies focus immediately and prevents momentum', () => {
+    const camera = createCamera();
+    const controller = new FlatController(camera);
+    controller.resize(390, 400);
+    controller.setActive(true);
+    controller.move(() => {
+      camera.center = [650, 250];
+      camera.zoom = 5;
+    });
+    expect(camera.center).toEqual([650, 250]);
+    controller.coast(600, 200);
+    frames.advance(30);
+    expect(camera.center).toEqual([650, 250]);
     expect(frames.pendingCount).toBe(0);
   });
 });

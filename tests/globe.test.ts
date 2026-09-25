@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { geoArea, geoContains } from 'd3-geo';
-import { quat, vec3 } from 'gl-matrix';
+import { mat3, quat, vec3 } from 'gl-matrix';
 
 import { countryIds } from '../src/countries/catalog';
 import { countryFeatures } from '../src/countries/geography';
@@ -197,6 +197,26 @@ describe('bundled globe geometry', () => {
 });
 
 describe('globe camera and country picking', () => {
+  test('projection results stay independent while a renderer reuses its matrix', () => {
+    const camera = new GlobeCamera();
+    camera.resize(390, 844);
+    const screen = camera.project(toCartesian([0, 0]))!;
+    const originalScreen = [...screen];
+    const matrix = camera.matrix();
+    const originalMatrix = Array.from(matrix);
+    const renderMatrix = mat3.create();
+    expect(camera.matrix(renderMatrix)).toBe(renderMatrix);
+    expect(renderMatrix).toEqual(matrix);
+
+    camera.drag(20, 30);
+    camera.project(toCartesian([20, 10]));
+    camera.matrix(renderMatrix);
+    expect(screen).toEqual(originalScreen);
+    expect(Array.from(matrix)).toEqual(originalMatrix);
+    expect(renderMatrix).toEqual(camera.matrix());
+    expect(renderMatrix).not.toEqual(matrix);
+  });
+
   test('launch and reset keep north upright with the equator level', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { CountryDetailsScreen } from '../../screens/CountryDetailsScreen';
+import { regionsHref, worldMapHref } from '../../places/navigation';
 
 export default function CountryDetailsRoute() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -15,12 +16,8 @@ export default function CountryDetailsRoute() {
       onSaveToLists={(placeId) =>
         router.push({ pathname: '/lists/add', params: { placeId } })
       }
-      onOpenRegions={(countryId) =>
-        router.push({ pathname: '/regions/[id]', params: { id: countryId } })
-      }
-      onShowMap={(focus) =>
-        router.dismissTo({ pathname: '/', params: { focus } })
-      }
+      onOpenRegions={(countryId) => router.push(regionsHref(countryId))}
+      onShowMap={(focus) => router.dismissTo(worldMapHref(focus))}
     />
   );
 }

@@ -1,8 +1,8 @@
 import { theme } from '../theme';
-import type { FlatCamera } from './FlatCamera';
+import type { ProjectedCamera } from './ProjectedCamera';
 import { PanMomentum } from './PanMomentum';
 
-export class FlatController {
+export class FlatController<Camera extends ProjectedCamera = ProjectedCamera> {
   private active = false;
   private reduceMotion = true;
   private frame: number | null = null;
@@ -18,7 +18,7 @@ export class FlatController {
   } | null = null;
 
   constructor(
-    readonly camera: FlatCamera,
+    readonly camera: Camera,
     private onFrame: (moving: boolean) => void = () => undefined,
   ) {}
 
@@ -43,7 +43,8 @@ export class FlatController {
 
   resize(width: number, height: number) {
     if (width <= 0 || height <= 0) return;
-    this.stop();
+    if (width === this.camera.width && height === this.camera.height) return;
+    this.finishMove();
     this.camera.resize(width, height);
     this.invalidate();
   }

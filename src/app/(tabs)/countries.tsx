@@ -11,6 +11,7 @@ import { useAppData } from '../../data/AppDataProvider';
 import { CountriesScreen } from '../../screens/CountriesScreen';
 import { RegionsScreen } from '../../screens/RegionsScreen';
 import { getPlace } from '../../places/catalog';
+import { countryHref, placeHref, regionsHref } from '../../places/navigation';
 import type { PlacesMode } from '../../places/PlaceKindControl';
 
 export default function CountriesRoute() {
@@ -39,7 +40,7 @@ export default function CountriesRoute() {
     if (requestedQuery !== undefined) router.setParams({ query: undefined });
   }, [requestedQuery]);
   const selectCountry = useCallback(
-    (id: string) => router.push({ pathname: '/country/[id]', params: { id } }),
+    (id: string) => router.push(countryHref(id)),
     [],
   );
   const filters = readCountryFilters({
@@ -81,15 +82,7 @@ export default function CountriesRoute() {
         continent={filters.continent}
         onSelect={(id) => {
           const region = getPlace(id);
-          if (region)
-            router.push({
-              pathname: '/regions/[id]',
-              params: {
-                id: region.countryId,
-                focus: id,
-                scope,
-              },
-            });
+          if (region) router.push(placeHref(region, scope));
         }}
         onSaveToLists={(placeId) =>
           router.push({ pathname: '/lists/add', params: { placeId } })
@@ -101,9 +94,7 @@ export default function CountriesRoute() {
       {...sharedProps}
       filters={filters}
       onSelect={selectCountry}
-      onOpenRegions={(id) =>
-        router.push({ pathname: '/regions/[id]', params: { id } })
-      }
+      onOpenRegions={(id) => router.push(regionsHref(id))}
     />
   );
 }

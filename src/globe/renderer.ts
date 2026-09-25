@@ -1,4 +1,5 @@
 import type { ExpoWebGLRenderingContext } from 'expo-gl';
+import { mat3 } from 'gl-matrix';
 
 import { countryColor } from '../atlas/colors';
 import type { AppData } from '../data/model';
@@ -100,6 +101,7 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
     const surfacePosition = gl.getAttribLocation(surface, 'position');
     const surfaceColor = gl.getAttribLocation(surface, 'color');
     const background = rgb(theme.color.background);
+    const rotation = mat3.create();
     const appearance = theme.globe;
     const water = rgb(appearance.ocean);
     const border = rgb(appearance.border);
@@ -155,7 +157,7 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
         gl.uniformMatrix3fv(
           surfaceUniform.rotation,
           false,
-          camera.matrix() as Float32Array,
+          camera.matrix(rotation) as Float32Array,
         );
         gl.uniform2f(surfaceUniform.scale, sx, sy);
         gl.uniform1i(surfaceUniform.marker, 0);

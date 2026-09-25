@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test';
 
 import {
   SubdivisionCamera,
-  SubdivisionController,
   pickSubdivision,
   subdivisionPickShapes,
   subdivisionMapMaxZoom,
@@ -18,12 +17,12 @@ describe('subdivision map selection focus', () => {
     const camera = new SubdivisionCamera(map);
     camera.resize(350, 280);
     expect(camera.scale).toBeCloseTo(0.35);
-    const phoneTopLeft = camera.project([0, 0]);
+    const phoneTopLeft = camera.projectPoint([0, 0]);
     expect(phoneTopLeft[0]).toBeCloseTo(0);
     expect(phoneTopLeft[1]).toBeCloseTo(17.5);
     camera.resize(350, 220);
     expect(camera.scale).toBeCloseTo(220 / 700);
-    const topLeft = camera.project([0, 0]);
+    const topLeft = camera.projectPoint([0, 0]);
     expect(topLeft[0]).toBeCloseTo((350 - (1000 * 220) / 700) / 2);
     expect(topLeft[1]).toBeCloseTo(0);
   });
@@ -36,8 +35,8 @@ describe('subdivision map selection focus', () => {
       [600, 400],
     ];
     camera.focus(bounds);
-    const topLeft = camera.project(bounds[0]);
-    const bottomRight = camera.project(bounds[1]);
+    const topLeft = camera.projectPoint(bounds[0]);
+    const bottomRight = camera.projectPoint(bounds[1]);
     expect(topLeft[0]).toBeGreaterThan(camera.width * 0.13);
     expect(topLeft[1]).toBeGreaterThan(camera.height * 0.13);
     expect(bottomRight[0]).toBeLessThan(camera.width * 0.87);
@@ -63,8 +62,8 @@ describe('subdivision map selection focus', () => {
     ]) {
       camera.focus(bounds);
       expect(camera.zoom).toBe(subdivisionMapMaxZoom);
-      const topLeft = camera.unproject(0, 0);
-      const bottomRight = camera.unproject(camera.width, camera.height);
+      const topLeft = camera.unprojectScreen(0, 0);
+      const bottomRight = camera.unprojectScreen(camera.width, camera.height);
       expect(topLeft[0]).toBeGreaterThanOrEqual(0);
       expect(topLeft[1]).toBeGreaterThanOrEqual(0);
       expect(bottomRight[0]).toBeLessThanOrEqual(map.width);
@@ -100,6 +99,24 @@ describe('subdivision map selection focus', () => {
     expect(camera.scale).toBe(0);
     expect(camera.zoom).toBe(1);
   });
+
+  test('initial mainland focus waits for layout and does not replace later navigation', () => {
+    const camera = new SubdivisionCamera(getSubdivisionMap('fr')!);
+    camera.start();
+    expect(camera.initialized).toBe(false);
+    camera.resize(350, 280);
+    camera.start();
+    expect(camera.initialized).toBe(true);
+    expect(camera.zoom).toBeGreaterThan(2);
+    camera.zoomAt(6, 175, 140);
+    camera.drag(15, 10);
+    const center = [...camera.center];
+    const zoom = camera.zoom;
+    camera.resize(350, 300);
+    camera.start();
+    expect(camera.center).toEqual(center);
+    expect(camera.zoom).toBe(zoom);
+  });
 });
 
 describe('subdivision map gestures and picking', () => {
@@ -107,13 +124,13 @@ describe('subdivision map gestures and picking', () => {
     const camera = new SubdivisionCamera(map);
     camera.resize(350, 280);
     camera.zoomAt(3, 175, 140);
-    const point = camera.unproject(220, 130);
+    const point = camera.unprojectScreen(220, 130);
     camera.zoomAt(4, 235, 150, 220, 130);
-    const after = camera.project(point);
+    const after = camera.projectPoint(point);
     expect(after[0]).toBeCloseTo(235);
     expect(after[1]).toBeCloseTo(150);
-    expect(camera.project([700, 350])[0]).toBeGreaterThan(
-      camera.project([300, 350])[0],
+    expect(camera.projectPoint([700, 350])[0]).toBeGreaterThan(
+      camera.projectPoint([300, 350])[0],
     );
     const [scale, , , , tx, ty] = camera.matrix;
     expect(point[0] * scale + tx).toBeCloseTo(after[0]);
@@ -135,25 +152,10 @@ describe('subdivision map gestures and picking', () => {
     camera.focus(bounds);
     expect(camera.matrix).toEqual(focused);
     camera.drag(1e8, -1e8);
-    const topLeft = camera.unproject(0, 0);
-    const bottomRight = camera.unproject(camera.width, camera.height);
+    const topLeft = camera.unprojectScreen(0, 0);
+    const bottomRight = camera.unprojectScreen(camera.width, camera.height);
     expect(topLeft[0]).toBeGreaterThanOrEqual(0);
     expect(bottomRight[1]).toBeLessThanOrEqual(map.height);
-  });
-
-  test('read-only interaction cannot move the map', () => {
-    const camera = new SubdivisionCamera(map);
-    camera.resize(350, 280);
-    const controller = new SubdivisionController(camera);
-    let redraws = 0;
-    controller.configure(false, () => {
-      redraws++;
-    });
-    const before = [...camera.matrix];
-    controller.zoom(8, 100, 100, 100, 100);
-    controller.drag(30, 20);
-    expect(camera.matrix).toEqual(before);
-    expect(redraws).toBe(0);
   });
 
   test('picking respects holes, disconnected islands, and tiny visible markers', () => {
@@ -181,7 +183,7 @@ describe('subdivision map gestures and picking', () => {
     camera.resize(350, 280);
     const shapes = subdivisionPickShapes(regions);
     const pick = (point: number[]) => {
-      const [x, y] = camera.project(point);
+      const [x, y] = camera.projectPoint(point);
       return pickSubdivision(camera, shapes, x, y);
     };
     expect(pick([150, 150])).toBe('main');
@@ -204,7 +206,7 @@ describe('subdivision map gestures and picking', () => {
         ]) {
           camera.resize(width, height);
           camera.focus(region.bounds);
-          const [x, y] = camera.project(region.point);
+          const [x, y] = camera.projectPoint(region.point);
           expect(x).toBeGreaterThanOrEqual(0);
           expect(y).toBeGreaterThanOrEqual(0);
           expect(x).toBeLessThanOrEqual(width);
@@ -223,12 +225,12 @@ describe('subdivision map gestures and picking', () => {
     expect(camera.zoom).toBeGreaterThan(2);
     camera.fit();
     expect(camera.zoom).toBe(1);
-    const bottomRight = camera.project([data.width, data.height]);
+    const bottomRight = camera.projectPoint([data.width, data.height]);
     expect(bottomRight[0]).toBeLessThanOrEqual(camera.width);
     expect(bottomRight[1]).toBeLessThanOrEqual(camera.height);
     for (const region of data.regions) {
       camera.focus(region.bounds);
-      const point = camera.project(region.point);
+      const point = camera.projectPoint(region.point);
       expect(point[0]).toBeGreaterThanOrEqual(0);
       expect(point[0]).toBeLessThanOrEqual(camera.width);
       expect(point[1]).toBeGreaterThanOrEqual(0);

@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { useAppData } from '../../data/AppDataProvider';
 import { t } from '../../localization';
 import { StampDetailsScreen } from '../../screens/StampDetailsScreen';
+import { worldMapHref } from '../../places/navigation';
 
 export default function StampDetailsRoute() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -27,12 +28,7 @@ export default function StampDetailsRoute() {
         id={id}
         onBrowse={() => router.dismissTo('/stamps')}
         onShare={() => router.push({ pathname: '/share', params: { kind: 'stamp', id } })}
-        onShowMap={(focus) =>
-          router.dismissTo({
-            pathname: '/',
-            params: { focus, focusRequest: String(Date.now()) },
-          })
-        }
+        onShowMap={(focus) => router.dismissTo(worldMapHref(focus))}
       />
     </>
   );

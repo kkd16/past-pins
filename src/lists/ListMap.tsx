@@ -1,8 +1,9 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg from 'react-native-svg';
 
 import { flatCountries, flatMarkers, mapSize } from '../atlas/geography';
+import { MapMarker, MapPaths } from '../atlas/MapShapes';
 import { AppText } from '../components/AppText';
 import { t } from '../localization';
 import type { Place } from '../places/catalog';
@@ -48,23 +49,20 @@ export const ListMap = memo(function ListMap({
           accessible={false}
           accessibilityElementsHidden
         >
-          {shapes.map(({ id, path }) => {
-            const included = selected.has(id);
-            const outlined = !regional && regionCountries.has(id);
-            return (
-              <Path
-                key={id}
-                d={path}
-                fillRule={regional ? 'evenodd' : 'nonzero'}
-                fill={included ? theme.color.accent : theme.color.border}
-                stroke={outlined ? theme.color.accent : theme.globe.border}
-                strokeWidth={outlined ? 1.5 : borderWidth}
-                vectorEffect="non-scaling-stroke"
-              />
-            );
-          })}
+          <MapPaths
+            shapes={shapes}
+            fillRule={regional ? 'evenodd' : 'nonzero'}
+            appearance={(id) => {
+              const outlined = !regional && regionCountries.has(id);
+              return {
+                fill: selected.has(id) ? theme.color.accent : theme.color.border,
+                stroke: outlined ? theme.color.accent : theme.globe.border,
+                strokeWidth: outlined ? 1.5 : borderWidth,
+              };
+            }}
+          />
           {markers.map(({ id, point }) => (
-            <Circle
+            <MapMarker
               key={id}
               cx={point[0]}
               cy={point[1]}
@@ -72,7 +70,6 @@ export const ListMap = memo(function ListMap({
               fill={selected.has(id) ? theme.color.accent : theme.globe.ocean}
               stroke={regional ? theme.globe.border : theme.color.accent}
               strokeWidth={regional ? 0.7 : 1}
-              vectorEffect="non-scaling-stroke"
             />
           ))}
         </Svg>

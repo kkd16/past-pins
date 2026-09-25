@@ -10,14 +10,16 @@ import { GlobeController } from '../src/globe/controller';
 type Event = Record<string, number>;
 type Callback = (event: Event, success?: boolean) => void;
 const handlers: Record<string, Record<string, Callback>> = {};
+const enabled: Record<string, boolean> = {};
 function gesture(name: string) {
   const callbacks: Record<string, Callback> = {};
   handlers[name] = callbacks;
   const builder: object = new Proxy(
     {},
     {
-      get: (_, key: string) => (value: Callback) => {
-        if (key.startsWith('on')) callbacks[key] = value;
+      get: (_, key: string) => (value: Callback | boolean) => {
+        if (key.startsWith('on')) callbacks[key] = value as Callback;
+        if (key === 'enabled') enabled[name] = value as boolean;
         return builder;
       },
     },
@@ -35,6 +37,16 @@ mock.module('react-native-gesture-handler', () => ({
   },
 }));
 const { navigationGestures } = await import('../src/atlas/gestures');
+
+test('hidden and read-only maps disable every native gesture recognizer', () => {
+  const controller = new GlobeController(mock());
+  navigationGestures(controller, mock(), false);
+  expect(enabled).toEqual({ pan: false, pinch: false, rotation: false, tap: false });
+  navigationGestures(controller, mock());
+  expect(enabled).toEqual({ pan: true, pinch: true, rotation: true, tap: true });
+  navigationGestures(new FlatController(new FlatCamera()), mock());
+  expect(enabled.rotation).toBe(false);
+});
 
 function setup(mode: 'globe' | 'map') {
   const camera = mode === 'globe' ? new GlobeCamera() : new FlatCamera();

@@ -49,7 +49,7 @@ export function WorldMapViewport({
     controller.move(() => {
       if (command.type === 'focus') camera.focus(command.id);
       else if (command.type === 'location') camera.focusLocation(command.point);
-      else camera.fitWorld();
+      else camera.fit();
     });
     onCommandApplied(command.key);
   }, [active, camera, command, controller, sized, onCommandApplied]);

@@ -4,6 +4,7 @@ import { toCartesian, toGeographic } from './coordinates';
 
 export class GlobeCamera {
   readonly rotation = quat.create();
+  private readonly projectedPoint = vec3.create();
   width = 0;
   height = 0;
   zoom = 1.2;
@@ -76,8 +77,8 @@ export class GlobeCamera {
     quat.normalize(this.rotation, this.rotation);
   }
 
-  matrix() {
-    return mat3.fromQuat(mat3.create(), this.rotation);
+  matrix(output = mat3.create()) {
+    return mat3.fromQuat(output, this.rotation);
   }
 
   twist(radians: number, x = this.width / 2, y = this.height / 2) {
@@ -104,11 +105,10 @@ export class GlobeCamera {
   }
 
   project(position: readonly number[]) {
-    const point = vec3.transformQuat(
-      vec3.create(),
-      [position[0], position[1], position[2]],
-      this.rotation,
-    );
+    // Labels share this scratch vector; returned screen points remain independent.
+    const point = this.projectedPoint;
+    vec3.set(point, position[0], position[1], position[2]);
+    vec3.transformQuat(point, point, this.rotation);
     if (point[2] <= 0) return null;
     return [
       this.width / 2 + point[0] * this.radius,

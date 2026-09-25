@@ -59,6 +59,8 @@ export function SubdivisionsScreen({
   const [view, setView] = useState<SubdivisionView>(
     initialSelectedId || initialScope === 'all' ? 'map' : 'list',
   );
+  const [mapLoaded, setMapLoaded] = useState(view === 'map');
+  if (view === 'map' && !mapLoaded) setMapLoaded(true);
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<CountryScope>(initialScope);
   const [selectedId, setSelectedId] = useState<string | null>(() =>
@@ -67,6 +69,7 @@ export function SubdivisionsScreen({
       ? initialSelectedId
       : null,
   );
+  const [focusRequest, setFocusRequest] = useState(0);
   const selectedRegion = selectedId
     ? subdivisionById.get(selectedId)
     : undefined;
@@ -127,6 +130,7 @@ export function SubdivisionsScreen({
       if (!selecting) {
         Keyboard.dismiss();
         setSelectedId(id);
+        setFocusRequest((request) => request + 1);
         setView('map');
         return;
       }
@@ -190,250 +194,261 @@ export function SubdivisionsScreen({
           }}
         />
       </ScrollView>
-      {view === 'map' ? (
-        <View style={styles.mapPane}>
-          <SubdivisionMap
-            countryId={countryId}
-            statuses={app.data.subdivisions}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            disabled={disabled}
-          />
-          <ScrollView
-            style={styles.mapDock}
-            contentContainerStyle={styles.mapDockContent}
-            contentInsetAdjustmentBehavior="never"
-            bounces={false}
-            scrollsToTop={false}
+      <View style={styles.panes}>
+        {mapLoaded && (
+          <View
+            style={[styles.mapPane, { opacity: view === 'map' ? 1 : 0 }]}
+            pointerEvents={view === 'map' ? 'auto' : 'none'}
+            accessibilityElementsHidden={view !== 'map'}
           >
-            <DataFeedback />
-            {selectedRegion && (
-              <View style={styles.selected}>
-                <View style={styles.selectedHeading}>
-                  <View style={styles.grow}>
-                    <AppText variant="caption" tone="muted">
-                      {t('subdivisions.selection', {
-                        type: getSubdivisionKindLabel(selectedRegion.kind),
-                      })}
-                    </AppText>
-                    <AppText variant="heading">{selectedRegion.name}</AppText>
-                    <AppText tone="muted">
-                      {
-                        getStatusPresentation(
-                          getSubdivisionStatus(app.data, selectedRegion.id),
-                        ).label
-                      }
-                    </AppText>
-                  </View>
-                  <IconButton
-                    name="close"
-                    accessibilityLabel={t('subdivisions.clearSelection')}
-                    onPress={() => setSelectedId(null)}
-                  />
-                </View>
-                <View style={styles.actions}>
-                  <Button
-                    label={t('subdivisions.changeStatus')}
-                    disabled={disabled}
-                    onPress={() => changeStatus(selectedRegion.id)}
-                  />
-                  <Button
-                    label={t('lists.saveToLists')}
-                    variant="quiet"
-                    disabled={disabled}
-                    onPress={() => saveToLists(selectedRegion.id)}
-                  />
-                </View>
-              </View>
-            )}
-            {!selectedRegion && (
-              <View style={styles.mapSummary}>
-                {app.status === 'ready' && (
-                  <AppText variant="label" tone="visited">
-                    {t('subdivisions.visitedSummary', {
-                      ...terminology,
-                      visited: formatNumber(stats.visited),
-                      total: formatNumber(stats.total),
-                    })}
-                  </AppText>
-                )}
-                <AppText variant="caption" tone="muted">
-                  {t('subdivisions.mapHint')}
-                </AppText>
-              </View>
-            )}
-            <Button
-              label={t('subdivisions.browseList', terminology)}
-              variant="quiet"
-              onPress={() => setView('list')}
+            <SubdivisionMap
+              countryId={countryId}
+              statuses={app.data.subdivisions}
+              selectedId={selectedId}
+              focusRequest={focusRequest}
+              onSelect={setSelectedId}
+              disabled={disabled}
+              active={view === 'map'}
             />
-          </ScrollView>
-        </View>
-      ) : (
-        <FlatList
-          data={app.status === 'ready' ? results : []}
-          keyExtractor={(region) => region.id}
-          extraData={{
-            statuses: app.data.subdivisions,
-            selecting,
-            selectedIds,
-            disabled,
-          }}
-          contentInsetAdjustmentBehavior="never"
-          contentContainerStyle={styles.content}
-          automaticallyAdjustKeyboardInsets
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          ItemSeparatorComponent={Separator}
-          ListHeaderComponent={
-            <View style={styles.header}>
-              <Button
-                label={t('subdivisions.countryDetails', {
-                  country: country.name,
-                })}
-                variant="quiet"
-                onPress={() => {
-                  Keyboard.dismiss();
-                  onOpenCountry();
-                }}
-              />
+            <ScrollView
+              style={styles.mapDock}
+              contentContainerStyle={styles.mapDockContent}
+              contentInsetAdjustmentBehavior="never"
+              bounces={false}
+              scrollsToTop={false}
+            >
               <DataFeedback />
-              <ProgressSummary
-                kind="subdivisions"
-                countryId={countryId}
-                label={t('subdivisions.visited', terminology)}
-                visited={stats.visited}
-                total={stats.total}
-                loading={app.status !== 'ready'}
-              />
-              <AppText variant="caption" tone="muted">
-                {t('subdivisions.independentTracking', terminology)}
-              </AppText>
-              <SearchField
-                value={query}
-                onChangeText={setQuery}
-                placeholder={t('subdivisions.search', terminology)}
-                accessibilityLabel={t('subdivisions.search', terminology)}
-              />
-              <CountryScopeControl value={scope} onChange={setScope} />
-              {app.status === 'ready' && (
-                <View style={styles.actions}>
-                  <AppText variant="caption" tone="muted" style={styles.grow}>
-                    {t('subdivisions.count', {
-                      ...terminology,
-                      count: results.length,
-                      amount: formatNumber(results.length),
-                    })}
-                  </AppText>
-                  {!selecting && (
-                    <Button
-                      label={t('subdivisions.select', terminology)}
-                      variant="quiet"
-                      disabled={disabled || results.length === 0}
-                      onPress={() => {
-                        Keyboard.dismiss();
-                        setSelection({ key: filterKey, ids: emptySelection });
-                      }}
+              {selectedRegion && (
+                <View style={styles.selected}>
+                  <View style={styles.selectedHeading}>
+                    <View style={styles.grow}>
+                      <AppText variant="caption" tone="muted">
+                        {t('subdivisions.selection', {
+                          type: getSubdivisionKindLabel(selectedRegion.kind),
+                        })}
+                      </AppText>
+                      <AppText variant="heading">{selectedRegion.name}</AppText>
+                      <AppText tone="muted">
+                        {
+                          getStatusPresentation(
+                            getSubdivisionStatus(app.data, selectedRegion.id),
+                          ).label
+                        }
+                      </AppText>
+                    </View>
+                    <IconButton
+                      name="close"
+                      accessibilityLabel={t('subdivisions.clearSelection')}
+                      onPress={() => setSelectedId(null)}
                     />
-                  )}
+                  </View>
+                  <View style={styles.actions}>
+                    <Button
+                      label={t('subdivisions.changeStatus')}
+                      disabled={disabled}
+                      onPress={() => changeStatus(selectedRegion.id)}
+                    />
+                    <Button
+                      label={t('lists.saveToLists')}
+                      variant="quiet"
+                      disabled={disabled}
+                      onPress={() => saveToLists(selectedRegion.id)}
+                    />
+                  </View>
                 </View>
               )}
-            </View>
-          }
-          renderItem={({ item }) => (
-            <SubdivisionRow
-              region={item}
-              status={getSubdivisionStatus(app.data, item.id)}
-              disabled={disabled}
-              selecting={selecting}
-              selected={selectedIds.has(item.id)}
-              onPress={pressRow}
-              onChangeStatus={changeStatus}
-              onSaveToLists={saveToLists}
-            />
-          )}
-          ListEmptyComponent={
-            app.status === 'ready' ? (
-              <View style={styles.empty}>
-                <AppText variant="heading">
-                  {t('subdivisions.noResults', terminology)}
-                </AppText>
-                <AppText tone="muted">
-                  {t('subdivisions.noResultsHint', terminology)}
-                </AppText>
-                <Button
-                  label={t('subdivisions.showAll', terminology)}
-                  variant="quiet"
-                  onPress={showAll}
-                />
-              </View>
-            ) : null
-          }
-          ListFooterComponent={
-            <AppText variant="caption" tone="muted" style={styles.coverage}>
-              {t('subdivisions.coverageNote')}
-            </AppText>
-          }
-        />
-      )}
-      {view === 'list' && selecting && (
-        <ScrollView
-          style={styles.footer}
-          contentInsetAdjustmentBehavior="never"
-          keyboardShouldPersistTaps="handled"
-          scrollsToTop={false}
-        >
-          <Surface style={styles.bulk}>
-            <AppText variant="label">
-              {t('subdivisions.selectedCount', selectionCount)}
-            </AppText>
-            <View style={styles.actions}>
+              {!selectedRegion && (
+                <View style={styles.mapSummary}>
+                  {app.status === 'ready' && (
+                    <AppText variant="label" tone="visited">
+                      {t('subdivisions.visitedSummary', {
+                        ...terminology,
+                        visited: formatNumber(stats.visited),
+                        total: formatNumber(stats.total),
+                      })}
+                    </AppText>
+                  )}
+                  <AppText variant="caption" tone="muted">
+                    {t('subdivisions.mapHint')}
+                  </AppText>
+                </View>
+              )}
               <Button
+                label={t('subdivisions.browseList', terminology)}
                 variant="quiet"
-                label={
-                  selectedIds.size === results.length
-                    ? t('countries.deselectAll')
-                    : t('countries.selectAll')
-                }
-                disabled={disabled}
-                onPress={() =>
-                  setSelection({
-                    key: filterKey,
-                    ids:
-                      selectedIds.size === results.length
-                        ? emptySelection
-                        : new Set(resultIds),
-                  })
-                }
+                onPress={() => setView('list')}
               />
-              <Button
-                variant="quiet"
-                label={t('common.done')}
-                onPress={() => setSelection(null)}
-              />
-            </View>
-            <Button
-              label={t('subdivisions.updateCount', selectionCount)}
-              disabled={disabled || selectedIds.size === 0}
-              onPress={() => {
-                Keyboard.dismiss();
-                const isCurrent = guard();
-                showStatusPicker(
-                  t('subdivisions.selectedCount', selectionCount),
-                  (status) => {
-                    if (!isCurrent()) return;
-                    void setSubdivisionStatus([...selectedIds], status).then(
-                      (changed) => {
-                        if (changed) setSelection(null);
-                      },
-                    );
-                  },
-                );
+            </ScrollView>
+          </View>
+        )}
+        {view === 'list' && (
+          <>
+            <FlatList
+              data={app.status === 'ready' ? results : []}
+              keyExtractor={(region) => region.id}
+              extraData={{
+                statuses: app.data.subdivisions,
+                selecting,
+                selectedIds,
+                disabled,
               }}
+              contentInsetAdjustmentBehavior="never"
+              contentContainerStyle={styles.content}
+              automaticallyAdjustKeyboardInsets
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              ItemSeparatorComponent={Separator}
+              ListHeaderComponent={
+                <View style={styles.header}>
+                  <Button
+                    label={t('subdivisions.countryDetails', {
+                      country: country.name,
+                    })}
+                    variant="quiet"
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      onOpenCountry();
+                    }}
+                  />
+                  <DataFeedback />
+                  <ProgressSummary
+                    kind="subdivisions"
+                    countryId={countryId}
+                    label={t('subdivisions.visited', terminology)}
+                    visited={stats.visited}
+                    total={stats.total}
+                    loading={app.status !== 'ready'}
+                  />
+                  <AppText variant="caption" tone="muted">
+                    {t('subdivisions.independentTracking', terminology)}
+                  </AppText>
+                  <SearchField
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder={t('subdivisions.search', terminology)}
+                    accessibilityLabel={t('subdivisions.search', terminology)}
+                  />
+                  <CountryScopeControl value={scope} onChange={setScope} />
+                  {app.status === 'ready' && (
+                    <View style={styles.actions}>
+                      <AppText variant="caption" tone="muted" style={styles.grow}>
+                        {t('subdivisions.count', {
+                          ...terminology,
+                          count: results.length,
+                          amount: formatNumber(results.length),
+                        })}
+                      </AppText>
+                      {!selecting && (
+                        <Button
+                          label={t('subdivisions.select', terminology)}
+                          variant="quiet"
+                          disabled={disabled || results.length === 0}
+                          onPress={() => {
+                            Keyboard.dismiss();
+                            setSelection({ key: filterKey, ids: emptySelection });
+                          }}
+                        />
+                      )}
+                    </View>
+                  )}
+                </View>
+              }
+              renderItem={({ item }) => (
+                <SubdivisionRow
+                  region={item}
+                  status={getSubdivisionStatus(app.data, item.id)}
+                  disabled={disabled}
+                  selecting={selecting}
+                  selected={selectedIds.has(item.id)}
+                  onPress={pressRow}
+                  onChangeStatus={changeStatus}
+                  onSaveToLists={saveToLists}
+                />
+              )}
+              ListEmptyComponent={
+                app.status === 'ready' ? (
+                  <View style={styles.empty}>
+                    <AppText variant="heading">
+                      {t('subdivisions.noResults', terminology)}
+                    </AppText>
+                    <AppText tone="muted">
+                      {t('subdivisions.noResultsHint', terminology)}
+                    </AppText>
+                    <Button
+                      label={t('subdivisions.showAll', terminology)}
+                      variant="quiet"
+                      onPress={showAll}
+                    />
+                  </View>
+                ) : null
+              }
+              ListFooterComponent={
+                <AppText variant="caption" tone="muted" style={styles.coverage}>
+                  {t('subdivisions.coverageNote')}
+                </AppText>
+              }
             />
-          </Surface>
-        </ScrollView>
-      )}
+            {selecting && (
+              <ScrollView
+                style={styles.footer}
+                contentInsetAdjustmentBehavior="never"
+                keyboardShouldPersistTaps="handled"
+                scrollsToTop={false}
+              >
+                <Surface style={styles.bulk}>
+                  <AppText variant="label">
+                    {t('subdivisions.selectedCount', selectionCount)}
+                  </AppText>
+                  <View style={styles.actions}>
+                    <Button
+                      variant="quiet"
+                      label={
+                        selectedIds.size === results.length
+                          ? t('countries.deselectAll')
+                          : t('countries.selectAll')
+                      }
+                      disabled={disabled}
+                      onPress={() =>
+                        setSelection({
+                          key: filterKey,
+                          ids:
+                            selectedIds.size === results.length
+                              ? emptySelection
+                              : new Set(resultIds),
+                        })
+                      }
+                    />
+                    <Button
+                      variant="quiet"
+                      label={t('common.done')}
+                      onPress={() => setSelection(null)}
+                    />
+                  </View>
+                  <Button
+                    label={t('subdivisions.updateCount', selectionCount)}
+                    disabled={disabled || selectedIds.size === 0}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      const isCurrent = guard();
+                      showStatusPicker(
+                        t('subdivisions.selectedCount', selectionCount),
+                        (status) => {
+                          if (!isCurrent()) return;
+                          void setSubdivisionStatus([...selectedIds], status).then(
+                            (changed) => {
+                              if (changed) setSelection(null);
+                            },
+                          );
+                        },
+                      );
+                    }}
+                  />
+                </Surface>
+              </ScrollView>
+            )}
+          </>
+        )}
+      </View>
     </Screen>
   );
 }
@@ -446,7 +461,11 @@ const styles = StyleSheet.create({
   screen: { paddingHorizontal: 0, paddingTop: 0 },
   viewControl: { flexGrow: 0, maxHeight: '30%' },
   viewControlContent: { padding: theme.space.lg },
-  mapPane: { flex: 1, backgroundColor: theme.globe.ocean },
+  panes: { flex: 1 },
+  mapPane: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: theme.globe.ocean,
+  },
   mapDock: { flexGrow: 0, maxHeight: '45%' },
   mapDockContent: { padding: theme.space.lg, gap: theme.space.sm },
   mapSummary: { gap: theme.space.sm },
