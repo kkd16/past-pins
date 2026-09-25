@@ -8,6 +8,32 @@ import { mockAnimationFrames } from './helpers/animation-frames';
 describe('atlas camera transitions', () => {
   const frames = mockAnimationFrames();
 
+  test('both location commands retain their destination across an iOS interruption', () => {
+    const point: [number, number] = [-75.69, 45.42];
+    const flat = new FlatController(new FlatCamera());
+    const globe = new GlobeController(mock());
+    globe.attach({ draw: mock(), setColors: mock(), dispose: mock() });
+    for (const controller of [flat, globe]) {
+      controller.resize(390, 844);
+      controller.setActive(true);
+      controller.setReduceMotion(false);
+    }
+    flat.move(() => flat.camera.focusLocation(point));
+    globe.move(() => globe.camera.focus(point, 0.1));
+    // Permission and suggestion alerts can arrive before the first frame.
+    flat.setActive(false);
+    globe.setActive(false);
+    expect(frames.pendingCount).toBe(0);
+    for (const controller of [flat, globe]) {
+      controller.setActive(true);
+      frames.advance();
+      const center = controller.camera.geographicPoint(195, 422)!;
+      expect(center[0]).toBeCloseTo(point[0], 3);
+      expect(center[1]).toBeCloseTo(point[1], 3);
+    }
+    expect(frames.pendingCount).toBe(0);
+  });
+
   test('flat momentum has no first-frame pause and matches 60 Hz and 120 Hz travel', () => {
     const positions: number[][] = [];
     for (const rate of [60, 120]) {

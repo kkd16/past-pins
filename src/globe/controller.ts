@@ -59,6 +59,11 @@ export class GlobeController {
     if (active) this.invalidate();
     else {
       this.interacting = false;
+      // An iOS alert can interrupt an acknowledged camera command.
+      if (this.transition) {
+        quat.copy(this.camera.rotation, this.transition.to);
+        this.camera.zoom = this.transition.toZoom;
+      }
       this.stop();
     }
   }

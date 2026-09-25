@@ -1,6 +1,8 @@
 import * as Location from 'expo-location';
+import { geoContains } from 'd3-geo';
 
 import { countryById } from '../countries/catalog';
+import { countryFeatures } from '../countries/geography';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 
@@ -17,8 +19,17 @@ export function getCurrentLocation(): Promise<Coordinates> {
 }
 
 export async function getCurrentCountry([longitude, latitude]: Coordinates) {
-  const addresses = await Location.reverseGeocodeAsync({ longitude, latitude });
-  const code = addresses[0]?.isoCountryCode?.toLowerCase();
+  try {
+    const addresses = await Location.reverseGeocodeAsync({ longitude, latitude });
+    const code = addresses[0]?.isoCountryCode?.toLowerCase();
+    const country = code ? countryById.get(code) : undefined;
+    if (country) return country;
+  } catch {
+    // Country selection still works offline using the map's own boundaries.
+  }
+  const code = countryFeatures
+    .find((shape) => geoContains(shape, [longitude, latitude]))
+    ?.properties.iso_a2.toLowerCase();
   return code ? countryById.get(code) : undefined;
 }
 

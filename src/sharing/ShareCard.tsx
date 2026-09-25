@@ -9,25 +9,15 @@ import { theme } from '../theme';
 import { getShareMapLabel, type ShareContent } from './content';
 import { TravelMap } from './TravelMap';
 
-const subtitles = {
-  world: 'sharing.worldSubtitle',
-  list: 'sharing.listSubtitle',
-  stamp: 'sharing.stampSubtitle',
-} as const;
-
 export function ShareCard({ content }: { content: ShareContent }) {
-  const regional =
-    content.kind === 'list' && !!getListRegionPreview(content.places);
+  const showCredit =
+    content.kind !== 'list' ||
+    (content.places.length > 0 && !getListRegionPreview(content.places));
   return (
     <View style={styles.card}>
-      <View style={styles.masthead}>
-        <AppText variant="label" tone="accent">
-          {t('common.appName')}
-        </AppText>
-        <AppText variant="caption" tone="muted">
-          {t(subtitles[content.kind])}
-        </AppText>
-      </View>
+      <AppText variant="label" tone="accent">
+        {t('common.appName')}
+      </AppText>
       <AppText variant="title" accessibilityRole="header">
         {content.kind === 'world'
           ? t('sharing.worldTitle')
@@ -116,11 +106,11 @@ export function ShareCard({ content }: { content: ShareContent }) {
           </AppText>
         </>
       )}
-      <View style={styles.credits}>
-        <AppText variant="caption" tone="muted">
-          {t(regional ? 'sharing.regionCredit' : 'sharing.mapCredit')}
+      {showCredit && (
+        <AppText variant="caption" tone="muted" style={styles.credit}>
+          {t('sharing.mapCredit')}
         </AppText>
-      </View>
+      )}
     </View>
   );
 }
@@ -133,12 +123,6 @@ const styles = StyleSheet.create({
     borderWidth: theme.stroke.subtle,
     borderColor: theme.color.border,
   },
-  masthead: {
-    gap: theme.space.xs,
-    paddingBottom: theme.space.md,
-    borderBottomWidth: theme.stroke.subtle,
-    borderBottomColor: theme.color.border,
-  },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.md },
   legendItem: {
     flexDirection: 'row',
@@ -149,9 +133,5 @@ const styles = StyleSheet.create({
   legendLabel: { flexShrink: 1 },
   swatch: { width: 10, height: 10, borderRadius: 3 },
   stamp: { alignSelf: 'center', width: '100%', maxWidth: 220, aspectRatio: 1 },
-  credits: {
-    borderTopWidth: theme.stroke.subtle,
-    borderTopColor: theme.color.border,
-    paddingTop: theme.space.md,
-  },
+  credit: { fontSize: 11 },
 });

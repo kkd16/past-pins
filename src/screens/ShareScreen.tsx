@@ -98,7 +98,6 @@ export function ShareScreen({
         <DataFeedback />
         {content ? (
           <>
-            <AppText tone="muted">{t('sharing.previewHint')}</AppText>
             <View
               ref={card}
               collapsable={false}
@@ -112,11 +111,6 @@ export function ShareScreen({
               <Surface>
                 <ToggleRow
                   title={t('sharing.includeWishlist')}
-                  description={t(
-                    content.kind === 'list'
-                      ? 'sharing.listWishlistDescription'
-                      : 'sharing.wishlistDescription',
-                  )}
                   value={options.includeWishlist}
                   disabled={disabled}
                   onValueChange={(includeWishlist) =>
@@ -126,7 +120,6 @@ export function ShareScreen({
                 {content.kind === 'world' && (
                   <ToggleRow
                     title={t('sharing.includeHome')}
-                    description={t('sharing.homeDescription')}
                     value={options.includeHome}
                     disabled={disabled}
                     onValueChange={(includeHome) =>
@@ -135,15 +128,6 @@ export function ShareScreen({
                   />
                 )}
               </Surface>
-            )}
-            {content.kind !== 'world' && (
-              <AppText variant="caption" tone="muted">
-                {t(
-                  content.kind === 'list'
-                    ? 'sharing.listPrivacy'
-                    : 'sharing.stampPrivacy',
-                )}
-              </AppText>
             )}
             {empty && (
               <AppText tone="muted">{t('sharing.emptyList')}</AppText>

@@ -72,10 +72,17 @@ describe('location geography', () => {
     }
   });
 
-  test('country lookup failure does not prevent locating the map', async () => {
+  test('selects the country from map boundaries when geocoding is offline', async () => {
     geocode.mockRejectedValue(new Error('Offline'));
-    await expect(getCurrentCountry([-75.69, 45.42])).rejects.toThrow('Offline');
+    expect((await getCurrentCountry([-75.69, 45.42]))?.id).toBe('ca');
+    expect((await getCurrentCountry([2.35, 48.86]))?.id).toBe('fr');
+    expect(await getCurrentCountry([-30, 0])).toBeUndefined();
     expect(await getCurrentLocation()).toEqual([-75.69, 45.42]);
+  });
+
+  test('uses map boundaries when the native country is missing', async () => {
+    geocode.mockResolvedValue([]);
+    expect((await getCurrentCountry([-75.69, 45.42]))?.id).toBe('ca');
   });
 
   test('both cameras focus coordinates rather than a country or home anchor', () => {

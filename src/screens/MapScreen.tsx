@@ -22,7 +22,7 @@ import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
-import { getCurrentLocation } from '../location/current-location';
+import { getCurrentCountry, getCurrentLocation } from '../location/current-location';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
@@ -79,13 +79,16 @@ export function MapScreen({
     const isCurrent = () =>
       isCurrentScreen() &&
       request === sequence.current &&
-      AppState.currentState === 'active';
+      AppState.currentState !== 'background';
     setLocating(true);
     try {
       const point = await getCurrentLocation();
       if (!isCurrent()) return;
       setSelection(null);
       setCommand({ type: 'location', point, key: request });
+      const country = await getCurrentCountry(point);
+      if (isCurrent() && country)
+        setSelection({ id: country.id, anchor: point });
     } catch (error) {
       if (isCurrent())
         Alert.alert(

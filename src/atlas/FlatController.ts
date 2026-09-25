@@ -31,6 +31,11 @@ export class FlatController {
     if (active) this.invalidate();
     else {
       this.interacting = false;
+      // An iOS alert can interrupt an acknowledged camera command.
+      if (this.transition) {
+        this.camera.center = this.transition.to;
+        this.camera.zoom = this.transition.toZoom;
+      }
       this.stop();
     }
   }
