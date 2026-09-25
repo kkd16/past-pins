@@ -51,7 +51,7 @@ export class GlobeController {
   detach() {
     this.renderer?.dispose();
     this.renderer = null;
-    this.stop();
+    this.finishMove();
   }
 
   setActive(active: boolean) {
@@ -78,7 +78,8 @@ export class GlobeController {
 
   resize(width: number, height: number) {
     if (width <= 0 || height <= 0) return;
-    this.stop();
+    if (width === this.camera.width && height === this.camera.height) return;
+    this.finishMove();
     this.camera.resize(width, height);
     this.invalidate();
   }

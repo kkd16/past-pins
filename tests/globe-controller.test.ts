@@ -16,6 +16,41 @@ describe('globe frame lifecycle', () => {
     return { controller, renderer, error };
   }
 
+  test.each(['resize', 'renderer replacement'] as const)(
+    'location focus survives %s before the first frame',
+    (interruption) => {
+      const { controller } = setup();
+      controller.setActive(true);
+      controller.setReduceMotion(false);
+      controller.move(() => controller.camera.focus([-75.69, 45.42], 0.1));
+      if (interruption === 'resize') controller.resize(390, 760);
+      else controller.attach({ draw: mock(), setColors: mock(), dispose: mock() });
+      frames.advance(40);
+      const { camera } = controller;
+      const center = camera.geographicPoint(camera.width / 2, camera.height / 2)!;
+      expect(center[0]).toBeCloseTo(-75.69, 3);
+      expect(center[1]).toBeCloseTo(45.42, 3);
+      expect(camera.zoom).toBeCloseTo(0.68 / Math.sin(0.1), 5);
+      expect(frames.pendingCount).toBe(0);
+    },
+  );
+
+  test('an unchanged layout does not interrupt globe navigation', () => {
+    const { controller } = setup();
+    controller.setActive(true);
+    controller.setReduceMotion(false);
+    controller.move(() => controller.camera.focus([-75.69, 45.42], 0.1));
+    controller.resize(390, 844);
+    frames.advance(5);
+    expect(controller.camera.zoom).toBeGreaterThan(1.2);
+    expect(controller.camera.zoom).toBeLessThan(0.68 / Math.sin(0.1));
+    frames.advance(35);
+    const center = controller.camera.geographicPoint(195, 422)!;
+    expect(center[0]).toBeCloseTo(-75.69, 3);
+    expect(center[1]).toBeCloseTo(45.42, 3);
+    expect(frames.pendingCount).toBe(0);
+  });
+
   test('globe gestures draw frames without requesting React updates until settled', () => {
     const draw = mock();
     const controller = new GlobeController(mock(), new GlobeCamera(), draw);
