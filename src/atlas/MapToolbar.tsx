@@ -102,6 +102,7 @@ export function MapToolbar({
           <IconButton
             name="north"
             accessibilityLabel={t('atlas.northUp')}
+            disabled={disabled}
             onPress={onNorth}
             style={styles.control}
           />
@@ -111,6 +112,7 @@ export function MapToolbar({
           accessibilityLabel={
             mode === 'globe' ? t('atlas.resetGlobe') : t('atlas.fitWorld')
           }
+          disabled={disabled}
           onPress={onReset}
           style={styles.control}
         />

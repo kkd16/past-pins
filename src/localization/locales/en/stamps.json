@@ -28,5 +28,5 @@
   "completeHint": "You’ve collected stamps for every country and territory.",
   "coverage": "Stamps represent countries and territories, not regions.",
   "enlargeStamp": "Enlarge stamp for %{country}",
-  "artworkLabel": "Stamp for %{country}"
+  "artworkLabel": "Stamp for %{country}, %{status}"
 }

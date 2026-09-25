@@ -77,7 +77,6 @@ export function PlaceListsScreen({
               disabled={disabled}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: selected }}
-              accessibilityLabel={item.name}
               onPress={() => app.toggleListPlace(item.id, placeId)}
             >
               <View style={styles.grow}>

@@ -12,6 +12,7 @@ import { createRoot, type Root } from 'test-renderer';
 import { countryById } from '../src/countries/catalog';
 import { defaultAppData } from '../src/data/model';
 import { t } from '../src/localization';
+import { navigation } from './setup';
 
 // Keep React's real effects/unmount lifecycle. Native animation and scrolling
 // are boundaries here; recognition and finger tracking still need an iPhone.
@@ -21,15 +22,10 @@ const expand = mock();
 const scrollTo = mock();
 const setStatus = mock();
 const setHome = mock();
-const router = { push: mock(), dismissTo: mock(), back: mock() };
-let routeId = 'ca';
+const { router } = navigation;
 let reducedMotion = false;
 let appStatus: 'ready' | 'loading' | 'load-error' = 'ready';
 
-mock.module('expo-router', () => ({
-  router,
-  useLocalSearchParams: () => ({ id: routeId }),
-}));
 mock.module('react-native-reanimated', () => ({
   ReduceMotion: { Always: 'always', Never: 'never' },
 }));
@@ -134,7 +130,7 @@ function detailsHidden() {
 }
 
 async function renderDetails(id = props.id) {
-  routeId = id;
+  navigation.routeId = id;
   await act(async () => {
     root.render(<CountryDetailsRoute />);
   });

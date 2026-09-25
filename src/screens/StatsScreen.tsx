@@ -165,14 +165,6 @@ export function StatsScreen({
         </ScreenHeader>
         <DataFeedback />
         <AppPressable
-          accessibilityLabel={
-            loading
-              ? loadingMessage
-              : t('countries.stats.visitedCount', {
-                  count: stats.visited,
-                  amount: formatNumber(stats.visited),
-                })
-          }
           accessibilityHint={t('countries.stats.visitedHint')}
           disabled={loading}
           onPress={() => onOpenCountries('visited')}
@@ -218,6 +210,17 @@ export function StatsScreen({
                   visited: formatNumber(regionStats.visited),
                   total: formatNumber(regionStats.total),
                 })
+          }
+          accessibilityValue={
+            loading
+              ? undefined
+              : {
+                  text: formatPercent(
+                    regionStats.total
+                      ? regionStats.visited / regionStats.total
+                      : 0,
+                  ),
+                }
           }
           accessibilityHint={t('places.matchingRegions')}
           disabled={loading}
@@ -283,11 +286,24 @@ export function StatsScreen({
           {stats.byContinent.map((continent) => (
             <AppPressable
               key={continent.id}
-              accessibilityLabel={t('countries.stats.continentProgress', {
-                name: continent.name,
-                visited: formatNumber(continent.visited),
-                total: formatNumber(continent.total),
-              })}
+              accessibilityLabel={
+                loading
+                  ? continent.name
+                  : t('countries.stats.continentProgress', {
+                      name: continent.name,
+                      visited: formatNumber(continent.visited),
+                      total: formatNumber(continent.total),
+                    })
+              }
+              accessibilityValue={{
+                text: loading
+                  ? loadingMessage
+                  : formatPercent(
+                      continent.total
+                        ? continent.visited / continent.total
+                        : 0,
+                    ),
+              }}
               accessibilityHint={t('countries.stats.continentHint')}
               disabled={loading}
               onPress={() => onOpenCountries('visited', continent.id)}

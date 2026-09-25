@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { Surface } from '../components/Surface';
 import { useAppData } from '../data/AppDataProvider';
 import { formatNumber, t } from '../localization';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { theme } from '../theme';
 import { showStatusPicker } from './StatusPicker';
 import type { CountryId } from './types';
@@ -21,6 +22,7 @@ export function CountryBulkActions({
   onEndSelection: () => void;
 }) {
   const { status, busy, setStatus } = useAppData();
+  const guard = useActionGuard(selectedIds);
   const disabled = status !== 'ready' || busy;
   const allSelected = selectedIds.size === resultIds.length;
   const count = {
@@ -59,9 +61,11 @@ export function CountryBulkActions({
           disabled={disabled || selectedIds.size === 0}
           onPress={() => {
             Keyboard.dismiss();
+            const isCurrent = guard();
             showStatusPicker(t('countries.placeCount', count), (nextStatus) => {
+              if (!isCurrent()) return;
               void setStatus([...selectedIds], nextStatus).then((applied) => {
-                if (applied) onEndSelection();
+                if (applied && isCurrent()) onEndSelection();
               });
             });
           }}

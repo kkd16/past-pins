@@ -24,6 +24,7 @@ export function StampDetailsScreen({
   const app = useAppData();
   const country = countryById.get(id);
   const ready = app.status === 'ready';
+  const collected = isVisited(getPlaceStatus(app.data, id));
 
   return (
     <Screen>
@@ -48,13 +49,16 @@ export function StampDetailsScreen({
                 accessibilityLanguage={language}
                 accessibilityLabel={t('stamps.artworkLabel', {
                   country: country.name,
+                  status: t(
+                    collected ? 'stamps.collected' : 'stamps.notCollected',
+                  ),
                 })}
                 style={styles.art}
               >
                 <View style={styles.stampArtwork}>
                   <CountryStamp
                     country={country}
-                    collected={isVisited(getPlaceStatus(app.data, id))}
+                    collected={collected}
                     size="100%"
                   />
                 </View>

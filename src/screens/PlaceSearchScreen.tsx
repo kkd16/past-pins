@@ -37,6 +37,8 @@ export function PlaceSearchScreen({
   const [query, setQuery] = useState('');
   const list = useRef<FlatList<Place>>(null);
   const { data, status, busy } = useAppData();
+  const ready = status === 'ready';
+  const disabled = busy || !ready;
   const matches = useMemo(
     () => searchPlaces(query, countriesOnly ? 'country' : 'all'),
     [query, countriesOnly],
@@ -73,8 +75,8 @@ export function PlaceSearchScreen({
       </View>
       <FlatList
         ref={list}
-        data={matches}
-        extraData={{ data, status, busy }}
+        data={ready ? matches : []}
+        extraData={{ data, disabled }}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustKeyboardInsets
@@ -90,23 +92,25 @@ export function PlaceSearchScreen({
                 Keyboard.dismiss();
                 onClear();
               }}
-              disabled={busy || status !== 'ready'}
+              disabled={disabled}
             />
           )
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <AppText tone="muted">
-              {t(
-                countriesOnly
-                  ? 'countries.empty.noSearchResults'
-                  : 'places.noSearchResults',
+          ready ? (
+            <View style={styles.empty}>
+              <AppText tone="muted">
+                {t(
+                  countriesOnly
+                    ? 'countries.empty.noSearchResults'
+                    : 'places.noSearchResults',
+                )}
+              </AppText>
+              {!countriesOnly && (
+                <AppText tone="muted">{t('places.noSearchResultsHint')}</AppText>
               )}
-            </AppText>
-            {!countriesOnly && (
-              <AppText tone="muted">{t('places.noSearchResultsHint')}</AppText>
-            )}
-          </View>
+            </View>
+          ) : null
         }
         renderItem={({ item }) => {
           const presentation = getStatusPresentation(
@@ -119,7 +123,7 @@ export function PlaceSearchScreen({
                 Keyboard.dismiss();
                 onSelect(item.id);
               }}
-              disabled={busy || status !== 'ready'}
+              disabled={disabled}
               accessibilityLabel={t('countries.countryStatus', {
                 name: formatPlaceName(item),
                 status: presentation.label,
