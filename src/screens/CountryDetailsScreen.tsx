@@ -11,7 +11,7 @@ import { ToggleRow } from '../components/ToggleRow';
 import { countryById } from '../countries/catalog';
 import { statusOptions } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
-import { getPlaceStatus } from '../data/model';
+import { getPlaceStatus, isVisited } from '../data/model';
 import { theme } from '../theme';
 import { t, formatList, language } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
@@ -23,12 +23,14 @@ export function CountryDetailsScreen({
   onShowMap,
   onOpenRegions,
   onSaveToLists,
+  onOpenStamp,
 }: {
   id: string;
   onDone: () => void;
   onShowMap: (id: string) => void;
   onOpenRegions: (id: string) => void;
   onSaveToLists: (id: string) => void;
+  onOpenStamp: (id: string) => void;
 }) {
   const app = useAppData();
   const country = countryById.get(id);
@@ -84,6 +86,16 @@ export function CountryDetailsScreen({
             />
           </Surface>
           <DataFeedback />
+          <Button
+            label={t(
+              isVisited(getPlaceStatus(app.data, id))
+                ? 'stamps.viewStamp'
+                : 'stamps.previewStamp',
+            )}
+            variant="quiet"
+            disabled={disabled}
+            onPress={() => onOpenStamp(id)}
+          />
           <Button
             label={t('countries.details.showMap')}
             onPress={() => onShowMap(id)}

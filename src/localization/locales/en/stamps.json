@@ -1,0 +1,40 @@
+{
+  "title": "Stamp collection",
+  "description": "Every country you visit adds a stamp to your collection.",
+  "progress": "%{collected} of %{total} stamps collected",
+  "collectionLabel": "Stamp collection, %{collected} of %{total} collected",
+  "count": {
+    "one": "%{amount} stamp collected",
+    "other": "%{amount} stamps collected"
+  },
+  "scopesLabel": "Stamps to show",
+  "scopes": {
+    "collected": "Collected",
+    "all": "All stamps",
+    "remaining": "To collect"
+  },
+  "search": "Search stamps",
+  "stampLabel": "%{country}, %{status}",
+  "collected": "Collected",
+  "notCollected": "To collect",
+  "openStamp": "Opens stamp details",
+  "openCollection": "Open stamp collection",
+  "emptyTitle": "Your collection starts here",
+  "emptyHint": "Mark a country as Visited or Lived to collect its stamp.",
+  "browseCountries": "Browse countries",
+  "noResults": "No stamps found",
+  "noResultsHint": "Try another country name or change the filter.",
+  "completeTitle": "Every stamp collected",
+  "completeHint": "Your collection includes every country and territory in Past Pins.",
+  "coverage": "One stamp for each country or territory in the app. Regions do not add separate stamps.",
+  "viewStamp": "View stamp",
+  "previewStamp": "Preview stamp",
+  "collectedHint": "Collected because you marked this country Visited or Lived. Its stamp follows changes to your travel status.",
+  "notCollectedHint": "Mark this country Visited or Lived to collect its stamp. Wishlist does not collect a stamp.",
+  "markVisited": "Mark as visited",
+  "changeStatus": "Change travel status",
+  "status": "Travel status: %{status}",
+  "artworkNote": "A keepsake inspired by passport stamps.",
+  "unavailable": "This stamp is not available.",
+  "browseCollection": "Browse stamp collection"
+}

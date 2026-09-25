@@ -23,6 +23,7 @@ import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
 import { t, formatNumber, formatPercent } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
+import { StampCollectionLink } from '../stamps/StampCollectionLink';
 
 function Statistic({
   value,
@@ -68,12 +69,14 @@ export function StatsScreen({
   onOpenCountries,
   onOpenCountry,
   onOpenRegions,
+  onOpenStamps,
 }: {
   onOpenSettings: () => void;
   onChooseHome: () => void;
   onOpenCountries: (scope: CountryScope, continent?: string) => void;
   onOpenCountry: (id: string) => void;
   onOpenRegions: () => void;
+  onOpenStamps: () => void;
 }) {
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
@@ -140,6 +143,7 @@ export function StatsScreen({
             </AppText>
           </Surface>
         </AppPressable>
+        <StampCollectionLink onPress={onOpenStamps} />
         <View style={styles.totals}>
           {[
             {
