@@ -73,7 +73,7 @@ export default function RootLayout() {
               />
               <Stack.Screen
                 name="stamps/[id]"
-                options={{ title: t('stamps.title'), presentation: 'modal' }}
+                options={{ headerShown: false, presentation: 'modal' }}
               />
               <Stack.Screen
                 name="lists/[id]"

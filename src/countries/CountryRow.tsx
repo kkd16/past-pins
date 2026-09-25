@@ -5,7 +5,7 @@ import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Checkmark } from '../components/Checkmark';
 import { Icon } from '../components/Icon';
-import { isVisited, type PlaceStatus } from '../data/model';
+import type { PlaceStatus } from '../data/model';
 import { theme } from '../theme';
 import { formatNumber, t } from '../localization';
 import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
@@ -43,7 +43,9 @@ export const CountryRow = memo(function CountryRow({
     <View
       style={[
         styles.row,
-        (selecting ? selected : isVisited(status)) && styles.highlight,
+        selecting
+          ? selected && styles.highlight
+          : { backgroundColor: presentation.backgroundColor },
       ]}
     >
       <View style={styles.main}>
@@ -140,7 +142,7 @@ const styles = StyleSheet.create({
     borderTopColor: theme.color.border,
   },
   regionLabel: { flex: 1 },
-  highlight: { backgroundColor: theme.color.visitedSurface },
+  highlight: { backgroundColor: theme.color.selectedSurface },
   details: {
     flex: 1,
     minHeight: theme.size.row,

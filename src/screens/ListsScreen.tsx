@@ -118,29 +118,33 @@ export function ListsScreen({
                 onOpen(item.id);
               }}
             >
-              <View style={styles.heading}>
-                <AppText variant="heading" style={styles.grow}>
-                  {item.name}
-                </AppText>
-                <Icon name="chevronRight" />
+              <View style={styles.cardBody}>
+                <View style={styles.heading}>
+                  <AppText variant="heading" style={styles.grow}>
+                    {item.name}
+                  </AppText>
+                  <Icon name="chevronRight" />
+                </View>
+                {preview.length > 0 && (
+                  <AppText tone="muted" numberOfLines={2}>
+                    {formatList(preview)}
+                  </AppText>
+                )}
               </View>
-              {preview.length > 0 && (
-                <AppText tone="muted" numberOfLines={2}>
-                  {formatList(preview)}
+              <View style={styles.progress}>
+                <AppText variant="caption" tone="accent">
+                  {t('lists.progress', counts)}
                 </AppText>
-              )}
-              <AppText variant="caption" tone="accent">
-                {t('lists.progress', counts)}
-              </AppText>
-              <View style={styles.track} accessibilityElementsHidden>
-                <View
-                  style={[
-                    styles.fill,
-                    {
-                      width: `${stats.total ? (stats.visited / stats.total) * 100 : 0}%`,
-                    },
-                  ]}
-                />
+                <View style={styles.track} accessibilityElementsHidden>
+                  <View
+                    style={[
+                      styles.fill,
+                      {
+                        width: `${stats.total ? (stats.visited / stats.total) * 100 : 0}%`,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
             </AppPressable>
           );
@@ -163,8 +167,18 @@ const styles = StyleSheet.create({
   },
   card: {
     ...theme.surface.panel,
+    backgroundColor: theme.color.surfaceWarm,
+    overflow: 'hidden',
+  },
+  cardBody: {
     padding: theme.space.lg,
     gap: theme.space.md,
+  },
+  progress: {
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+    gap: theme.space.sm,
+    backgroundColor: theme.color.surface,
   },
   heading: { flexDirection: 'row', alignItems: 'center', gap: theme.space.md },
   grow: { flex: 1 },

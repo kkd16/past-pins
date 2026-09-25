@@ -72,6 +72,7 @@ export function StampCollectionLink({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   card: {
     ...theme.surface.panel,
+    backgroundColor: theme.color.surfaceWarm,
     padding: theme.space.lg,
     gap: theme.space.md,
   },

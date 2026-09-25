@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { FlatCamera } from '../atlas/FlatCamera';
 import { MapSummary } from '../atlas/MapSummary';
@@ -120,6 +121,10 @@ export function MapScreen({
   const command = incomingFocus ?? localCommand;
   const selectedId = incomingFocus?.id ?? selection?.id ?? null;
   const selectedCountry = selectedId ? countryById.get(selectedId) : undefined;
+  const selectionScrollGesture = useMemo(() => Gesture.Native(), []);
+  const openSelectedCountry = useCallback(() => {
+    if (selectedId) onSelect(selectedId);
+  }, [onSelect, selectedId]);
   const regionStats = selectedCountry
     ? getSubdivisionStatistics(data.subdivisions, selectedCountry.id)
     : null;
@@ -223,57 +228,62 @@ export function MapScreen({
           { paddingBottom: insets.bottom + theme.space.sm },
         ]}
       >
-        <ScrollView
+        <GestureDetector
           key={selectedId ?? 'summary'}
-          style={styles.overlayScroll}
-          contentInsetAdjustmentBehavior="never"
-          bounces={false}
-          onLayout={({ nativeEvent: { layout } }) =>
-            setBottomHeight(layout.height + theme.space.sm)
-          }
-          contentContainerStyle={styles.footer}
+          gesture={selectionScrollGesture}
         >
-          <DataFeedback />
-          {ready && selectedCountry && (
-            <PlaceSelectionCard
-              title={selectedCountry.name}
-              status={getPlaceStatus(data, selectedCountry.id)}
-              home={data.homeCountryId === selectedCountry.id}
-              disabled={app.busy}
-              onChangeStatus={(status) => {
-                void app.setStatus([selectedCountry.id], status, {
-                  preserveLived: false,
-                });
-              }}
-              onSaveToLists={() => onSaveToLists(selectedCountry.id)}
-              onDetails={() => onSelect(selectedCountry.id)}
-              onDismiss={() => selectCountry(null)}
-              autofocus={screenReader}
-            >
-              {regionStats && regionStats.total > 0 && (
-                <Button
-                  label={t('subdivisions.progress', {
-                    ...getCountrySubdivisionTerminology(selectedCountry.id),
-                    visited: formatNumber(regionStats.visited),
-                    total: formatNumber(regionStats.total),
-                  })}
-                  accessibilityHint={t(
-                    'subdivisions.openCountry',
-                    getCountrySubdivisionTerminology(selectedCountry.id),
-                  )}
-                  variant="quiet"
-                  onPress={() => onOpenRegions(selectedCountry.id)}
-                />
-              )}
-            </PlaceSelectionCard>
-          )}
-          {ready && !selectedCountry && data.preferences.mapSummary && (
-            <MapSummary
-              places={data.places}
-              onOpenCountries={onOpenCountries}
-            />
-          )}
-        </ScrollView>
+          <ScrollView
+            style={styles.overlayScroll}
+            contentInsetAdjustmentBehavior="never"
+            bounces={false}
+            onLayout={({ nativeEvent: { layout } }) =>
+              setBottomHeight(layout.height + theme.space.sm)
+            }
+            contentContainerStyle={styles.footer}
+          >
+            <DataFeedback />
+            {ready && selectedCountry && (
+              <PlaceSelectionCard
+                title={selectedCountry.name}
+                status={getPlaceStatus(data, selectedCountry.id)}
+                home={data.homeCountryId === selectedCountry.id}
+                disabled={app.busy}
+                onChangeStatus={(status) => {
+                  void app.setStatus([selectedCountry.id], status, {
+                    preserveLived: false,
+                  });
+                }}
+                onSaveToLists={() => onSaveToLists(selectedCountry.id)}
+                onDetails={openSelectedCountry}
+                scrollGesture={selectionScrollGesture}
+                onDismiss={() => selectCountry(null)}
+                autofocus={screenReader}
+              >
+                {regionStats && regionStats.total > 0 && (
+                  <Button
+                    label={t('subdivisions.progress', {
+                      ...getCountrySubdivisionTerminology(selectedCountry.id),
+                      visited: formatNumber(regionStats.visited),
+                      total: formatNumber(regionStats.total),
+                    })}
+                    accessibilityHint={t(
+                      'subdivisions.openCountry',
+                      getCountrySubdivisionTerminology(selectedCountry.id),
+                    )}
+                    variant="quiet"
+                    onPress={() => onOpenRegions(selectedCountry.id)}
+                  />
+                )}
+              </PlaceSelectionCard>
+            )}
+            {ready && !selectedCountry && data.preferences.mapSummary && (
+              <MapSummary
+                places={data.places}
+                onOpenCountries={onOpenCountries}
+              />
+            )}
+          </ScrollView>
+        </GestureDetector>
       </View>
     </View>
   );

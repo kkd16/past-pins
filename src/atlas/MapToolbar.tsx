@@ -3,7 +3,6 @@ import { StyleSheet, View } from 'react-native';
 
 import { ChoiceRow } from '../components/ChoiceRow';
 import { IconButton } from '../components/IconButton';
-import { Surface } from '../components/Surface';
 import type { Preferences } from '../data/model';
 import { language, t } from '../localization';
 import { theme } from '../theme';
@@ -39,42 +38,41 @@ export function MapToolbar({
   return (
     <View style={styles.content}>
       <View style={styles.toolbar}>
-        <Surface variant="floating" style={styles.mode}>
-          {largeText ? (
-            <View
-              accessibilityRole="radiogroup"
-              accessibilityLabel={t('atlas.mapView')}
-              accessibilityLanguage={language}
-            >
-              {modes.map(({ value, label }) => (
-                <ChoiceRow
-                  key={value}
-                  label={label}
-                  selected={mode === value}
-                  disabled={disabled}
-                  onPress={() => onChangeMode(value)}
-                />
-              ))}
-            </View>
-          ) : (
-            <SegmentedControl
-              style={styles.segments}
-              values={modes.map(({ label }) => label)}
-              accessibilityLabel={t('atlas.mapView')}
-              accessibilityLanguage={language}
-              selectedIndex={modes.findIndex(({ value }) => value === mode)}
-              enabled={!disabled}
-              appearance={theme.appearance.colorScheme}
-              tintColor={theme.color.accent}
-              backgroundColor={theme.color.surface}
-              fontStyle={{ color: theme.color.textMuted }}
-              activeFontStyle={{ color: theme.color.onAccent }}
-              onChange={({ nativeEvent }) =>
-                onChangeMode(modes[nativeEvent.selectedSegmentIndex].value)
-              }
-            />
-          )}
-        </Surface>
+        {largeText ? (
+          <View
+            style={[styles.mode, styles.largeTextModes]}
+            accessibilityRole="radiogroup"
+            accessibilityLabel={t('atlas.mapView')}
+            accessibilityLanguage={language}
+          >
+            {modes.map(({ value, label }) => (
+              <ChoiceRow
+                key={value}
+                label={label}
+                selected={mode === value}
+                disabled={disabled}
+                onPress={() => onChangeMode(value)}
+              />
+            ))}
+          </View>
+        ) : (
+          <SegmentedControl
+            style={[styles.mode, styles.segments]}
+            values={modes.map(({ label }) => label)}
+            accessibilityLabel={t('atlas.mapView')}
+            accessibilityLanguage={language}
+            selectedIndex={modes.findIndex(({ value }) => value === mode)}
+            enabled={!disabled}
+            appearance={theme.appearance.colorScheme}
+            tintColor={theme.color.accent}
+            backgroundColor={theme.color.surface}
+            fontStyle={{ color: theme.color.textMuted }}
+            activeFontStyle={{ color: theme.color.onAccent }}
+            onChange={({ nativeEvent }) =>
+              onChangeMode(modes[nativeEvent.selectedSegmentIndex].value)
+            }
+          />
+        )}
         <IconButton
           name="search"
           accessibilityLabel={t('places.searchTitle')}
@@ -129,7 +127,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.space.sm,
   },
-  mode: { flexGrow: 1, flexShrink: 1, minWidth: 140, padding: theme.space.xs },
+  mode: { flexGrow: 1, flexShrink: 1, minWidth: 140 },
+  largeTextModes: { ...theme.surface.panel, borderRadius: theme.radius.sm },
   segments: { height: theme.size.touch },
   actions: { flexDirection: 'row', gap: theme.space.sm, alignSelf: 'flex-end' },
   control: { ...theme.surface.floating, borderRadius: theme.radius.pill },

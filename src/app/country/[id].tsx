@@ -10,8 +10,11 @@ export default function CountryDetailsRoute() {
     <CountryDetailsScreen
       id={id}
       onDone={() => router.back()}
-      onOpenStamp={(countryId) =>
-        router.push({ pathname: '/stamps/[id]', params: { id: countryId } })
+      onShareStamp={() =>
+        router.push({ pathname: '/share', params: { kind: 'stamp', id } })
+      }
+      onEnlargeStamp={() =>
+        router.push({ pathname: '/stamps/[id]', params: { id } })
       }
       onSaveToLists={(placeId) =>
         router.push({ pathname: '/lists/add', params: { placeId } })

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 
 import { useAppData } from '../../data/AppDataProvider';
-import { placesHref } from '../../places/navigation';
+import { countryHref, placesHref } from '../../places/navigation';
 import { StampsScreen } from '../../screens/StampsScreen';
 
 export default function StampsRoute() {
@@ -9,9 +9,7 @@ export default function StampsRoute() {
   return (
     <StampsScreen
       key={resetVersion}
-      onSelect={(id) =>
-        router.push({ pathname: '/stamps/[id]', params: { id } })
-      }
+      onSelect={(id) => router.push(countryHref(id))}
       onBrowseCountries={() =>
         router.dismissTo(placesHref('countries'))
       }

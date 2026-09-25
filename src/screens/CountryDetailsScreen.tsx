@@ -13,6 +13,7 @@ import { getStatusPresentation } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus, isVisited } from '../data/model';
 import { PlaceStatusControl } from '../places/PlaceStatusControl';
+import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
 import { t, formatList, formatNumber, language } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
@@ -24,20 +25,23 @@ export function CountryDetailsScreen({
   onShowMap,
   onOpenRegions,
   onSaveToLists,
-  onOpenStamp,
+  onShareStamp,
+  onEnlargeStamp,
 }: {
   id: string;
   onDone: () => void;
   onShowMap: (id: string) => void;
   onOpenRegions: (id: string) => void;
   onSaveToLists: (id: string) => void;
-  onOpenStamp: (id: string) => void;
+  onShareStamp: () => void;
+  onEnlargeStamp: () => void;
 }) {
   const app = useAppData();
   const country = countryById.get(id);
   const terminology = getCountrySubdivisionTerminology(id);
   const disabled = app.status !== 'ready' || app.busy;
   const status = getPlaceStatus(app.data, id);
+  const collected = isVisited(status);
   const home = app.data.homeCountryId === id;
   const presentation = getStatusPresentation(status, home);
   const regionStats = getSubdivisionStatistics(app.data.subdivisions, id);
@@ -77,7 +81,12 @@ export function CountryDetailsScreen({
         <>
           {app.status === 'ready' && (
             <>
-              <Surface style={styles.status}>
+              <Surface
+                style={[
+                  styles.status,
+                  { backgroundColor: presentation.backgroundColor },
+                ]}
+              >
                 <AppText variant="label" style={{ color: presentation.color }}>
                   {presentation.label}
                 </AppText>
@@ -136,15 +145,34 @@ export function CountryDetailsScreen({
               disabled={disabled}
               onPress={() => onSaveToLists(id)}
             />
-            <Button
-              label={t(
-                isVisited(status) ? 'stamps.viewStamp' : 'stamps.previewStamp',
-              )}
-              variant="quiet"
-              disabled={disabled}
-              onPress={() => onOpenStamp(id)}
-            />
           </View>
+          {app.status === 'ready' && (
+            <Surface style={styles.stamp}>
+              <AppPressable
+                accessibilityLabel={t('stamps.enlargeStamp', {
+                  country: country.name,
+                })}
+                onPress={onEnlargeStamp}
+                style={styles.stampArtwork}
+              >
+                <CountryStamp
+                  country={country}
+                  collected={collected}
+                  size="100%"
+                />
+                <View style={styles.enlargeIcon} pointerEvents="none">
+                  <Icon name="expand" color={theme.color.accent} />
+                </View>
+              </AppPressable>
+              <Button
+                label={t('sharing.stampAction')}
+                variant="quiet"
+                disabled={disabled}
+                onPress={onShareStamp}
+                style={styles.shareStamp}
+              />
+            </Surface>
+          )}
           {facts.length > 0 && (
             <Surface style={styles.facts}>
               <AppText variant="heading" accessibilityRole="header">
@@ -174,12 +202,30 @@ export function CountryDetailsScreen({
 }
 
 const styles = StyleSheet.create({
+  stamp: {
+    backgroundColor: theme.color.surfaceWarm,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.xl,
+    alignItems: 'center',
+    gap: theme.space.lg,
+  },
+  stampArtwork: { width: '100%', maxWidth: 240, aspectRatio: 1 },
+  shareStamp: { alignSelf: 'stretch' },
+  enlargeIcon: {
+    position: 'absolute',
+    bottom: 0,
+    end: 0,
+    padding: theme.space.sm,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.color.surfaceRaised,
+  },
   status: { padding: theme.space.md, gap: theme.space.md },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm },
   facts: { padding: theme.space.lg, gap: theme.space.lg },
   fact: { gap: theme.space.xs },
   regions: {
     ...theme.surface.panel,
+    backgroundColor: theme.color.surfaceCool,
     flexDirection: 'row',
     alignItems: 'center',
     padding: theme.space.lg,

@@ -22,6 +22,9 @@ describe('travel theme accessibility', () => {
     for (const background of [
       theme.color.background,
       theme.color.surface,
+      theme.color.surfaceRaised,
+      theme.color.surfaceWarm,
+      theme.color.surfaceCool,
       theme.color.selectedSurface,
       theme.color.visitedSurface,
     ]) {
@@ -45,6 +48,9 @@ describe('travel theme accessibility', () => {
     for (const background of [
       theme.color.background,
       theme.color.surface,
+      theme.color.surfaceRaised,
+      theme.color.surfaceWarm,
+      theme.color.surfaceCool,
       theme.color.visitedSurface,
     ]) {
       expect(

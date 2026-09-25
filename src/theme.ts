@@ -3,6 +3,9 @@ import type { TextStyle, ViewStyle } from 'react-native';
 const palette = {
   forest: '#101B18',
   canopy: '#192823',
+  clearing: '#24352E',
+  peat: '#2D2B23',
+  inlet: '#1C2B31',
   moss: '#3B5148',
   stone: '#EDF1E8',
   sage: '#A6B5AA',
@@ -12,6 +15,9 @@ const palette = {
 const color = {
   background: palette.forest,
   surface: palette.canopy,
+  surfaceRaised: palette.clearing,
+  surfaceWarm: palette.peat,
+  surfaceCool: palette.inlet,
   border: palette.moss,
   controlBorder: '#6C8778',
   text: palette.stone,
@@ -41,9 +47,11 @@ export const theme = {
       borderCurve: 'continuous',
     },
     floating: {
-      backgroundColor: color.surface,
+      backgroundColor: color.surfaceRaised,
       borderRadius: radius.lg,
       borderCurve: 'continuous',
+      borderWidth: stroke.subtle,
+      borderColor: color.border,
       shadowColor: palette.forest,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.12,

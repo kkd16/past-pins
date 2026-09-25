@@ -39,28 +39,32 @@ function StatusTotals({
   loading: boolean;
   onPress: (scope: CountryScope) => void;
 }) {
+  const tiles = kind === 'countries' && !largeText;
   return (
-    <Surface style={styles.totals}>
+    <View style={tiles ? styles.totalTiles : styles.totals}>
       {[
         {
           scope: 'wishlist' as const,
           label: t('countries.status.wishlist'),
           count: stats.wishlist,
           color: theme.color.wishlist,
+          backgroundColor: theme.color.surfaceWarm,
         },
         {
           scope: 'lived' as const,
           label: t('countries.status.lived'),
           count: stats.lived,
           color: theme.color.lived,
+          backgroundColor: theme.color.surfaceCool,
         },
         {
           scope: 'not-visited' as const,
           label: t('countries.stats.remaining'),
           count: stats.remaining,
-          color: theme.color.accent,
+          color: theme.color.textMuted,
+          backgroundColor: theme.color.surface,
         },
-      ].map(({ scope, label, count, color }, index) => {
+      ].map(({ scope, label, count, color, backgroundColor }, index) => {
         const value = loading ? '—' : formatNumber(count);
         return (
           <AppPressable
@@ -79,24 +83,34 @@ function StatusTotals({
             )}
             disabled={loading}
             onPress={() => onPress(scope)}
-            style={[styles.statistic, index > 0 && styles.statisticBorder]}
+            style={[
+              styles.statistic,
+              tiles
+                ? [styles.statisticTile, { backgroundColor }]
+                : index > 0 && styles.statisticBorder,
+            ]}
           >
             <View
               style={[
                 styles.statisticContent,
-                largeText && styles.statisticStack,
+                (largeText || tiles) && styles.statisticStack,
               ]}
             >
-              <AppText style={!largeText && styles.cardLabel}>{label}</AppText>
-              <AppText variant="label" style={{ color }}>
+              <AppText
+                variant={tiles ? 'caption' : 'body'}
+                style={tiles ? styles.tileLabel : !largeText && styles.cardLabel}
+              >
+                {label}
+              </AppText>
+              <AppText variant={tiles ? 'number' : 'label'} style={{ color }}>
                 {value}
               </AppText>
             </View>
-            <Icon name="chevronRight" />
+            {!tiles && <Icon name="chevronRight" />}
           </AppPressable>
         );
       })}
-    </Surface>
+    </View>
   );
 }
 
@@ -302,15 +316,28 @@ export function StatsScreen({
 
 const styles = StyleSheet.create({
   content: { paddingBottom: theme.space.xl, gap: theme.space.lg },
-  journey: { padding: theme.space.xl, gap: theme.space.sm },
-  regionJourney: { paddingHorizontal: theme.space.lg },
+  journey: {
+    padding: theme.space.xl,
+    gap: theme.space.sm,
+    backgroundColor: theme.color.visitedSurface,
+    borderWidth: theme.stroke.subtle,
+    borderColor: theme.color.border,
+  },
+  regionJourney: {
+    paddingHorizontal: theme.space.lg,
+    backgroundColor: theme.color.surfaceCool,
+  },
   cardHeading: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.space.sm,
   },
   cardLabel: { flex: 1 },
-  totals: { paddingHorizontal: theme.space.lg },
+  totals: { ...theme.surface.panel, paddingHorizontal: theme.space.lg },
+  totalTiles: {
+    flexDirection: 'row',
+    gap: theme.space.sm,
+  },
   statistic: {
     minHeight: theme.size.row,
     paddingVertical: theme.space.md,
@@ -329,12 +356,22 @@ const styles = StyleSheet.create({
     gap: theme.space.sm,
   },
   statisticStack: { flexDirection: 'column', alignItems: 'flex-start' },
+  statisticTile: {
+    flex: 1,
+    minWidth: 0,
+    padding: theme.space.md,
+    alignItems: 'stretch',
+    borderRadius: theme.radius.sm,
+    borderCurve: 'continuous',
+  },
+  tileLabel: { alignSelf: 'stretch', flexGrow: 1 },
   continents: { paddingHorizontal: theme.space.lg },
   explanation: { paddingHorizontal: theme.space.sm },
   home: {
     padding: theme.space.lg,
     gap: theme.space.sm,
     alignItems: 'flex-start',
+    backgroundColor: theme.color.surfaceCool,
   },
   homeLabel: {
     alignSelf: 'stretch',

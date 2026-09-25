@@ -6,7 +6,7 @@ import { AppText } from '../components/AppText';
 import { Checkmark } from '../components/Checkmark';
 import { Icon } from '../components/Icon';
 import { getStatusPresentation } from '../countries/status';
-import { isVisited, type PlaceStatus } from '../data/model';
+import type { PlaceStatus } from '../data/model';
 import { t } from '../localization';
 import { theme } from '../theme';
 import type { Subdivision } from './types';
@@ -40,7 +40,9 @@ export const SubdivisionRow = memo(function SubdivisionRow({
     <View
       style={[
         styles.row,
-        (selecting ? selected : isVisited(status)) && styles.highlight,
+        selecting
+          ? selected && styles.highlight
+          : { backgroundColor: presentation.backgroundColor },
       ]}
     >
       <AppPressable
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color.surface,
     borderRadius: theme.radius.sm,
   },
-  highlight: { backgroundColor: theme.color.visitedSurface },
+  highlight: { backgroundColor: theme.color.selectedSurface },
   details: {
     flex: 1,
     minHeight: theme.size.row,

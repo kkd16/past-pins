@@ -11,6 +11,7 @@
   "selectCountry": "Selects this country",
   "countryStatus": "%{country}, %{status}",
   "openDetails": "Opens country details",
+  "expandDetails": "Tap or swipe up for details",
   "dismissSelection": "Clear selected country",
   "globeError": "The globe couldn’t load.",
   "globeErrorHint": "Try the world map, or browse Places.",

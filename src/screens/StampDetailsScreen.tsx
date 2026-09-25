@@ -1,121 +1,74 @@
-import {
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { countryById } from '../countries/catalog';
-import { getStatusPresentation } from '../countries/status';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus, isVisited } from '../data/model';
-import { t } from '../localization';
-import { PlaceStatusControl } from '../places/PlaceStatusControl';
+import { language, t } from '../localization';
 import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
 
 export function StampDetailsScreen({
   id,
-  onBrowse,
-  onShowMap,
+  onClose,
   onShare,
 }: {
   id: string;
-  onBrowse: () => void;
-  onShowMap: (id: string) => void;
+  onClose: () => void;
   onShare: () => void;
 }) {
   const app = useAppData();
-  const { width } = useWindowDimensions();
   const country = countryById.get(id);
-  const status = getPlaceStatus(app.data, id);
-  const collected = isVisited(status);
-  const home = app.data.homeCountryId === id;
   const ready = app.status === 'ready';
-  const disabled = !ready || app.busy;
 
   return (
     <Screen>
       <ScrollView
+        onAccessibilityEscape={onClose}
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={styles.content}
       >
+        <ScreenHeader
+          title={country?.name ?? t('countries.details.notFound')}
+          compact
+        >
+          <Button label={t('common.done')} variant="quiet" onPress={onClose} />
+        </ScreenHeader>
         <DataFeedback />
         {country ? (
           <>
-            <View style={styles.heading}>
-              <AppText variant="title" accessibilityRole="header">
-                {country.name}
-              </AppText>
-              <AppText tone="muted">{country.continent.name}</AppText>
-            </View>
             {ready && (
-              <>
-                <View style={styles.status}>
-                  <AppText variant="caption" tone="muted">
-                    {t('stamps.status', {
-                      status: getStatusPresentation(status).label,
-                    })}
-                  </AppText>
-                  {home && (
-                    <AppText variant="caption" tone="accent">
-                      {t('common.currentHome')}
-                    </AppText>
-                  )}
-                  <PlaceStatusControl
-                    status={status}
-                    disabled={disabled}
-                    onChange={(nextStatus) => {
-                      void app.setStatus([id], nextStatus, {
-                        preserveLived: false,
-                      });
-                    }}
-                  />
-                </View>
-                <View style={styles.art}>
+              <View
+                accessible
+                accessibilityRole="image"
+                accessibilityLanguage={language}
+                accessibilityLabel={t('stamps.artworkLabel', {
+                  country: country.name,
+                })}
+                style={styles.art}
+              >
+                <View style={styles.stampArtwork}>
                   <CountryStamp
                     country={country}
-                    collected={collected}
-                    size={Math.min(
-                      240,
-                      Math.max(120, width - theme.space.xl * 2),
-                    )}
+                    collected={isVisited(getPlaceStatus(app.data, id))}
+                    size="100%"
                   />
-                  <AppText
-                    variant="caption"
-                    tone={collected ? 'accent' : 'muted'}
-                  >
-                    {t(collected ? 'stamps.collected' : 'stamps.notCollected')}
-                  </AppText>
                 </View>
-              </>
+              </View>
             )}
-            <View style={styles.actions}>
-              <Button
-                label={t('sharing.stampAction')}
-                variant="quiet"
-                disabled={disabled}
-                onPress={onShare}
-              />
-              <Button
-                label={t('countries.details.showMap')}
-                variant="quiet"
-                onPress={() => onShowMap(id)}
-              />
-            </View>
-            <AppText variant="caption" tone="muted">
-              {t('stamps.artworkNote')}
-            </AppText>
+            <Button
+              label={t('sharing.stampAction')}
+              variant="quiet"
+              disabled={!ready || app.busy}
+              onPress={onShare}
+            />
           </>
         ) : (
-          <>
-            <AppText variant="heading">{t('stamps.unavailable')}</AppText>
-            <Button label={t('stamps.browseCollection')} onPress={onBrowse} />
-          </>
+          <AppText tone="muted">{t('countries.details.notInCatalog')}</AppText>
         )}
       </ScrollView>
     </Screen>
@@ -123,9 +76,7 @@ export function StampDetailsScreen({
 }
 
 const styles = StyleSheet.create({
-  content: { paddingVertical: theme.space.lg, gap: theme.space.lg },
-  heading: { gap: theme.space.xs },
-  status: { gap: theme.space.sm },
-  art: { alignItems: 'center', gap: theme.space.sm },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm },
+  content: { flexGrow: 1, gap: theme.space.lg, paddingBottom: theme.space.xl },
+  art: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
+  stampArtwork: { width: '100%', aspectRatio: 1 },
 });
