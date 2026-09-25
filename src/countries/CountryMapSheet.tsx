@@ -12,15 +12,7 @@ import { StyleSheet, View } from 'react-native';
 import { ReduceMotion } from 'react-native-reanimated';
 
 import { AppPressable } from '../components/AppPressable';
-import { Button } from '../components/Button';
-import { DataFeedback } from '../components/DataFeedback';
-import { useAppData } from '../data/AppDataProvider';
-import { getPlaceStatus } from '../data/model';
-import { formatNumber, t } from '../localization';
 import { useReducedMotion } from '../motion/ReducedMotion';
-import { PlaceSelectionContent } from '../places/PlaceSelectionCard';
-import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
-import { getSubdivisionStatistics } from '../subdivisions/tracking';
 import { theme } from '../theme';
 import { CountryDetailsContent } from './CountryDetailsContent';
 import type { Country } from './types';
@@ -79,7 +71,6 @@ export function CountryMapSheet({
   onShareStamp: (id: string) => void;
   onEnlargeStamp: (id: string) => void;
 }) {
-  const app = useAppData();
   const sheet = useRef<BottomSheet>(null);
   const scroll = useRef<BottomSheetScrollViewMethods>(null);
   const [sheetIndex, setSheetIndex] = useState(-1);
@@ -93,9 +84,6 @@ export function CountryMapSheet({
     availableHeight / 2,
   );
   const snapPoints = useMemo(() => [collapsedHeight, '100%'], [collapsedHeight]);
-  const status = getPlaceStatus(app.data, country.id);
-  const regions = getSubdivisionStatistics(app.data.subdivisions, country.id);
-  const terminology = getCountrySubdivisionTerminology(country.id);
   const collapse = () => sheet.current?.collapse();
   const toggle = () => (expanded ? collapse() : sheet.current?.expand());
   const onEscape = expanded ? collapse : onDismiss;
@@ -120,13 +108,11 @@ export function CountryMapSheet({
         snapPoints={snapPoints}
         enableDynamicSizing={false}
         enablePanDownToClose
-        detached
         topInset={topInset}
         bottomInset={bottomInset}
         handleComponent={Handle}
         backdropComponent={Backdrop}
-        style={styles.sheet}
-        backgroundStyle={theme.surface.floating}
+        backgroundStyle={styles.background}
         accessible={false}
         overrideReduceMotion={
           reducedMotion ? ReduceMotion.Always : ReduceMotion.Never
@@ -146,55 +132,22 @@ export function CountryMapSheet({
           contentInsetAdjustmentBehavior="never"
           onAccessibilityEscape={onEscape}
         >
-          <View
-            style={styles.preview}
-            onLayout={({ nativeEvent: { layout } }) =>
+          <CountryDetailsContent
+            id={country.id}
+            onPreviewLayout={({ nativeEvent: { layout } }) =>
               setPreviewHeight(layout.height)
             }
-          >
-            <PlaceSelectionContent
-              title={country.name}
-              status={status}
-              home={app.data.homeCountryId === country.id}
-              disabled={app.busy}
-              onChangeStatus={(next) => {
-                void app.setStatus([country.id], next, {
-                  preserveLived: false,
-                });
-              }}
-              onSaveToLists={() => onSaveToLists(country.id)}
-              onDetails={toggle}
-              expanded={expanded}
-              onDismiss={onDismiss}
-              onEscape={onEscape}
-              autofocus={autofocus && sheetIndex >= 0}
-            >
-              {regions.total > 0 && (
-                <Button
-                  label={t('subdivisions.progress', {
-                    ...terminology,
-                    visited: formatNumber(regions.visited),
-                    total: formatNumber(regions.total),
-                  })}
-                  accessibilityHint={t('subdivisions.openCountry', terminology)}
-                  variant="quiet"
-                  onPress={() => onOpenRegions(country.id)}
-                />
-              )}
-            </PlaceSelectionContent>
-            <DataFeedback />
-          </View>
-          <View style={styles.details} accessibilityElementsHidden={!expanded}>
-            <CountryDetailsContent
-              id={country.id}
-              showOverview={false}
-              onShowMap={collapse}
-              onOpenRegions={onOpenRegions}
-              onSaveToLists={onSaveToLists}
-              onShareStamp={() => onShareStamp(country.id)}
-              onEnlargeStamp={() => onEnlargeStamp(country.id)}
-            />
-          </View>
+            onToggleDetails={toggle}
+            expanded={expanded}
+            onDismiss={onDismiss}
+            onEscape={onEscape}
+            autofocus={autofocus && sheetIndex >= 0}
+            onShowMap={collapse}
+            onOpenRegions={onOpenRegions}
+            onSaveToLists={onSaveToLists}
+            onShareStamp={() => onShareStamp(country.id)}
+            onEnlargeStamp={() => onEnlargeStamp(country.id)}
+          />
         </BottomSheetScrollView>
       </BottomSheet>
     </View>
@@ -202,17 +155,7 @@ export function CountryMapSheet({
 }
 
 const styles = StyleSheet.create({
-  sheet: { marginHorizontal: theme.space.lg },
+  background: { backgroundColor: theme.color.background },
   handle: { height: theme.size.touch, justifyContent: 'center' },
   indicator: { backgroundColor: theme.color.textMuted },
-  preview: {
-    paddingHorizontal: theme.space.md,
-    paddingBottom: theme.space.md,
-    gap: theme.space.sm,
-  },
-  details: {
-    paddingHorizontal: theme.space.md,
-    paddingBottom: theme.space.xl,
-    gap: theme.space.lg,
-  },
 });

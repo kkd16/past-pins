@@ -8,6 +8,7 @@ export const native = {
     alert: mock<typeof Alert.alert>(),
   },
   View: 'View',
+  ScrollView: 'ScrollView',
   StyleSheet: { create: <T>(styles: T) => styles, absoluteFill: {} },
 };
 mock.module('react-native', () => native);

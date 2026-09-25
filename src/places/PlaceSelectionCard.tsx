@@ -8,7 +8,7 @@ import { Surface } from '../components/Surface';
 import { getStatusPresentation } from '../countries/status';
 import type { PlaceStatus } from '../data/model';
 import { language, t } from '../localization';
-import { theme } from '../theme';
+import { theme, type TextVariant } from '../theme';
 import { PlaceStatusControl } from './PlaceStatusControl';
 
 export function PlaceSelectionCard(
@@ -27,6 +27,7 @@ export function PlaceSelectionCard(
 
 export function PlaceSelectionContent({
   title,
+  titleVariant = 'label',
   subtitle,
   status,
   home = false,
@@ -41,8 +42,9 @@ export function PlaceSelectionContent({
   children,
 }: {
   title: string;
+  titleVariant?: TextVariant;
   subtitle?: string;
-  status: PlaceStatus;
+  status?: PlaceStatus;
   home?: boolean;
   disabled?: boolean;
   onChangeStatus: (status: PlaceStatus) => void;
@@ -55,7 +57,10 @@ export function PlaceSelectionContent({
   children?: ReactNode;
 }) {
   const heading = useRef<View>(null);
-  const presentation = getStatusPresentation(status, home);
+  const presentation = status ? getStatusPresentation(status, home) : undefined;
+  const place = subtitle
+    ? t('common.placeSubtitle', { place: title, subtitle })
+    : title;
   useEffect(() => {
     if (autofocus && heading.current)
       AccessibilityInfo.sendAccessibilityEvent(heading.current, 'focus');
@@ -70,12 +75,11 @@ export function PlaceSelectionContent({
           accessible
           accessibilityLanguage={language}
           accessibilityRole={onDetails ? 'button' : 'header'}
-          accessibilityLabel={t('common.placeStatus', {
-            place: subtitle
-              ? t('common.placeSubtitle', { place: title, subtitle })
-              : title,
-            status: presentation.label,
-          })}
+          accessibilityLabel={
+            presentation
+              ? t('common.placeStatus', { place, status: presentation.label })
+              : place
+          }
           accessibilityHint={
             onDetails
               ? t(expanded ? 'atlas.collapseDetails' : 'atlas.openDetails')
@@ -92,7 +96,7 @@ export function PlaceSelectionContent({
           onPress={onDetails}
           style={styles.title}
         >
-          <AppText variant="label" tone={onDetails ? 'accent' : 'default'}>
+          <AppText variant={titleVariant}>
             {title}
           </AppText>
           {subtitle && (
@@ -100,9 +104,11 @@ export function PlaceSelectionContent({
               {subtitle}
             </AppText>
           )}
-          <AppText variant="caption" style={{ color: presentation.color }}>
-            {presentation.label}
-          </AppText>
+          {presentation && (
+            <AppText variant="caption" style={{ color: presentation.color }}>
+              {presentation.label}
+            </AppText>
+          )}
         </Heading>
         <IconButton
           name="list"
@@ -116,11 +122,13 @@ export function PlaceSelectionContent({
           onPress={onDismiss}
         />
       </View>
-      <PlaceStatusControl
-        status={status}
-        disabled={disabled}
-        onChange={onChangeStatus}
-      />
+      {status && (
+        <PlaceStatusControl
+          status={status}
+          disabled={disabled}
+          onChange={onChangeStatus}
+        />
+      )}
       {children}
     </>
   );

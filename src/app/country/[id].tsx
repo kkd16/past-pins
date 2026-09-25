@@ -9,7 +9,7 @@ export default function CountryDetailsRoute() {
   return (
     <CountryDetailsScreen
       id={id}
-      onDone={() => router.back()}
+      onDismiss={() => router.back()}
       onShareStamp={() =>
         router.push({ pathname: '/share', params: { kind: 'stamp', id } })
       }
