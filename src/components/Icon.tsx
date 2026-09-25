@@ -7,6 +7,7 @@ const paths = {
   close: 'm6 6 12 12M6 18 18 6',
   check: 'm5 12 4 4L19 6',
   search: 'm16 16 4 4',
+  share: 'M12 15V3m-4 4 4-4 4 4M7 10H4v11h16V10h-3',
   reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6',
   filter: 'M4 6h16M7 12h10M10 18h4',
   list: 'M4 5h2M10 5h10M4 11h2M10 11h10M4 17h2M10 17h5M19 14v6M16 17h6',

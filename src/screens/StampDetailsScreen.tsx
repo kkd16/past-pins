@@ -23,10 +23,12 @@ export function StampDetailsScreen({
   id,
   onBrowse,
   onShowMap,
+  onShare,
 }: {
   id: string;
   onBrowse: () => void;
   onShowMap: (id: string) => void;
+  onShare: () => void;
 }) {
   const app = useAppData();
   const { width } = useWindowDimensions();
@@ -106,6 +108,12 @@ export function StampDetailsScreen({
                 />
               </>
             )}
+            <Button
+              label={t('sharing.stampAction')}
+              variant="quiet"
+              disabled={disabled}
+              onPress={onShare}
+            />
             <Button
               label={t('countries.details.showMap')}
               variant="quiet"

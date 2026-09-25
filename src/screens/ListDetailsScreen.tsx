@@ -32,12 +32,14 @@ export function ListDetailsScreen({
   onBrowse,
   onOpenPlace,
   onOpenRegions,
+  onShare,
 }: {
   id: string;
   onEdit: () => void;
   onBrowse: () => void;
   onOpenPlace: (place: Place) => void;
   onOpenRegions: (countryId: string) => void;
+  onShare: () => void;
 }) {
   const app = useAppData();
   const list = app.data.lists.find((item) => item.id === id);
@@ -132,6 +134,12 @@ export function ListDetailsScreen({
                     <Button
                       label={t('lists.editPlaces')}
                       onPress={onEdit}
+                      disabled={disabled}
+                    />
+                    <Button
+                      label={t('sharing.listAction')}
+                      variant="quiet"
+                      onPress={onShare}
                       disabled={disabled}
                     />
                   </>

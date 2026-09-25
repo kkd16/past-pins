@@ -10,6 +10,7 @@ import subdivisions from './locales/en/subdivisions.json';
 import lists from './locales/en/lists.json';
 import stamps from './locales/en/stamps.json';
 import places from './locales/en/places.json';
+import sharing from './locales/en/sharing.json';
 
 export const translations = {
   en: {
@@ -22,6 +23,7 @@ export const translations = {
     lists,
     stamps,
     places,
+    sharing,
   },
 };
 export const {

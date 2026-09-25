@@ -64,6 +64,10 @@ export default function RootLayout() {
                 options={{ presentation: 'modal', headerShown: false }}
               />
               <Stack.Screen
+                name="share"
+                options={{ presentation: 'modal', headerShown: false }}
+              />
+              <Stack.Screen
                 name="stamps/index"
                 options={{ title: t('stamps.title') }}
               />

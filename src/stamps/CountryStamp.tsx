@@ -14,7 +14,7 @@ export const CountryStamp = memo(function CountryStamp({
 }: {
   country: Country;
   collected: boolean;
-  size?: number;
+  size?: number | '100%';
 }) {
   const seed = country.id.charCodeAt(0) * 31 + country.id.charCodeAt(1);
   const variant = seed % 3;

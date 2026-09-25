@@ -14,6 +14,7 @@ export function MapToolbar({
   disabled,
   onChangeMode,
   onSearch,
+  onShare,
   onLocation,
   locating,
   onNorth,
@@ -24,6 +25,7 @@ export function MapToolbar({
   disabled: boolean;
   onChangeMode: (mode: Preferences['mapView']) => void;
   onSearch: () => void;
+  onShare: () => void;
   onLocation: () => void;
   locating: boolean;
   onNorth: () => void;
@@ -81,6 +83,13 @@ export function MapToolbar({
         />
       </View>
       <View style={styles.actions}>
+        <IconButton
+          name="share"
+          accessibilityLabel={t('sharing.worldAction')}
+          disabled={disabled}
+          onPress={onShare}
+          style={styles.control}
+        />
         <IconButton
           name="location"
           accessibilityLabel={

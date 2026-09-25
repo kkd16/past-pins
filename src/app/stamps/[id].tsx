@@ -26,6 +26,7 @@ export default function StampDetailsRoute() {
         key={`${id}:${resetVersion}`}
         id={id}
         onBrowse={() => router.dismissTo('/stamps')}
+        onShare={() => router.push({ pathname: '/share', params: { kind: 'stamp', id } })}
         onShowMap={(focus) =>
           router.dismissTo({
             pathname: '/',

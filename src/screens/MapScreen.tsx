@@ -33,6 +33,7 @@ export function MapScreen({
   onOpenCountries,
   onOpenRegions,
   onSearch,
+  onShare,
   focus,
   focusRequest,
   onFocusConsumed,
@@ -41,6 +42,7 @@ export function MapScreen({
   onOpenCountries: () => void;
   onOpenRegions: (countryId: string) => void;
   onSearch: () => void;
+  onShare: () => void;
   focus?: string;
   focusRequest?: string;
   onFocusConsumed: () => void;
@@ -180,6 +182,7 @@ export function MapScreen({
               disabled={!ready || app.busy}
               onChangeMode={(mapView) => app.updatePreferences({ mapView })}
               onSearch={onSearch}
+              onShare={onShare}
               onLocation={focusLocation}
               locating={locating}
               onNorth={() =>

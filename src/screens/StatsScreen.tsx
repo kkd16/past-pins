@@ -112,6 +112,7 @@ export function StatsScreen({
   onOpenCountry,
   onOpenRegions,
   onOpenStamps,
+  onShare,
 }: {
   onOpenSettings: () => void;
   onChooseHome: () => void;
@@ -119,6 +120,7 @@ export function StatsScreen({
   onOpenCountry: (id: string) => void;
   onOpenRegions: (scope: CountryScope) => void;
   onOpenStamps: () => void;
+  onShare: () => void;
 }) {
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
@@ -191,6 +193,12 @@ export function StatsScreen({
           largeText={largeText}
           loading={loading}
           onPress={onOpenCountries}
+        />
+        <Button
+          label={t('sharing.worldAction')}
+          variant="quiet"
+          disabled={loading || app.busy}
+          onPress={onShare}
         />
         <AppPressable
           accessibilityLabel={

@@ -26,6 +26,7 @@ export default function MapRoute() {
         router.push({ pathname: '/regions/[id]', params: { id } })
       }
       onSearch={() => router.push('/map-search')}
+      onShare={() => router.push({ pathname: '/share', params: { kind: 'world' } })}
     />
   );
 }
