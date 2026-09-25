@@ -30,12 +30,10 @@ export function ListsScreen({ onOpen }: { onOpen: (id: string) => void }) {
 
   function create() {
     Keyboard.dismiss();
-    const isCurrent = guard();
     promptListName((name) => {
-      if (!isCurrent()) return;
       const id = app.createList(name);
       if (id) onOpen(id);
-    });
+    }, guard());
   }
 
   return (

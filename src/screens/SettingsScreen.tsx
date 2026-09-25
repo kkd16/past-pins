@@ -12,28 +12,12 @@ import { isVisited } from '../data/model';
 import { UserFacingError } from '../data/errors';
 import { useToast } from '../feedback/ToastProvider';
 import { formatNumber, t } from '../localization';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
 import { theme } from '../theme';
 
 type DataAction = 'export' | 'restore' | 'clear' | 'reset' | 'resetApp';
-
-function confirm(
-  title: string,
-  message: string,
-  action: string,
-): Promise<boolean> {
-  return new Promise((resolve) =>
-    Alert.alert(title, message, [
-      {
-        text: t('common.cancel'),
-        style: 'cancel',
-        onPress: () => resolve(false),
-      },
-      { text: action, style: 'destructive', onPress: () => resolve(true) },
-    ]),
-  );
-}
 
 export function SettingsScreen({
   onOpen,
@@ -54,24 +38,45 @@ export function SettingsScreen({
     resetApp,
   } = useAppData();
   const running = useRef(false);
+  const guard = useActionGuard(data);
   const [operation, setOperation] = useState<DataAction | null>(null);
   const working = operation !== null;
   const disabled = status !== 'ready' || busy || working;
   const prefs = data.preferences;
 
+  function confirm(title: string, message: string, action: string) {
+    const isCurrent = guard();
+    return new Promise<boolean>((resolve) =>
+      Alert.alert(title, message, [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+          onPress: () => resolve(false),
+        },
+        {
+          text: action,
+          style: 'destructive',
+          onPress: () => resolve(isCurrent()),
+        },
+      ]),
+    );
+  }
+
   async function run(name: DataAction, action: () => Promise<void>) {
-    if (running.current) return;
+    const isCurrent = guard();
+    if (running.current || busy || status === 'loading' || !isCurrent()) return;
     running.current = true;
     setOperation(name);
     try {
       await action();
     } catch (error) {
-      Alert.alert(
-        t('settings.couldNotFinish'),
-        error instanceof UserFacingError
-          ? error.message
-          : t('common.unknownError'),
-      );
+      if (isCurrent())
+        Alert.alert(
+          t('settings.couldNotFinish'),
+          error instanceof UserFacingError
+            ? error.message
+            : t('common.unknownError'),
+        );
     } finally {
       running.current = false;
       setOperation(null);
@@ -79,8 +84,9 @@ export function SettingsScreen({
   }
 
   async function importBackup() {
+    const isCurrent = guard();
     const backup = await pickBackup();
-    if (!backup) return;
+    if (!backup || !isCurrent()) return;
     const statuses = Object.values(backup.places);
     const visited = statuses.filter(isVisited).length;
     const lived = statuses.filter((value) => value === 'lived').length;

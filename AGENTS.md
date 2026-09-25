@@ -2,6 +2,11 @@ This is an intentionally iPhone-only Expo/React Native mobile application. Prior
 
 iPad is unsupported by design. Keep `ios.supportsTablet` set to `false`. Do not add iPad-specific layouts or workarounds, or support for other devices or platforms, unless the user explicitly changes this scope.
 
+## Keep changes simple
+
+- Prefer native iOS controls and documented Expo, React Native, and library defaults. Reuse existing helpers before adding dependencies, wrappers, or custom state.
+- Fix demonstrated problems at their source. Explain the reason for each behavior change, add regression coverage for data and async failures where practical, and report native checks that could not be run.
+
 ## Command-first project changes
 
 - Use the project or framework CLI whenever an appropriate command exists for package management, scaffolding, configuration, or validation.

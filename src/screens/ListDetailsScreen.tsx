@@ -60,9 +60,7 @@ export function ListDetailsScreen({
       (index) => {
         if (!isCurrent()) return;
         if (index === 0)
-          promptListName((name) => {
-            if (isCurrent()) app.renameList(id, name);
-          }, list.name);
+          promptListName((name) => app.renameList(id, name), isCurrent, list.name);
         if (index === 1 && app.deleteList(id)) onBrowse();
       },
     );

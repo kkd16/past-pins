@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { View } from 'react-native';
 import type { CaptureOptions } from 'react-native-view-shot';
 
+import { countryIds } from '../src/countries/catalog';
+import { encodeBackup } from '../src/data/backup';
+import { defaultAppData } from '../src/data/model';
 import { t } from '../src/localization';
+import { subdivisionIds } from '../src/subdivisions/catalog';
 
 const capture = mock(
   async (_view: View, _options: CaptureOptions) =>
@@ -13,6 +17,13 @@ const available = mock(async () => true);
 const present = mock(async (_uri: string, _options: unknown) => {});
 const measureCard = mock<View['measure']>();
 const view = { measure: measureCard } as unknown as View;
+const backupFile = {
+  uri: 'file:///cache/backup.json',
+  exists: true,
+  size: 0,
+  text: mock<() => Promise<string>>(),
+  delete() {},
+};
 
 mock.module('react-native-view-shot', () => ({
   captureRef: capture,
@@ -22,7 +33,20 @@ mock.module('expo-sharing', () => ({
   isAvailableAsync: available,
   shareAsync: present,
 }));
+mock.module('expo-document-picker', () => ({
+  getDocumentAsync: async () => ({
+    canceled: false,
+    assets: [{ uri: backupFile.uri, name: 'backup.json', lastModified: 0 }],
+  }),
+}));
+mock.module('expo-file-system', () => ({
+  File: function () {
+    return backupFile;
+  },
+  Paths: { cache: { uri: 'file:///cache/' } },
+}));
 const { shareCardImage } = await import('../src/sharing/share-image');
+const { pickBackup } = await import('../src/settings/backup-files');
 
 beforeEach(() => {
   capture.mockReset().mockResolvedValue('/tmp/ReactNative/capture.png');
@@ -177,4 +201,23 @@ describe('native image sharing', () => {
       shareCardImage(view, 3, () => true),
     ).resolves.toBeUndefined();
   });
+});
+
+test('backup imports restore every field when an exported file exceeds 1 MB', async () => {
+  const data = defaultAppData();
+  data.places = { ca: 'lived', fr: 'visited', jp: 'wishlist' };
+  data.homeCountryId = 'ca';
+  data.subdivisions = { [[...subdivisionIds][0]]: 'visited' };
+  data.preferences.haptics = false;
+  const placeIds = [...countryIds, ...subdivisionIds];
+  data.lists = Array.from({ length: 8 }, (_, index) => ({
+    id: `list-${index}`,
+    name: `Trip ${index}`,
+    placeIds,
+  }));
+  const encoded = encodeBackup(data);
+  backupFile.size = new TextEncoder().encode(encoded).length;
+  backupFile.text.mockResolvedValue(encoded);
+  expect(backupFile.size).toBeGreaterThan(1_000_000);
+  expect(await pickBackup()).toEqual(data);
 });

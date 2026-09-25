@@ -23,6 +23,7 @@ import { useAppData } from '../data/AppDataProvider';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 import { getCurrentLocation } from '../location/current-location';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
@@ -63,6 +64,7 @@ export function MapScreen({
   } | null>(null);
   const [localCommand, setCommand] = useState<AtlasCommand | null>(null);
   const sequence = useRef(0);
+  const guard = useActionGuard(app.resetVersion);
   const [topHeight, setTopHeight] = useState(108);
   const [bottomHeight, setBottomHeight] = useState(120);
   const insets = useSafeAreaInsets();
@@ -72,14 +74,20 @@ export function MapScreen({
   const dockSelection = largeText || screenReader;
   async function focusLocation() {
     if (locating) return;
+    const isCurrentScreen = guard();
+    const request = ++sequence.current;
+    const isCurrent = () =>
+      isCurrentScreen() &&
+      request === sequence.current &&
+      AppState.currentState === 'active';
     setLocating(true);
     try {
       const point = await getCurrentLocation();
-      if (AppState.currentState !== 'active') return;
+      if (!isCurrent()) return;
       setSelection(null);
-      setCommand({ type: 'location', point, key: ++sequence.current });
+      setCommand({ type: 'location', point, key: request });
     } catch (error) {
-      if (AppState.currentState === 'active')
+      if (isCurrent())
         Alert.alert(
           t('location.unavailableTitle'),
           error instanceof UserFacingError
@@ -106,6 +114,8 @@ export function MapScreen({
   const commandApplied = useCallback(
     (key: string | number) => {
       if (incomingFocus?.key === key) {
+        ++sequence.current;
+        setCommand(null);
         setSelection({ id: incomingFocus.id, anchor: null });
         onFocusConsumed();
       } else setCommand((current) => (current?.key === key ? null : current));
@@ -113,8 +123,10 @@ export function MapScreen({
     [incomingFocus, onFocusConsumed],
   );
   const selectCountry = useCallback(
-    (id: string | null, anchor?: readonly number[]) =>
-      setSelection(id ? { id, anchor: anchor ?? null } : null),
+    (id: string | null, anchor?: readonly number[]) => {
+      ++sequence.current;
+      setSelection(id ? { id, anchor: anchor ?? null } : null);
+    },
     [],
   );
   const viewport = {

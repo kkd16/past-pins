@@ -108,7 +108,6 @@ export const theme = {
   motion: {
     cameraDuration: 420,
     enter: 220,
-    pressRelease: 180,
     progress: 280,
     lift: 8,
     checkScale: 1.16,

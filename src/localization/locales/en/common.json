@@ -51,7 +51,6 @@
     "invalidBackup": "Choose a backup exported by this version of Past Pins.",
     "dataNotReady": "Data is not ready. Try again shortly.",
     "unknownCountry": "Unknown country.",
-    "unknownSubdivision": "Unknown region.",
-    "backupTooLarge": "This file is too large for a Past Pins backup."
+    "unknownSubdivision": "Unknown region."
   }
 }

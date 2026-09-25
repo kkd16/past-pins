@@ -8,7 +8,7 @@ import { Button } from './Button';
 import { Surface } from './Surface';
 
 export function DataFeedback() {
-  const { status, saveError, retry } = useAppData();
+  const { status, saveError, retry, busy } = useAppData();
   if (status === 'loading')
     return (
       <ActivityIndicator
@@ -27,7 +27,12 @@ export function DataFeedback() {
           ? t('countries.loadError')
           : t('countries.saveError')}
       </AppText>
-      <Button label={t('common.retry')} variant="quiet" onPress={retry} />
+      <Button
+        label={t('common.retry')}
+        variant="quiet"
+        disabled={busy}
+        onPress={retry}
+      />
     </Surface>
   );
 }

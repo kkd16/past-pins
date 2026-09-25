@@ -57,12 +57,9 @@ export function PlaceListsScreen({
             <Button
               label={t('lists.newList')}
               disabled={disabled}
-              onPress={() => {
-                const isCurrent = guard();
-                promptListName((name) => {
-                  if (isCurrent()) app.createList(name, [placeId]);
-                });
-              }}
+              onPress={() =>
+                promptListName((name) => app.createList(name, [placeId]), guard())
+              }
             />
           </View>
         }
