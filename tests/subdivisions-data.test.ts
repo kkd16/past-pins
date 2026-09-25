@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { countryIds } from '../src/countries/catalog';
+import type { CountryFeature } from '../src/countries/geography';
 import {
   getCountrySubdivisions,
   subdivisionById,
@@ -96,7 +97,7 @@ describe('source-derived offline subdivisions', () => {
       const map = getSubdivisionMap(countryId)!;
       expect(map.width).toBe(1000);
       expect(map.height).toBe(700);
-      expect(map.focusBounds?.flat().every(Number.isFinite)).toBe(true);
+      expect(map.focusBounds.flat().every(Number.isFinite)).toBe(true);
       expect(map.regions.length).toBe(regions.length);
       for (const region of map.regions) {
         expect(mapped.has(region.id)).toBe(false);
@@ -125,7 +126,7 @@ describe('source-derived offline subdivisions', () => {
   test('default framing reaches the main landmass without removing overseas regions', () => {
     for (const countryId of ['us', 'fr']) {
       const map = getSubdivisionMap(countryId)!;
-      const [[left, top], [right, bottom]] = map.focusBounds!;
+      const [[left, top], [right, bottom]] = map.focusBounds;
       expect(right - left).toBeLessThan(map.width * 0.75);
       expect(bottom - top).toBeLessThan(map.height * 0.75);
       expect(
@@ -216,7 +217,12 @@ describe('subdivision importer', () => {
         ],
       ],
     };
-    const map = generateSubdivisionMaps([crossing]).aa;
+    const country: CountryFeature = {
+      type: 'Feature',
+      properties: { iso_a2: 'AA', name: 'Test country' },
+      geometry: crossing.geometry,
+    };
+    const map = generateSubdivisionMaps([crossing], [country]).aa;
     const [[left, top], [right, bottom]] = map.regions[0].bounds;
     expect(right - left).toBeGreaterThan(600);
     expect(bottom - top).toBeGreaterThan(600);
@@ -236,5 +242,24 @@ describe('subdivision importer', () => {
       [2, 0],
     ];
     expect(simplifyRing(points)).not.toContainEqual([0, 1]);
+  });
+
+  test('rejects missing and empty country geometry before emitting an unusable map', () => {
+    const region = fixture();
+    expect(() => generateSubdivisionMaps([region], [])).toThrow(
+      'Missing country geometry: aa',
+    );
+    const country: CountryFeature = {
+      type: 'Feature',
+      properties: { iso_a2: 'AA', name: 'Test country' },
+      geometry: { type: 'MultiPolygon', coordinates: [] },
+    };
+    expect(() => generateSubdivisionMaps([region], [country])).toThrow(
+      'Empty country geometry: aa',
+    );
+    country.geometry = { type: 'Polygon', coordinates: [] };
+    expect(() => generateSubdivisionMaps([region], [country])).toThrow(
+      'Invalid country bounds: aa',
+    );
   });
 });

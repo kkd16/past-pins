@@ -1,8 +1,7 @@
 {
-  "title": "Countries",
   "subtitle": "Countries & territories",
   "filters": "Filters",
-  "filtersApplied": "Filters, custom options applied",
+  "filtersApplied": "Filters, active",
   "search": "Search countries",
   "searchLabel": "Search countries and territories",
   "placesToShow": "Places to show",

@@ -1,11 +1,11 @@
-import { t } from '../localization';
-import { UserFacingError } from '../data/errors';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { decodeBackup, encodeBackup } from '../data/backup';
+import { UserFacingError } from '../data/errors';
 import type { AppData } from '../data/model';
+import { t } from '../localization';
 
 function discardCachedFile(file: File) {
   try {
@@ -31,7 +31,6 @@ export async function shareBackup(data: AppData) {
 export async function pickBackup(): Promise<AppData | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: 'application/json',
-    copyToCacheDirectory: true,
   });
   if (result.canceled) return null;
   const file = new File(result.assets[0].uri);

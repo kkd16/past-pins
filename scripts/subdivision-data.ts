@@ -240,7 +240,7 @@ function area(ring: Point[]) {
 
 export function generateSubdivisionMaps(
   features: readonly SubdivisionFeature[],
-  countries: readonly CountryFeature[] = [],
+  countries: readonly CountryFeature[],
 ) {
   const countriesById = new Map(
     countries.map((country) => [
@@ -258,6 +258,14 @@ export function generateSubdivisionMaps(
   const maps: Record<string, SubdivisionMapData> = {};
   for (const countryId of [...groups.keys()].sort()) {
     const group = groups.get(countryId)!;
+    const country = countriesById.get(countryId);
+    if (!country)
+      throw new Error(`Missing country geometry: ${countryId}`);
+    const main = countryPolygons(country)
+      .map((coordinates) => ({ type: 'Polygon' as const, coordinates }))
+      .sort((a, b) => geoArea(b) - geoArea(a))[0];
+    if (!main)
+      throw new Error(`Empty country geometry: ${countryId}`);
     const collection: SubdivisionSourceData = {
       type: 'FeatureCollection',
       features: group,
@@ -330,19 +338,15 @@ export function generateSubdivisionMaps(
         return { id: idFor(feature), path: outline, bounds, point };
       })
       .sort(compareIds);
-    const country = countriesById.get(countryId);
-    const main =
-      country &&
-      countryPolygons(country)
-        .map((coordinates) => ({ type: 'Polygon' as const, coordinates }))
-        .sort((a, b) => geoArea(b) - geoArea(a))[0];
-    const focusBounds =
-      main &&
-      (path.bounds(main).map((point) => point.map(round)) as [Point, Point]);
+    const focusBounds = path
+      .bounds(main)
+      .map((point) => point.map(round)) as [Point, Point];
+    if (!focusBounds.flat().every(Number.isFinite))
+      throw new Error(`Invalid country bounds: ${countryId}`);
     maps[countryId] = {
       width: 1000,
       height: 700,
-      ...(focusBounds && { focusBounds }),
+      focusBounds,
       regions,
     };
   }

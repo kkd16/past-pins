@@ -219,7 +219,7 @@ describe('subdivision map gestures and picking', () => {
     const data = getSubdivisionMap('fr')!;
     const camera = new SubdivisionCamera(data);
     camera.resize(350, 280);
-    camera.focus(data.focusBounds!);
+    camera.focus(data.focusBounds);
     expect(camera.zoom).toBeGreaterThan(2);
     camera.fit();
     expect(camera.zoom).toBe(1);

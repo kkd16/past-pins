@@ -1,6 +1,5 @@
 {
   "appName": "Past Pins",
-  "countries": "Countries",
   "map": "Map",
   "stats": "Stats",
   "settings": "Settings",
@@ -50,9 +49,9 @@
     "invalidPreferences": "The saved preferences are invalid.",
     "invalidJson": "This file is not a valid JSON backup.",
     "invalidBackup": "Choose a backup exported by this version of Past Pins.",
-    "dataNotReady": "Your data is not ready. Try again in a moment.",
+    "dataNotReady": "Data is not ready. Try again shortly.",
     "unknownCountry": "Unknown country.",
     "unknownSubdivision": "Unknown region.",
-    "backupTooLarge": "This file is too large to be a Past Pins backup."
+    "backupTooLarge": "This file is too large for a Past Pins backup."
   }
 }

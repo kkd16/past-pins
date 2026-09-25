@@ -43,9 +43,7 @@ export function readCountryFilters(params: {
   grouping?: string | string[];
 }): CountryFilters {
   return {
-    continent: continents.some(({ id }) => id === params.continent)
-      ? (params.continent as string)
-      : 'all',
+    continent: continents.find(({ id }) => id === params.continent)?.id ?? 'all',
     grouping: params.grouping === 'alphabetical' ? 'alphabetical' : 'continent',
   };
 }

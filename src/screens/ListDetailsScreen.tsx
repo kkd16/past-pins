@@ -21,7 +21,7 @@ import {
   type Place,
 } from '../places/catalog';
 import { promptListName } from '../lists/prompt';
-import { useListActionGuard } from '../lists/useListActionGuard';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { formatNumber, t } from '../localization';
 import { getCountrySubdivisions } from '../subdivisions/catalog';
 import { theme } from '../theme';
@@ -42,7 +42,7 @@ export function ListDetailsScreen({
   const app = useAppData();
   const list = app.data.lists.find((item) => item.id === id);
   const disabled = app.status !== 'ready' || app.busy;
-  const guard = useListActionGuard(app.data.lists);
+  const guard = useActionGuard(app.data.lists);
 
   function options() {
     if (!list) return;

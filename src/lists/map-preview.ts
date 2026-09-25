@@ -25,9 +25,7 @@ export function getListRegionPreview(places: readonly Place[]) {
   const bottom = Math.max(...selected.map(({ bounds }) => bounds[1][1]));
   // Fit every member with padding. Keep some country context even for a city
   // region; the surrounding, unselected regions remain visible in the preview.
-  const countryWidth = map.focusBounds
-    ? map.focusBounds[1][0] - map.focusBounds[0][0]
-    : map.width;
+  const countryWidth = map.focusBounds[1][0] - map.focusBounds[0][0];
   const width = Math.max(
     (right - left) * 1.3,
     (bottom - top) * 2.6,

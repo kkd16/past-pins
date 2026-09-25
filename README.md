@@ -29,7 +29,7 @@ The app targets Expo SDK 57 and uses its bundled native modules. Use the Bun ver
 | `bun run deps:update` | Update compatible dependencies, align Expo versions, regenerate assets, and run all checks |
 | `bun run reset` | Reinstall locked dependencies and clear this project's Expo state |
 
-Reset leaves other projects' Metro caches and Watchman watches alone. The `react-native-screens` override matches the native version included in Expo Go; align it when changing SDKs. Install app dependencies with `bunx expo install`, then run `bun run generate` to refresh affected bundled assets.
+Reset leaves other projects' Metro caches and Watchman watches alone. The `react-native-screens` override follows the direct Expo-compatible dependency so Router's broader range cannot install a second native version. Install app dependencies with `bunx expo install`, then run `bun run generate` to refresh affected bundled assets.
 
 ## Product flows
 
@@ -54,6 +54,7 @@ Undo appears in a toast after an individual, bulk, home, or custom-list edit and
 
 - `src/app/`: thin Expo Router routes, native tabs, and one native stack for detail sheets and Settings.
 - `src/screens/`: page composition and connected navigation flows. Search typing stays local; route parameters carry navigation requests, country/region mode, scope, and continent. Grouping is a persisted preference.
+- `src/navigation/`: shared native-prompt guards discard actions after a screen loses focus or the relevant data changes.
 - `src/countries/`: authoritative catalog joins, country facts, pure search/filter/statistics functions, and country controls.
 - `src/subdivisions/`: generated regional catalogs and SVG maps, country-scoped region search and statistics, region controls, and map interaction. Geography is generated before bundling and never fetched by the app.
 - `src/places/`: shared offline country/region search index, country-filtered discovery, global region filters, and the Places mode control. Map search, list pickers, and Places use the same source IDs and names.

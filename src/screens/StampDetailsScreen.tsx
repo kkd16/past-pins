@@ -1,5 +1,3 @@
-import { useCallback, useRef } from 'react';
-import { useFocusEffect } from 'expo-router';
 import {
   ScrollView,
   StyleSheet,
@@ -17,6 +15,7 @@ import { showStatusPicker } from '../countries/StatusPicker';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus, isVisited } from '../data/model';
 import { t } from '../localization';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
 
@@ -36,21 +35,13 @@ export function StampDetailsScreen({
   const collected = isVisited(status);
   const ready = app.status === 'ready';
   const disabled = !ready || app.busy;
-  const session = useRef<object | null>(null);
-  useFocusEffect(
-    useCallback(() => {
-      session.current = { id, resetVersion: app.resetVersion };
-      return () => {
-        session.current = null;
-      };
-    }, [id, app.resetVersion]),
-  );
+  const guard = useActionGuard(`${id}:${app.resetVersion}`);
 
   function editStatus() {
     if (!country) return;
-    const current = session.current;
+    const isCurrent = guard();
     showStatusPicker(country.name, (nextStatus) => {
-      if (current && session.current === current)
+      if (isCurrent())
         void app.setStatus([id], nextStatus, { preserveLived: false });
     });
   }

@@ -1,4 +1,3 @@
-import { useFocusEffect } from 'expo-router';
 import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 
@@ -15,6 +14,7 @@ import type { CountryScope } from '../countries/filters';
 import { showStatusPicker } from '../countries/StatusPicker';
 import { useAppData } from '../data/AppDataProvider';
 import { formatNumber, t } from '../localization';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { formatPlaceName, getPlace, type Place } from '../places/catalog';
 import { selectRegions } from '../places/filter';
 import { PlaceKindControl, type PlacesMode } from '../places/PlaceKindControl';
@@ -50,15 +50,7 @@ export function RegionsScreen({
   const app = useAppData();
   const { setSubdivisionStatus, resetVersion } = app;
   const list = useRef<FlatList<Place>>(null);
-  const session = useRef<object | null>(null);
-  useFocusEffect(
-    useCallback(() => {
-      session.current = { resetVersion };
-      return () => {
-        session.current = null;
-      };
-    }, [resetVersion]),
-  );
+  const guard = useActionGuard(resetVersion);
   useLayoutEffect(() => {
     list.current?.scrollToOffset({ offset: 0, animated: false });
   }, [query, scope, continent, intent]);
@@ -86,14 +78,14 @@ export function RegionsScreen({
     (id: string) => {
       Keyboard.dismiss();
       const region = getPlace(id);
-      const current = session.current;
-      if (!region || !current) return;
+      const isCurrent = guard();
+      if (!region || !isCurrent()) return;
       showStatusPicker(formatPlaceName(region), (status) => {
-        if (session.current === current)
+        if (isCurrent())
           void setSubdivisionStatus([id], status, { preserveLived: false });
       });
     },
-    [setSubdivisionStatus],
+    [guard, setSubdivisionStatus],
   );
 
   return (

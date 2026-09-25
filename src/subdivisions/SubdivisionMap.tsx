@@ -78,8 +78,7 @@ export function SubdivisionMap({
   }, [controller, disabled, draw]);
   useLayoutEffect(() => {
     camera.resize(viewport.width, viewport.height);
-    if (map?.focusBounds) camera.focus(map.focusBounds);
-    else camera.fit();
+    if (map) camera.focus(map.focusBounds);
     draw();
   }, [camera, draw, map, viewport]);
   useLayoutEffect(() => {

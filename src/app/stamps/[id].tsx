@@ -13,7 +13,6 @@ export default function StampDetailsRoute() {
     <>
       <Stack.Screen
         options={{
-          title: t('stamps.title'),
           headerRight: () => (
             <Button
               label={t('common.done')}

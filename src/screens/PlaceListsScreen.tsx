@@ -10,7 +10,7 @@ import { Screen } from '../components/Screen';
 import { useAppData } from '../data/AppDataProvider';
 import { formatPlaceName, getPlace } from '../places/catalog';
 import { promptListName } from '../lists/prompt';
-import { useListActionGuard } from '../lists/useListActionGuard';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { compareNames, formatNumber, t } from '../localization';
 import { theme } from '../theme';
 
@@ -22,7 +22,7 @@ export function PlaceListsScreen({
   onDone: () => void;
 }) {
   const app = useAppData();
-  const guard = useListActionGuard(app.data.lists);
+  const guard = useActionGuard(app.data.lists);
   const place = getPlace(placeId);
   const disabled = app.status !== 'ready' || app.busy || !place;
   const lists = [...app.data.lists].sort((a, b) =>

@@ -22,6 +22,6 @@ export type SubdivisionMapRegion = {
 export type SubdivisionMapData = {
   width: number;
   height: number;
-  focusBounds?: [[number, number], [number, number]];
+  focusBounds: [[number, number], [number, number]];
   regions: readonly SubdivisionMapRegion[];
 };

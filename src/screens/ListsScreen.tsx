@@ -14,13 +14,13 @@ import { useAppData } from '../data/AppDataProvider';
 import { getListStatistics } from '../lists/places';
 import { formatPlaceName, getPlace } from '../places/catalog';
 import { promptListName } from '../lists/prompt';
-import { useListActionGuard } from '../lists/useListActionGuard';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { compareNames, formatList, formatNumber, t } from '../localization';
 import { theme } from '../theme';
 
 export function ListsScreen({ onOpen }: { onOpen: (id: string) => void }) {
   const app = useAppData();
-  const guard = useListActionGuard(app.data.lists);
+  const guard = useActionGuard(app.data.lists);
   const [query, setQuery] = useState('');
   const disabled = app.status !== 'ready' || app.busy;
   const term = normalizeSearch(query);

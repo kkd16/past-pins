@@ -12,11 +12,9 @@ export default function TabsLayout() {
       backgroundColor={theme.color.surface}
       iconColor={{
         default: theme.color.textMuted,
-        selected: theme.color.accent,
       }}
       labelStyle={{
         default: { color: theme.color.textMuted },
-        selected: { color: theme.color.accent },
       }}
       minimizeBehavior="never"
       disableTransparentOnScrollEdge

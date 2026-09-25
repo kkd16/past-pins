@@ -1,5 +1,4 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Keyboard,
   LayoutAnimation,
@@ -26,6 +25,7 @@ import { showStatusPicker } from '../countries/StatusPicker';
 import type { CountryId } from '../countries/types';
 import { useAppData } from '../data/AppDataProvider';
 import { useReducedMotion } from '../motion/ReducedMotion';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { getCountryRegionProgress } from '../places/filter';
 import { PlaceKindControl, type PlacesMode } from '../places/PlaceKindControl';
 import { theme } from '../theme';
@@ -61,15 +61,7 @@ export function CountriesScreen({
   const app = useAppData();
   const reducedMotion = useReducedMotion();
   const { setStatus, resetVersion } = app;
-  const session = useRef<object | null>(null);
-  useFocusEffect(
-    useCallback(() => {
-      session.current = { resetVersion };
-      return () => {
-        session.current = null;
-      };
-    }, [resetVersion]),
-  );
+  const guard = useActionGuard(resetVersion);
   const { continent, grouping } = filters;
   const regionProgress = useMemo(
     () => getCountryRegionProgress(app.data.subdivisions),
@@ -127,13 +119,13 @@ export function CountriesScreen({
   const changeStatus = useCallback(
     (id: CountryId) => {
       Keyboard.dismiss();
-      const current = session.current;
+      const isCurrent = guard();
       showStatusPicker(countryById.get(id)!.name, (status) => {
-        if (current && current === session.current)
+        if (isCurrent())
           void setStatus([id], status, { preserveLived: false });
       });
     },
-    [setStatus],
+    [guard, setStatus],
   );
   function endSelection() {
     Keyboard.dismiss();

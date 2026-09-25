@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Keyboard, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
@@ -19,6 +18,7 @@ import { useAppData } from '../data/AppDataProvider';
 import { getSubdivisionStatus } from '../data/model';
 import { formatNumber, t } from '../localization';
 import { useReducedMotion } from '../motion/ReducedMotion';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { subdivisionById } from '../subdivisions/catalog';
 import { SubdivisionMap } from '../subdivisions/SubdivisionMap';
 import { SubdivisionRow } from '../subdivisions/SubdivisionRow';
@@ -89,21 +89,11 @@ export function SubdivisionsScreen({
     count: selectedIds.size,
     amount: formatNumber(selectedIds.size),
   };
-  const focused = useRef(false);
-  const editGeneration = useRef(0);
-  useFocusEffect(
-    useCallback(() => {
-      focused.current = true;
-      return () => {
-        focused.current = false;
-        editGeneration.current++;
-      };
-    }, []),
+  const editScope = useMemo(
+    () => ({ filterKey, selectedIds }),
+    [filterKey, selectedIds],
   );
-  useEffect(() => {
-    // A native action sheet must not apply an obsolete selection after a reset.
-    editGeneration.current++;
-  }, [filterKey, selectedIds]);
+  const guard = useActionGuard(editScope);
   const stats = useMemo(
     () => getSubdivisionStatistics(app.data.subdivisions, countryId),
     [app.data.subdivisions, countryId],
@@ -114,14 +104,14 @@ export function SubdivisionsScreen({
     (id: string) => {
       Keyboard.dismiss();
       const region = subdivisionById.get(id);
-      const generation = editGeneration.current;
+      const isCurrent = guard();
       if (region)
         showStatusPicker(region.name, (status) => {
-          if (!focused.current || generation !== editGeneration.current) return;
+          if (!isCurrent()) return;
           void setSubdivisionStatus([id], status, { preserveLived: false });
         });
     },
-    [setSubdivisionStatus],
+    [guard, setSubdivisionStatus],
   );
 
   const pressRow = useCallback(
@@ -359,15 +349,11 @@ export function SubdivisionsScreen({
               disabled={disabled || selectedIds.size === 0}
               onPress={() => {
                 Keyboard.dismiss();
-                const generation = editGeneration.current;
+                const isCurrent = guard();
                 showStatusPicker(
                   t('subdivisions.selectedCount', selectionCount),
                   (status) => {
-                    if (
-                      !focused.current ||
-                      generation !== editGeneration.current
-                    )
-                      return;
+                    if (!isCurrent()) return;
                     void setSubdivisionStatus([...selectedIds], status).then(
                       (changed) => {
                         if (changed) setSelection(null);

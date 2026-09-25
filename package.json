@@ -68,7 +68,7 @@
   },
   "private": true,
   "overrides": {
-    "react-native-screens": "~4.26.2"
+    "react-native-screens": "$react-native-screens"
   },
   "packageManager": "bun@1.4.2",
   "engines": {
