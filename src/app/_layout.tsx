@@ -97,7 +97,7 @@ export default function RootLayout() {
                 name="regions/[id]"
                 options={{
                   title: t('subdivisions.title'),
-                  presentation: 'modal',
+                  presentation: 'fullScreenModal',
                 }}
               />
               <Stack.Screen

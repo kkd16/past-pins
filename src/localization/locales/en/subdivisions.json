@@ -5,6 +5,11 @@
   "countryDetails": "View %{country} details",
   "independentTracking": "Regions and countries are tracked separately.",
   "searchRegions": "Find a region",
+  "viewLabel": "Region view",
+  "mapView": "Map",
+  "listView": "List",
+  "browseList": "Find a region in the list",
+  "visitedSummary": "%{visited} of %{total} regions visited",
   "count": {
     "one": "%{amount} region",
     "other": "%{amount} regions"
@@ -13,7 +18,7 @@
   "progress": "%{visited} of %{total} regions",
   "progressValue": "%{visited} of %{total} regions, %{percent}",
   "countryProgress": "%{country}: %{visited} of %{total} regions visited",
-  "openCountry": "Opens the region map and list",
+  "openCountry": "Opens the region map",
   "regionStatus": "%{name}, %{status}",
   "changeStatus": "Change status",
   "openRegionHint": "Opens the region map and actions",
@@ -22,7 +27,7 @@
   "selection": "Selected region",
   "clearSelection": "Clear selected region",
   "fitCountry": "Show whole country",
-  "mapHint": "Pinch to zoom. Tap a region to select it.",
+  "mapHint": "Tap a region to see its name and mark your visit. Pinch to zoom.",
   "select": "Select regions",
   "selectedCount": {
     "one": "%{amount} region selected",
