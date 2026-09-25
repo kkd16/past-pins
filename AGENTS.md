@@ -1,4 +1,6 @@
-This is an iPhone-only Expo/React Native mobile application. Prioritize performance, accessibility, and native iOS conventions. Do not add support for other devices or platforms unless the user explicitly changes the supported platforms.
+This is an intentionally iPhone-only Expo/React Native mobile application. Prioritize performance, accessibility, and native iOS conventions.
+
+iPad is unsupported by design. Keep `ios.supportsTablet` set to `false`. Do not add iPad-specific layouts or workarounds, or support for other devices or platforms, unless the user explicitly changes this scope.
 
 ## Command-first project changes
 

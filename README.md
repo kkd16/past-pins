@@ -2,6 +2,8 @@
 
 An offline travel atlas built exclusively for iPhone, with one dark green theme. It opens on the Map tab; Countries, Lists, and Stats connect the same collection of places.
 
+iPad is intentionally unsupported. Keep `ios.supportsTablet` set to `false`; tablet-specific layouts and workarounds are outside the project's scope.
+
 ## Develop
 
 ```sh
