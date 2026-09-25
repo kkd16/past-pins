@@ -59,17 +59,18 @@
     "licenses:generate": "bun scripts/generate-licenses.ts",
     "licenses:check": "bun scripts/generate-licenses.ts --check",
     "dev": "expo start --go --tunnel",
-    "test:coverage": "bun test --coverage",
-    "check": "bun run lint && bun run typecheck && bun run test && bun run globe:check && bun run subdivisions:check && bun run licenses:check",
-    "check:all": "bun run check && bun run doctor && bun run export:ios",
+    "test:coverage": "bun run test --coverage",
+    "check": "bun run lint && bun run typecheck && bun run test:coverage && bun run globe:check && bun run subdivisions:check && bun run licenses:check",
+    "check:all": "bun run verify",
     "doctor": "bunx expo-doctor",
     "export:ios": "expo export --platform ios",
     "generate": "bun run globe:generate && bun run subdivisions:generate && bun run licenses:generate",
-    "deps:update": "bun update && bunx expo install --fix --bun && bun run generate && bun run check:all",
+    "deps:update": "bun update && bunx expo install --fix --bun && bun run generate && bun run verify",
     "reset": "rm -rf node_modules .expo && bun install --frozen-lockfile",
     "subdivisions:generate": "bun scripts/generate-subdivisions.ts",
     "subdivisions:refresh": "bun scripts/generate-subdivisions.ts --refresh",
-    "subdivisions:check": "bun scripts/generate-subdivisions.ts --check"
+    "subdivisions:check": "bun scripts/generate-subdivisions.ts --check",
+    "verify": "bash scripts/verify.sh"
   },
   "private": true,
   "overrides": {

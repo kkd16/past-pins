@@ -18,8 +18,8 @@ The app targets Expo SDK 57 and uses its bundled native modules. Use the Bun ver
 
 | Command | Purpose |
 | --- | --- |
-| `bun run check` | Lint all code, typecheck, run tests, and check generated assets |
-| `bun run check:all` | Also run Expo Doctor and export the production iOS bundle |
+| `bun run check` | Lint all code, typecheck, run tests with coverage, and check generated assets |
+| `bun run verify` | Run the complete shared CI gate before pushing: locked install, all checks, Expo Doctor, and production iOS export |
 | `bun test --watch` | Rerun tests as files change |
 | `bun test backup` | Run tests whose filenames match a pattern |
 | `bun run test:coverage` | Inspect coverage of the code loaded by tests |
@@ -101,11 +101,12 @@ Localization uses [`expo-localization`](https://docs.expo.dev/versions/v57.0.0/s
 Accessibility uses native iOS controls, scalable text, semantic control states, logical spacing, and 44-point targets. VoiceOver and large text get a stable selected-country card; map accessibility actions provide zoom and pan without multi-finger gestures. Reduce Motion skips custom transitions and finishes an active camera move at its destination. Keep manual device checks below part of each platform upgrade.
 
 ```sh
-bun run check
-bun run check:all  # includes network-based Expo diagnostics and the iOS export
+bun run verify  # required before pushing; includes network-based Expo diagnostics
 ```
 
-GitHub Actions runs the same checks on pull requests, pushes to `main`, and manual runs, with coverage shown in the test log. It uses current stable action releases, the latest stable Node.js, and the project's Bun version. The workflow has read-only repository access and cancels superseded runs. It does not sign, submit, deploy, or publish the app.
+GitHub Actions calls this same command on pull requests, pushes to `main`, and manual runs. `scripts/verify.sh` installs locked dependencies, runs `check`, Expo Doctor, and the iOS export in noninteractive CI mode, stopping on the first failure. The workflow only sets up Node.js and Bun before invoking it. `bun run check` remains the shorter development check; `bun run check:all` is an alias for `verify`.
+
+CI uses current stable action releases, the latest stable Node.js, and the project's Bun version. The workflow has read-only repository access and cancels superseded runs. It does not sign, submit, deploy, or publish the app. Agents must follow the pre-push verification requirement in `AGENTS.md`.
 
 Tests cover locale fallback, interpolation/plurals, regional formatting, native/source-name search, map accessibility actions, travel/home invariants, bulk changes, Undo, persistence ordering and failure recovery, atomic restore, backup validation, catalog filtering/counts, geometry, cameras, picking, annotations, frame lifecycle, and theme contrast. Country-card lifecycle tests exercise real React effects with mocked native sheet callbacks, including late close events and repeated map requests. Use explicit examples or independent invariants for expected results; avoid checking a function against itself or coupling tests to object identity without a behavioral reason. Coverage is diagnostic, with no percentage gate: it measures loaded JavaScript/TypeScript, not native screens, gestures, or device performance. The test preload supplies iOS locale information and shared native stubs; controller tests use a small manual frame clock rather than elapsed-time sleeps.
 
