@@ -1,6 +1,7 @@
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { StyleSheet, View } from 'react-native';
 
+import { Button } from '../components/Button';
 import { ChoiceRow } from '../components/ChoiceRow';
 import { IconButton } from '../components/IconButton';
 import { Surface } from '../components/Surface';
@@ -14,10 +15,8 @@ export function MapToolbar({
   disabled,
   onChangeMode,
   onSearch,
-  onShare,
-  onLocation,
+  onMore,
   locating,
-  onNorth,
   onReset,
 }: {
   mode: Preferences['mapView'];
@@ -25,15 +24,13 @@ export function MapToolbar({
   disabled: boolean;
   onChangeMode: (mode: Preferences['mapView']) => void;
   onSearch: () => void;
-  onShare: () => void;
-  onLocation: () => void;
+  onMore: () => void;
   locating: boolean;
-  onNorth: () => void;
   onReset: () => void;
 }) {
   const modes = [
     { value: 'globe', label: t('atlas.globe') },
-    { value: 'map', label: t('atlas.worldMap') },
+    { value: 'map', label: t('common.map') },
   ] as const;
 
   return (
@@ -81,33 +78,16 @@ export function MapToolbar({
           onPress={onSearch}
           style={styles.control}
         />
+        <Button
+          label={locating ? t('location.locating') : t('common.more')}
+          variant="quiet"
+          onPress={onMore}
+          accessibilityLabel={t('atlas.mapOptions')}
+          accessibilityState={{ busy: locating }}
+          style={styles.more}
+        />
       </View>
       <View style={styles.actions}>
-        <IconButton
-          name="share"
-          accessibilityLabel={t('sharing.worldAction')}
-          disabled={disabled}
-          onPress={onShare}
-          style={styles.control}
-        />
-        <IconButton
-          name="location"
-          accessibilityLabel={
-            locating ? t('location.locating') : t('location.goToLocation')
-          }
-          accessibilityState={{ busy: locating }}
-          disabled={disabled || locating}
-          onPress={onLocation}
-          style={styles.control}
-        />
-        {mode === 'globe' && (
-          <IconButton
-            name="north"
-            accessibilityLabel={t('atlas.northUp')}
-            onPress={onNorth}
-            style={styles.control}
-          />
-        )}
         <IconButton
           name="reset"
           accessibilityLabel={
@@ -123,9 +103,15 @@ export function MapToolbar({
 
 const styles = StyleSheet.create({
   content: { gap: theme.space.sm },
-  toolbar: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
-  mode: { flex: 1, padding: theme.space.xs },
+  toolbar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: theme.space.sm,
+  },
+  mode: { flexGrow: 1, flexShrink: 1, minWidth: 140, padding: theme.space.xs },
   segments: { height: theme.size.touch },
   actions: { flexDirection: 'row', gap: theme.space.sm, alignSelf: 'flex-end' },
   control: { ...theme.surface.floating, borderRadius: theme.radius.pill },
+  more: { ...theme.surface.floating, paddingHorizontal: theme.space.md },
 });

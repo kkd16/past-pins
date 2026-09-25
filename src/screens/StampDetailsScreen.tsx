@@ -1,4 +1,5 @@
 import {
+  ActionSheetIOS,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -11,11 +12,11 @@ import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { countryById } from '../countries/catalog';
 import { getStatusPresentation } from '../countries/status';
-import { showStatusPicker } from '../countries/StatusPicker';
 import { useAppData } from '../data/AppDataProvider';
 import { getPlaceStatus, isVisited } from '../data/model';
 import { t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
+import { PlaceStatusControl } from '../places/PlaceStatusControl';
 import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
 
@@ -35,17 +36,33 @@ export function StampDetailsScreen({
   const country = countryById.get(id);
   const status = getPlaceStatus(app.data, id);
   const collected = isVisited(status);
+  const home = app.data.homeCountryId === id;
   const ready = app.status === 'ready';
   const disabled = !ready || app.busy;
   const guard = useActionGuard(`${id}:${app.resetVersion}`);
 
-  function editStatus() {
+  function more() {
     if (!country) return;
     const isCurrent = guard();
-    showStatusPicker(country.name, (nextStatus) => {
-      if (isCurrent())
-        void app.setStatus([id], nextStatus, { preserveLived: false });
-    });
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: country.name,
+        options: [
+          t('common.markLived'),
+          t('countries.details.showMap'),
+          t('common.cancel'),
+        ],
+        disabledButtonIndices: disabled ? [0] : [],
+        cancelButtonIndex: 2,
+        userInterfaceStyle: theme.appearance.colorScheme,
+      },
+      (index) => {
+        if (!isCurrent()) return;
+        if (index === 0 && !disabled)
+          void app.setStatus([id], 'lived', { preserveLived: false });
+        if (index === 1) onShowMap(id);
+      },
+    );
   }
 
   return (
@@ -65,60 +82,58 @@ export function StampDetailsScreen({
             </View>
             {ready && (
               <>
+                <View style={styles.status}>
+                  <AppText variant="caption" tone="muted">
+                    {t('stamps.status', {
+                      status: getStatusPresentation(status).label,
+                    })}
+                  </AppText>
+                  {home && (
+                    <AppText variant="caption" tone="accent">
+                      {t('common.currentHome')}
+                    </AppText>
+                  )}
+                  <PlaceStatusControl
+                    status={status}
+                    disabled={disabled}
+                    onChange={(nextStatus) => {
+                      void app.setStatus([id], nextStatus, {
+                        preserveLived: false,
+                      });
+                    }}
+                  />
+                </View>
                 <View style={styles.art}>
                   <CountryStamp
                     country={country}
                     collected={collected}
                     size={Math.min(
-                      300,
+                      240,
                       Math.max(120, width - theme.space.xl * 2),
                     )}
                   />
+                  <AppText
+                    variant="caption"
+                    tone={collected ? 'accent' : 'muted'}
+                  >
+                    {t(collected ? 'stamps.collected' : 'stamps.notCollected')}
+                  </AppText>
                 </View>
-                <AppText
-                  variant="heading"
-                  tone={collected ? 'accent' : 'muted'}
-                >
-                  {t(collected ? 'stamps.collected' : 'stamps.notCollected')}
-                </AppText>
-                <AppText tone="muted">
-                  {t(
-                    collected
-                      ? 'stamps.collectedHint'
-                      : 'stamps.notCollectedHint',
-                  )}
-                </AppText>
-                <AppText variant="caption" tone="muted">
-                  {t('stamps.status', {
-                    status: getStatusPresentation(status).label,
-                  })}
-                </AppText>
-                <Button
-                  label={t(
-                    collected ? 'stamps.changeStatus' : 'stamps.markVisited',
-                  )}
-                  disabled={disabled}
-                  onPress={
-                    collected
-                      ? editStatus
-                      : () => {
-                          void app.setStatus([id], 'visited');
-                        }
-                  }
-                />
               </>
             )}
-            <Button
-              label={t('sharing.stampAction')}
-              variant="quiet"
-              disabled={disabled}
-              onPress={onShare}
-            />
-            <Button
-              label={t('countries.details.showMap')}
-              variant="quiet"
-              onPress={() => onShowMap(id)}
-            />
+            <View style={styles.actions}>
+              <Button
+                label={t('sharing.stampAction')}
+                variant="quiet"
+                disabled={disabled}
+                onPress={onShare}
+              />
+              <Button
+                label={t('common.more')}
+                variant="quiet"
+                onPress={more}
+              />
+            </View>
             <AppText variant="caption" tone="muted">
               {t('stamps.artworkNote')}
             </AppText>
@@ -137,5 +152,7 @@ export function StampDetailsScreen({
 const styles = StyleSheet.create({
   content: { paddingVertical: theme.space.lg, gap: theme.space.lg },
   heading: { gap: theme.space.xs },
-  art: { alignItems: 'center', paddingVertical: theme.space.md },
+  status: { gap: theme.space.sm },
+  art: { alignItems: 'center', gap: theme.space.sm },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm },
 });

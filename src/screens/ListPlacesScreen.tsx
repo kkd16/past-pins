@@ -170,15 +170,20 @@ function ListPlacesEditor({
         ItemSeparatorComponent={Separator}
         ListHeaderComponent={
           <View style={styles.header}>
-            <AppText variant="heading" accessibilityRole="header">
-              {list.name}
-            </AppText>
-            <AppText tone="muted">
-              {t('lists.selectedCount', {
-                count: selected.size,
-                amount: formatNumber(selected.size),
-              })}
-            </AppText>
+            <View style={styles.summary}>
+              <AppText variant="heading" accessibilityRole="header">
+                {list.name}
+              </AppText>
+              <AppText tone="muted">
+                {t('lists.selectedCount', {
+                  count: selected.size,
+                  amount: formatNumber(selected.size),
+                })}
+              </AppText>
+              <AppText variant="caption" tone="muted">
+                {t('lists.independent')}
+              </AppText>
+            </View>
             <DataFeedback />
             {stale && (
               <AppText tone="muted">{t('lists.changedElsewhere')}</AppText>
@@ -325,6 +330,7 @@ function Separator() {
 const styles = StyleSheet.create({
   content: { paddingVertical: theme.space.md, paddingBottom: theme.space.xl },
   header: { gap: theme.space.md, paddingBottom: theme.space.lg },
+  summary: { gap: theme.space.xs },
   breadcrumb: { alignItems: 'flex-start', gap: theme.space.xs },
   segments: { height: theme.size.touch },
   card: { borderRadius: theme.radius.sm, backgroundColor: theme.color.surface },

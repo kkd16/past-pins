@@ -84,9 +84,6 @@ export default function CountriesRoute() {
           const region = getPlace(id);
           if (region) router.push(placeHref(region, scope));
         }}
-        onSaveToLists={(placeId) =>
-          router.push({ pathname: '/lists/add', params: { placeId } })
-        }
       />
     );
   return (

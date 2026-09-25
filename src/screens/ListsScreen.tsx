@@ -18,7 +18,13 @@ import { useActionGuard } from '../navigation/useActionGuard';
 import { compareNames, formatList, formatNumber, t } from '../localization';
 import { theme } from '../theme';
 
-export function ListsScreen({ onOpen }: { onOpen: (id: string) => void }) {
+export function ListsScreen({
+  onOpen,
+  onCreate,
+}: {
+  onOpen: (id: string) => void;
+  onCreate: (id: string) => void;
+}) {
   const app = useAppData();
   const guard = useActionGuard(app.data.lists);
   const [query, setQuery] = useState('');
@@ -32,7 +38,7 @@ export function ListsScreen({ onOpen }: { onOpen: (id: string) => void }) {
     Keyboard.dismiss();
     promptListName((name) => {
       const id = app.createList(name);
-      if (id) onOpen(id);
+      if (id) onCreate(id);
     }, guard());
   }
 

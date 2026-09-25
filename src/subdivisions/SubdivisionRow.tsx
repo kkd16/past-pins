@@ -21,7 +21,6 @@ export const SubdivisionRow = memo(function SubdivisionRow({
   selected,
   onPress,
   onChangeStatus,
-  onSaveToLists,
 }: {
   region: Subdivision;
   countryName?: string;
@@ -31,7 +30,6 @@ export const SubdivisionRow = memo(function SubdivisionRow({
   selected: boolean;
   onPress: (id: string) => void;
   onChangeStatus: (id: string) => void;
-  onSaveToLists: (id: string) => void;
 }) {
   const presentation = getStatusPresentation(status);
   const kindLabel = getSubdivisionKindLabel(region.kind);
@@ -62,43 +60,32 @@ export const SubdivisionRow = memo(function SubdivisionRow({
       >
         <View style={styles.text}>
           <AppText>{region.name}</AppText>
-          {countryName && (
-            <AppText variant="caption" tone="muted">
-              {countryName}
-            </AppText>
-          )}
           <AppText variant="caption" tone="muted">
-            {kindLabel}
-          </AppText>
-          <AppText variant="caption" style={{ color: presentation.color }}>
-            {presentation.label}
+            {countryName
+              ? t('subdivisions.globalRowMetadata', {
+                  country: countryName,
+                  type: kindLabel,
+                  status: presentation.label,
+                })
+              : t('subdivisions.rowMetadata', {
+                  type: kindLabel,
+                  status: presentation.label,
+                })}
           </AppText>
         </View>
         {selecting && <Checkmark checked={selected} />}
       </AppPressable>
       {!selecting && (
-        <>
-          <AppPressable
-            style={styles.action}
-            accessibilityLabel={t('subdivisions.changeRegionStatus', {
-              name,
-            })}
-            disabled={disabled}
-            onPress={() => onChangeStatus(region.id)}
-          >
-            <Icon name={presentation.icon} color={presentation.color} />
-          </AppPressable>
-          <AppPressable
-            style={styles.action}
-            accessibilityLabel={t('subdivisions.saveRegionToLists', {
-              name,
-            })}
-            disabled={disabled}
-            onPress={() => onSaveToLists(region.id)}
-          >
-            <Icon name="list" />
-          </AppPressable>
-        </>
+        <AppPressable
+          style={styles.action}
+          accessibilityLabel={t('subdivisions.changeRegionStatus', {
+            name,
+          })}
+          disabled={disabled}
+          onPress={() => onChangeStatus(region.id)}
+        >
+          <Icon name={presentation.icon} color={presentation.color} />
+        </AppPressable>
       )}
     </View>
   );

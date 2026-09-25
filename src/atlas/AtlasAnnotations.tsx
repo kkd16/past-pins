@@ -3,7 +3,6 @@ import {
   useImperativeHandle,
   useLayoutEffect,
   useRef,
-  useState,
   type Ref,
 } from 'react';
 import {
@@ -21,14 +20,12 @@ import { language, t } from '../localization';
 import { theme } from '../theme';
 import {
   annotationTranslation,
-  calloutRect,
   inBounds,
   labelSize,
   placeLabels,
   projectLabels,
   type Rect,
 } from './annotations';
-import { CountryCallout } from './CountryCallout';
 import { countryAnchors, labelCandidates } from './geography';
 import type { AtlasViewportProps } from './types';
 
@@ -41,11 +38,8 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
   selectedId,
   selectedAnchor,
   homeCountryId,
-  places,
   labels,
-  dockSelection,
   onSelect,
-  onDetails,
   topInset,
   bottomInset,
   project,
@@ -61,22 +55,9 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
 }) {
   const homeRef = useRef<View>(null);
   const pinRef = useRef<View>(null);
-  const calloutRef = useRef<View>(null);
   const labelRefs = useRef(new Map<string, View>());
   const visibleLabels = useRef<string[]>([]);
   const { fontScale } = useWindowDimensions();
-  const measurementKey = `${selectedId}:${width}:${fontScale}:${selectedId ? places[selectedId] : ''}:${selectedId === homeCountryId}`;
-  const [measurement, setMeasurement] = useState<{
-    key: string;
-    height: number;
-  }>({
-    key: '',
-    height: 0,
-  });
-  const size = {
-    width: Math.min(260, Math.max(1, width - 16)),
-    height: measurement.height,
-  };
   const bounds = { width, height, top: topInset, bottom: bottomInset };
   const country = selectedId ? countryById.get(selectedId) : null;
   const anchor =
@@ -110,10 +91,10 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
             height: homeSize,
           }
         : null;
-    const callout =
-      dockSelection || measurement.key !== measurementKey
-        ? null
-        : calloutRect(point, size, bounds);
+    const pin =
+      point && inBounds(point, bounds)
+        ? { x: point[0] - 4, y: point[1] - 4, width: 8, height: 8 }
+        : null;
     // Keep label contents mounted, so newly visible countries appear during a
     // drag without React work. Only visible labels receive native frame updates.
     const position = (
@@ -136,17 +117,11 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
       });
     };
     position(homeRef.current, home, true);
-    position(calloutRef.current, callout, true);
-    position(
-      pinRef.current,
-      callout && point
-        ? { x: point[0] - 4, y: point[1] - 4, width: 8, height: 8 }
-        : null,
-    );
+    position(pinRef.current, pin);
     const visible = placeLabels(
       projectLabels(names, project, camera.zoom),
       bounds,
-      [callout, home].filter((rect) => rect !== null),
+      [pin, home].filter((rect) => rect !== null),
       fontScale,
     );
     for (const id of visibleLabels.current)
@@ -201,39 +176,13 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
           </AppText>
         </View>
       ))}
-      {country && !dockSelection && (
-        <>
-          <View
-            ref={pinRef}
-            pointerEvents="none"
-            accessibilityElementsHidden
-            style={[styles.positioned, styles.pin]}
-          />
-          <View
-            ref={calloutRef}
-            collapsable={false}
-            pointerEvents="none"
-            accessibilityElementsHidden
-            style={[styles.positioned, { width: size.width }]}
-          >
-            <CountryCallout
-              key={measurementKey}
-              countryId={country.id}
-              status={places[country.id]}
-              home={country.id === homeCountryId}
-              onDetails={onDetails}
-              onDismiss={() => onSelect(null)}
-              onLayout={({ nativeEvent: { layout } }) =>
-                setMeasurement((current) =>
-                  current.key === measurementKey &&
-                  current.height === layout.height
-                    ? current
-                    : { key: measurementKey, height: layout.height },
-                )
-              }
-            />
-          </View>
-        </>
+      {country && (
+        <View
+          ref={pinRef}
+          pointerEvents="none"
+          accessibilityElementsHidden
+          style={[styles.positioned, styles.pin]}
+        />
       )}
     </View>
   );

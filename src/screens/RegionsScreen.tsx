@@ -34,7 +34,6 @@ export function RegionsScreen({
   onOpenFilters,
   onResetFilters,
   onSelect,
-  onSaveToLists,
 }: {
   continent: string;
   query: string;
@@ -46,7 +45,6 @@ export function RegionsScreen({
   onOpenFilters: () => void;
   onResetFilters: () => void;
   onSelect: (id: string) => void;
-  onSaveToLists: (id: string) => void;
 }) {
   const app = useAppData();
   const terminology = getCountrySubdivisionTerminology();
@@ -68,13 +66,6 @@ export function RegionsScreen({
       onSelect(id);
     },
     [onSelect],
-  );
-  const saveToLists = useCallback(
-    (id: string) => {
-      Keyboard.dismiss();
-      onSaveToLists(id);
-    },
-    [onSaveToLists],
   );
   const changeStatus = useCallback(
     (id: string) => {
@@ -157,7 +148,6 @@ export function RegionsScreen({
             disabled={disabled}
             onPress={select}
             onChangeStatus={changeStatus}
-            onSaveToLists={saveToLists}
           />
         )}
         ListEmptyComponent={

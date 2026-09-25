@@ -25,6 +25,9 @@ export default function MapRoute() {
       onOpenRegions={(id) => router.push(regionsHref(id))}
       onSearch={() => router.push('/map-search')}
       onShare={() => router.push({ pathname: '/share', params: { kind: 'world' } })}
+      onSaveToLists={(placeId) =>
+        router.push({ pathname: '/lists/add', params: { placeId } })
+      }
     />
   );
 }

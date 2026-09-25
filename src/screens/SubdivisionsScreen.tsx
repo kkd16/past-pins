@@ -1,23 +1,29 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActionSheetIOS,
+  FlatList,
+  Keyboard,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
+import { useScreenReaderEnabled } from '../accessibility/useScreenReaderEnabled';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
-import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { SearchField } from '../components/SearchField';
 import { Surface } from '../components/Surface';
 import { countryById } from '../countries/catalog';
 import { CountryScopeControl } from '../countries/CountryScopeControl';
 import type { CountryScope } from '../countries/filters';
-import { ProgressSummary } from '../countries/ProgressSummary';
-import { getStatusPresentation } from '../countries/status';
 import { showStatusPicker } from '../countries/StatusPicker';
 import { useAppData } from '../data/AppDataProvider';
 import { getSubdivisionStatus } from '../data/model';
 import { formatNumber, t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
+import { PlaceSelectionCard } from '../places/PlaceSelectionCard';
 import { subdivisionById } from '../subdivisions/catalog';
 import { SubdivisionMap } from '../subdivisions/SubdivisionMap';
 import { SubdivisionRow } from '../subdivisions/SubdivisionRow';
@@ -53,6 +59,7 @@ export function SubdivisionsScreen({
   onSaveToLists: (id: string) => void;
 }) {
   const app = useAppData();
+  const screenReader = useScreenReaderEnabled();
   const { setSubdivisionStatus } = app;
   const country = countryById.get(countryId);
   const terminology = getCountrySubdivisionTerminology(countryId);
@@ -101,8 +108,8 @@ export function SubdivisionsScreen({
     amount: formatNumber(selectedIds.size),
   };
   const editScope = useMemo(
-    () => ({ filterKey, selectedIds }),
-    [filterKey, selectedIds],
+    () => ({ filterKey, selectedIds, selectedId, view }),
+    [filterKey, selectedIds, selectedId, view],
   );
   const guard = useActionGuard(editScope);
   const stats = useMemo(
@@ -144,13 +151,31 @@ export function SubdivisionsScreen({
     [selecting, filterKey],
   );
 
-  const saveToLists = useCallback(
-    (id: string) => {
-      Keyboard.dismiss();
-      onSaveToLists(id);
-    },
-    [onSaveToLists],
-  );
+  function showMore() {
+    if (!selectedRegion || !country || disabled) return;
+    const id = selectedRegion.id;
+    const isCurrent = guard();
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: selectedRegion.name,
+        options: [
+          t('common.markLived'),
+          t('lists.saveToLists'),
+          t('subdivisions.countryDetails', { country: country.name }),
+          t('common.cancel'),
+        ],
+        cancelButtonIndex: 3,
+        userInterfaceStyle: theme.appearance.colorScheme,
+      },
+      (index) => {
+        if (!isCurrent()) return;
+        if (index === 0)
+          void setSubdivisionStatus([id], 'lived', { preserveLived: false });
+        else if (index === 1) onSaveToLists(id);
+        else if (index === 2) onOpenCountry();
+      },
+    );
+  }
 
   function showAll() {
     setQuery('');
@@ -175,7 +200,13 @@ export function SubdivisionsScreen({
   return (
     <Screen
       style={styles.screen}
-      onAccessibilityEscape={selecting ? () => setSelection(null) : undefined}
+      onAccessibilityEscape={
+        selecting
+          ? () => setSelection(null)
+          : view === 'map' && selectedId
+            ? () => setSelectedId(null)
+            : undefined
+      }
     >
       <ScrollView
         style={styles.viewControl}
@@ -211,6 +242,7 @@ export function SubdivisionsScreen({
               active={view === 'map'}
             />
             <ScrollView
+              key={selectedId ?? 'summary'}
               style={styles.mapDock}
               contentContainerStyle={styles.mapDockContent}
               contentInsetAdjustmentBehavior="never"
@@ -218,44 +250,21 @@ export function SubdivisionsScreen({
               scrollsToTop={false}
             >
               <DataFeedback />
-              {selectedRegion && (
-                <View style={styles.selected}>
-                  <View style={styles.selectedHeading}>
-                    <View style={styles.grow}>
-                      <AppText variant="caption" tone="muted">
-                        {t('subdivisions.selection', {
-                          type: getSubdivisionKindLabel(selectedRegion.kind),
-                        })}
-                      </AppText>
-                      <AppText variant="heading">{selectedRegion.name}</AppText>
-                      <AppText tone="muted">
-                        {
-                          getStatusPresentation(
-                            getSubdivisionStatus(app.data, selectedRegion.id),
-                          ).label
-                        }
-                      </AppText>
-                    </View>
-                    <IconButton
-                      name="close"
-                      accessibilityLabel={t('subdivisions.clearSelection')}
-                      onPress={() => setSelectedId(null)}
-                    />
-                  </View>
-                  <View style={styles.actions}>
-                    <Button
-                      label={t('subdivisions.changeStatus')}
-                      disabled={disabled}
-                      onPress={() => changeStatus(selectedRegion.id)}
-                    />
-                    <Button
-                      label={t('lists.saveToLists')}
-                      variant="quiet"
-                      disabled={disabled}
-                      onPress={() => saveToLists(selectedRegion.id)}
-                    />
-                  </View>
-                </View>
+              {selectedRegion && app.status === 'ready' && (
+                <PlaceSelectionCard
+                  title={selectedRegion.name}
+                  subtitle={getSubdivisionKindLabel(selectedRegion.kind)}
+                  status={getSubdivisionStatus(app.data, selectedRegion.id)}
+                  disabled={disabled}
+                  onChangeStatus={(status) => {
+                    void setSubdivisionStatus([selectedRegion.id], status, {
+                      preserveLived: false,
+                    });
+                  }}
+                  onMore={showMore}
+                  onDismiss={() => setSelectedId(null)}
+                  autofocus={screenReader && view === 'map'}
+                />
               )}
               {!selectedRegion && (
                 <View style={styles.mapSummary}>
@@ -273,11 +282,6 @@ export function SubdivisionsScreen({
                   </AppText>
                 </View>
               )}
-              <Button
-                label={t('subdivisions.browseList', terminology)}
-                variant="quiet"
-                onPress={() => setView('list')}
-              />
             </ScrollView>
           </View>
         )}
@@ -300,28 +304,6 @@ export function SubdivisionsScreen({
               ItemSeparatorComponent={Separator}
               ListHeaderComponent={
                 <View style={styles.header}>
-                  <Button
-                    label={t('subdivisions.countryDetails', {
-                      country: country.name,
-                    })}
-                    variant="quiet"
-                    onPress={() => {
-                      Keyboard.dismiss();
-                      onOpenCountry();
-                    }}
-                  />
-                  <DataFeedback />
-                  <ProgressSummary
-                    kind="subdivisions"
-                    countryId={countryId}
-                    label={t('subdivisions.visited', terminology)}
-                    visited={stats.visited}
-                    total={stats.total}
-                    loading={app.status !== 'ready'}
-                  />
-                  <AppText variant="caption" tone="muted">
-                    {t('subdivisions.independentTracking', terminology)}
-                  </AppText>
                   <SearchField
                     value={query}
                     onChangeText={setQuery}
@@ -329,15 +311,25 @@ export function SubdivisionsScreen({
                     accessibilityLabel={t('subdivisions.search', terminology)}
                   />
                   <CountryScopeControl value={scope} onChange={setScope} />
+                  <DataFeedback />
                   {app.status === 'ready' && (
                     <View style={styles.actions}>
-                      <AppText variant="caption" tone="muted" style={styles.grow}>
-                        {t('subdivisions.count', {
-                          ...terminology,
-                          count: results.length,
-                          amount: formatNumber(results.length),
-                        })}
-                      </AppText>
+                      <View style={styles.grow}>
+                        <AppText variant="caption" tone="muted">
+                          {t('subdivisions.count', {
+                            ...terminology,
+                            count: results.length,
+                            amount: formatNumber(results.length),
+                          })}
+                        </AppText>
+                        <AppText variant="caption" tone="visited">
+                          {t('subdivisions.visitedSummary', {
+                            ...terminology,
+                            visited: formatNumber(stats.visited),
+                            total: formatNumber(stats.total),
+                          })}
+                        </AppText>
+                      </View>
                       {!selecting && (
                         <Button
                           label={t('subdivisions.select', terminology)}
@@ -351,6 +343,16 @@ export function SubdivisionsScreen({
                       )}
                     </View>
                   )}
+                  <Button
+                    label={t('subdivisions.countryDetails', {
+                      country: country.name,
+                    })}
+                    variant="quiet"
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      onOpenCountry();
+                    }}
+                  />
                 </View>
               }
               renderItem={({ item }) => (
@@ -362,7 +364,6 @@ export function SubdivisionsScreen({
                   selected={selectedIds.has(item.id)}
                   onPress={pressRow}
                   onChangeStatus={changeStatus}
-                  onSaveToLists={saveToLists}
                 />
               )}
               ListEmptyComponent={
@@ -383,9 +384,14 @@ export function SubdivisionsScreen({
                 ) : null
               }
               ListFooterComponent={
-                <AppText variant="caption" tone="muted" style={styles.coverage}>
-                  {t('subdivisions.coverageNote')}
-                </AppText>
+                <View style={styles.coverage}>
+                  <AppText variant="caption" tone="muted">
+                    {t('subdivisions.independentTracking', terminology)}
+                  </AppText>
+                  <AppText variant="caption" tone="muted">
+                    {t('subdivisions.coverageNote')}
+                  </AppText>
+                </View>
               }
             />
             {selecting && (
@@ -479,12 +485,6 @@ const styles = StyleSheet.create({
     paddingBottom: theme.space.sm,
   },
   grow: { flex: 1 },
-  selected: { gap: theme.space.md },
-  selectedHeading: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.space.sm,
-  },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   separator: { height: theme.space.sm },
   empty: { padding: theme.space.xl, gap: theme.space.md, alignItems: 'center' },
-  coverage: { paddingVertical: theme.space.xl },
+  coverage: { paddingVertical: theme.space.xl, gap: theme.space.sm },
   footer: {
     flexGrow: 0,
     maxHeight: '40%',

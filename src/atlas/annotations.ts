@@ -34,28 +34,6 @@ export function inBounds(point: readonly number[] | null, bounds: ViewBounds) {
   );
 }
 
-export function calloutRect(
-  point: readonly number[] | null,
-  size: { width: number; height: number },
-  bounds: ViewBounds,
-): Rect | null {
-  if (!inBounds(point, bounds) || !point) return null;
-  if (size.height > bounds.height - bounds.top - bounds.bottom) return null;
-  const above = point[1] - size.height - 14;
-  const y =
-    above >= bounds.top
-      ? above
-      : Math.min(point[1] + 14, bounds.height - bounds.bottom - size.height);
-  return {
-    x: Math.max(
-      8,
-      Math.min(bounds.width - size.width - 8, point[0] - size.width / 2),
-    ),
-    y,
-    ...size,
-  };
-}
-
 export function labelSize(name: string, fontScale: number) {
   return {
     width: Math.min(170 * fontScale, name.length * 6.5 * fontScale + 12),

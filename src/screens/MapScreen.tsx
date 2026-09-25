@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useIsFocused } from 'expo-router';
 import {
+  ActionSheetIOS,
   Alert,
   AppState,
   ScrollView,
@@ -11,7 +12,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FlatCamera } from '../atlas/FlatCamera';
-import { CountryCallout } from '../atlas/CountryCallout';
 import { MapSummary } from '../atlas/MapSummary';
 import { MapToolbar } from '../atlas/MapToolbar';
 import type { AtlasCommand } from '../atlas/types';
@@ -22,13 +22,15 @@ import { Button } from '../components/Button';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { UserFacingError } from '../data/errors';
-import { t } from '../localization';
+import { getPlaceStatus } from '../data/model';
+import { formatNumber, t } from '../localization';
 import { getCurrentCountry, getCurrentLocation } from '../location/current-location';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
-import { getCountrySubdivisions } from '../subdivisions/catalog';
+import { PlaceSelectionCard } from '../places/PlaceSelectionCard';
+import { getSubdivisionStatistics } from '../subdivisions/tracking';
 import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 
 export function MapScreen({
@@ -37,6 +39,7 @@ export function MapScreen({
   onOpenRegions,
   onSearch,
   onShare,
+  onSaveToLists,
   focus,
   focusRequest,
   onFocusConsumed,
@@ -46,6 +49,7 @@ export function MapScreen({
   onOpenRegions: (countryId: string) => void;
   onSearch: () => void;
   onShare: () => void;
+  onSaveToLists: (id: string) => void;
   focus?: string;
   focusRequest?: string;
   onFocusConsumed: () => void;
@@ -68,13 +72,13 @@ export function MapScreen({
   const [localCommand, setCommand] = useState<AtlasCommand | null>(null);
   const sequence = useRef(0);
   const guard = useActionGuard(app.resetVersion);
+  const menuGuard = useActionGuard(data);
   const [topHeight, setTopHeight] = useState(108);
   const [bottomHeight, setBottomHeight] = useState(120);
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
   const screenReader = useScreenReaderEnabled();
-  const dockSelection = largeText || screenReader;
   async function focusLocation() {
     if (locating) return;
     const isCurrentScreen = guard();
@@ -117,6 +121,83 @@ export function MapScreen({
   );
   const command = incomingFocus ?? localCommand;
   const selectedId = incomingFocus?.id ?? selection?.id ?? null;
+  const selectionGuard = useActionGuard(selectedId);
+  const selectedCountry = selectedId ? countryById.get(selectedId) : undefined;
+  const regionStats = selectedCountry
+    ? getSubdivisionStatistics(data.subdivisions, selectedCountry.id)
+    : null;
+
+  function showCountryActions() {
+    if (!selectedCountry || !ready || app.busy) return;
+    const isCurrentData = menuGuard();
+    const isCurrentSelection = selectionGuard();
+    const id = selectedCountry.id;
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: selectedCountry.name,
+        options: [
+          t('common.markLived'),
+          t('lists.saveToLists'),
+          t('common.cancel'),
+        ],
+        cancelButtonIndex: 2,
+        userInterfaceStyle: theme.appearance.colorScheme,
+      },
+      (index) => {
+        if (!isCurrentData() || !isCurrentSelection()) return;
+        if (index === 0)
+          void app.setStatus([id], 'lived', { preserveLived: false });
+        if (index === 1) onSaveToLists(id);
+      },
+    );
+  }
+
+  function showMapActions() {
+    const isCurrent = menuGuard();
+    const actions = [
+      {
+        label: t('sharing.worldAction'),
+        disabled: !ready || app.busy,
+        run: onShare,
+      },
+      {
+        label: t(locating ? 'location.locating' : 'location.goToLocation'),
+        disabled: !ready || app.busy || locating,
+        run: () => void focusLocation(),
+      },
+      ...(mode === 'globe'
+        ? [{
+            label: t('atlas.northUp'),
+            disabled: !ready,
+            run: () => setCommand({ type: 'north', key: ++sequence.current }),
+          }]
+        : []),
+      {
+        label: t('atlas.gestureHelp'),
+        disabled: false,
+        run: () =>
+          Alert.alert(
+            t('atlas.gestureHelp'),
+            t(mode === 'globe' ? 'atlas.globeGestures' : 'atlas.mapGestures'),
+          ),
+      },
+    ];
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: t('atlas.mapOptions'),
+        options: [...actions.map(({ label }) => label), t('common.cancel')],
+        cancelButtonIndex: actions.length,
+        disabledButtonIndices: actions.flatMap(({ disabled }, index) =>
+          disabled ? [index] : [],
+        ),
+        userInterfaceStyle: theme.appearance.colorScheme,
+      },
+      (index) => {
+        const action = actions[index];
+        if (isCurrent() && action && !action.disabled) action.run();
+      },
+    );
+  }
   const commandApplied = useCallback(
     (key: string | number) => {
       if (incomingFocus?.key === key) {
@@ -141,12 +222,10 @@ export function MapScreen({
     selectedId,
     selectedAnchor: incomingFocus ? null : (selection?.anchor ?? null),
     labels: data.preferences.countryLabels,
-    dockSelection,
     command,
     topInset: insets.top + topHeight + theme.space.md,
     bottomInset: insets.bottom + bottomHeight + theme.space.md,
     onSelect: selectCountry,
-    onDetails: onSelect,
     onCommandApplied: commandApplied,
   };
 
@@ -199,12 +278,8 @@ export function MapScreen({
             disabled={!ready || app.busy}
             onChangeMode={(mapView) => app.updatePreferences({ mapView })}
             onSearch={onSearch}
-            onShare={onShare}
-            onLocation={focusLocation}
+            onMore={showMapActions}
             locating={locating}
-            onNorth={() =>
-              setCommand({ type: 'north', key: ++sequence.current })
-            }
             onReset={() =>
               setCommand({ type: 'reset', key: ++sequence.current })
             }
@@ -219,6 +294,7 @@ export function MapScreen({
         ]}
       >
         <ScrollView
+          key={selectedId ?? 'summary'}
           style={styles.overlayScroll}
           contentInsetAdjustmentBehavior="never"
           bounces={false}
@@ -227,35 +303,43 @@ export function MapScreen({
           }
           contentContainerStyle={styles.footer}
         >
-          {ready && dockSelection && selectedId && (
-            <CountryCallout
-              key={selectedId}
-              countryId={selectedId}
-              status={data.places[selectedId]}
-              home={data.homeCountryId === selectedId}
-              onDetails={onSelect}
+          <DataFeedback />
+          {ready && selectedCountry && (
+            <PlaceSelectionCard
+              title={selectedCountry.name}
+              status={getPlaceStatus(data, selectedCountry.id)}
+              home={data.homeCountryId === selectedCountry.id}
+              disabled={app.busy}
+              onChangeStatus={(status) => {
+                void app.setStatus([selectedCountry.id], status, {
+                  preserveLived: false,
+                });
+              }}
+              onMore={showCountryActions}
+              onDetails={() => onSelect(selectedCountry.id)}
               onDismiss={() => selectCountry(null)}
               autofocus={screenReader}
-            />
+            >
+              {regionStats && regionStats.total > 0 && (
+                <Button
+                  label={t('subdivisions.progress', {
+                    ...getCountrySubdivisionTerminology(selectedCountry.id),
+                    visited: formatNumber(regionStats.visited),
+                    total: formatNumber(regionStats.total),
+                  })}
+                  accessibilityHint={t(
+                    'subdivisions.openCountry',
+                    getCountrySubdivisionTerminology(selectedCountry.id),
+                  )}
+                  variant="quiet"
+                  onPress={() => onOpenRegions(selectedCountry.id)}
+                />
+              )}
+            </PlaceSelectionCard>
           )}
-          <DataFeedback />
-          {ready &&
-            selectedId &&
-            getCountrySubdivisions(selectedId).length > 0 && (
-              <Button
-                label={t('subdivisions.countryTitle', {
-                  ...getCountrySubdivisionTerminology(selectedId),
-                  country: countryById.get(selectedId)!.name,
-                })}
-                variant="quiet"
-                onPress={() => onOpenRegions(selectedId)}
-              />
-            )}
-          {ready && data.preferences.mapSummary && (
+          {ready && !selectedCountry && data.preferences.mapSummary && (
             <MapSummary
               places={data.places}
-              mode={mode}
-              screenReader={screenReader}
               onOpenCountries={onOpenCountries}
             />
           )}
@@ -272,7 +356,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    maxHeight: '50%',
+    maxHeight: '40%',
     paddingHorizontal: theme.space.lg,
   },
   bottom: {

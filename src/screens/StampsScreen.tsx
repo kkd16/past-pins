@@ -85,7 +85,6 @@ export function StampsScreen({
             ItemSeparatorComponent={Separator}
             ListHeaderComponent={
               <View style={styles.header}>
-                <AppText tone="muted">{t('stamps.description')}</AppText>
                 <DataFeedback />
                 {app.status === 'ready' && (
                   <View style={styles.progress}>
@@ -193,15 +192,14 @@ export function StampsScreen({
                   />
                   <View style={styles.label}>
                     <AppText variant="label">{item.name}</AppText>
-                    <AppText variant="caption" tone="muted">
-                      {item.continent.name}
-                    </AppText>
-                    <AppText
-                      variant="caption"
-                      tone={collected ? 'accent' : 'muted'}
-                    >
-                      {status}
-                    </AppText>
+                    {scope === 'all' && (
+                      <AppText
+                        variant="caption"
+                        tone={collected ? 'accent' : 'muted'}
+                      >
+                        {status}
+                      </AppText>
+                    )}
                   </View>
                 </AppPressable>
               );

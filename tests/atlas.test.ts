@@ -3,7 +3,7 @@ import { geoArea, geoContains } from 'd3-geo';
 
 import {
   annotationTranslation,
-  calloutRect,
+  inBounds,
   placeLabels,
   projectLabels,
   type Rect,
@@ -219,7 +219,7 @@ describe('camera navigation', () => {
     expect(camera.zoom).toBe(1);
   });
 
-  test('a local tap anchor keeps a large country callout visible without moving the globe', () => {
+  test('a local tap anchor keeps the selected pin visible without moving the globe', () => {
     const camera = new GlobeCamera();
     camera.resize(390, 844);
     camera.focus([-123, 54], 0.03);
@@ -228,21 +228,19 @@ describe('camera navigation', () => {
       toCartesian(countryAnchors.get('ca')!.anchor),
     );
     expect(
-      calloutRect(
+      inBounds(
         mainAnchor,
-        { width: 240, height: 80 },
         { width: 390, height: 844, top: 130, bottom: 140 },
       ),
-    ).toBeNull();
+    ).toBe(false);
     const tappedAnchor = camera.geographicPoint(195, 422)!;
     const point = camera.project(toCartesian(tappedAnchor));
     expect(
-      calloutRect(
+      inBounds(
         point,
-        { width: 240, height: 80 },
         { width: 390, height: 844, top: 130, bottom: 140 },
       ),
-    ).not.toBeNull();
+    ).toBe(true);
     expect(Array.from(camera.rotation)).toEqual(rotation);
   });
 
@@ -262,7 +260,7 @@ describe('camera navigation', () => {
   });
 });
 
-describe('map callouts and sparse labels', () => {
+describe('map markers and sparse labels', () => {
   const bounds = { width: 390, height: 844, top: 130, bottom: 140 };
   test('mounted labels follow the current camera throughout a drag and pinch', () => {
     const camera = new GlobeCamera();
@@ -319,20 +317,17 @@ describe('map callouts and sparse labels', () => {
     expect(label.x + label.width).toBeLessThanOrEqual(bounds.width - 8);
   });
 
-  test('callouts flip and clamp within usable bounds, hiding offscreen anchors', () => {
-    const size = { width: 240, height: 80 };
-    expect(calloutRect([195, 150], size, bounds)!.y).toBe(164);
-    expect(calloutRect([15, 400], size, bounds)!.x).toBe(8);
-    expect(calloutRect([380, 400], size, bounds)!.x).toBe(142);
-    expect(calloutRect(null, size, bounds)).toBeNull();
-    expect(calloutRect([-5, 400], size, bounds)).toBeNull();
-    expect(calloutRect([195, 800], size, bounds)).toBeNull();
-    expect(
-      calloutRect([195, 400], { width: 240, height: 1000 }, bounds),
-    ).toBeNull();
+  test('selected pins stay visible between the toolbar and selection panel', () => {
+    expect(inBounds([195, 150], bounds)).toBe(true);
+    expect(inBounds([15, 400], bounds)).toBe(true);
+    expect(inBounds([380, 400], bounds)).toBe(true);
+    expect(inBounds(null, bounds)).toBe(false);
+    expect(inBounds([-5, 400], bounds)).toBe(false);
+    expect(inBounds([195, 800], bounds)).toBe(false);
+    expect(inBounds([195, 400], { ...bounds, bottom: 500 })).toBe(false);
   });
 
-  test('labels cap at twelve and leave the callout and each other clear', () => {
+  test('labels cap at twelve and leave markers and each other clear', () => {
     const blocked = { x: 120, y: 300, width: 150, height: 60 };
     const candidates = Array.from({ length: 30 }, (_, index) => ({
       id: String(index),
@@ -356,17 +351,17 @@ describe('map callouts and sparse labels', () => {
     });
   });
 
-  test('labels also leave a visible home marker clear', () => {
+  test('labels leave both home and selected markers clear', () => {
     const home = { x: 181, y: 386, width: 28, height: 28 };
-    const callout = { x: 8, y: 520, width: 240, height: 80 };
+    const selected = { x: 191, y: 556, width: 8, height: 8 };
     const labels = placeLabels(
       [
         { id: 'near-home', name: 'Home neighbor', point: [220, 400] },
-        { id: 'near-callout', name: 'Selected neighbor', point: [195, 560] },
+        { id: 'near-selection', name: 'Selected neighbor', point: [195, 560] },
         { id: 'clear', name: 'Clear country', point: [195, 300] },
       ],
       bounds,
-      [home, callout],
+      [home, selected],
     );
     expect(labels.map(({ id }) => id)).toEqual(['clear']);
   });

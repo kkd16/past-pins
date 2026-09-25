@@ -11,13 +11,9 @@ import { theme } from '../theme';
 
 export function MapSummary({
   places,
-  mode,
-  screenReader,
   onOpenCountries,
 }: {
   places: AppData['places'];
-  mode: AppData['preferences']['mapView'];
-  screenReader: boolean;
   onOpenCountries: () => void;
 }) {
   const statuses = Object.values(places);
@@ -34,17 +30,12 @@ export function MapSummary({
         })}
         style={styles.heading}
       >
-        <AppText variant="number" tone="visited">
+        <AppText variant="heading" tone="visited">
           {formatNumber(visited)}
         </AppText>
-        <View style={styles.text}>
-          <AppText variant="label">{t('atlas.placesVisited')}</AppText>
-          {!screenReader && (
-            <AppText variant="caption" tone="muted">
-              {mode === 'globe' ? t('atlas.globeGestures') : t('atlas.mapGestures')}
-            </AppText>
-          )}
-        </View>
+        <AppText variant="label" style={styles.text}>
+          {t('atlas.placesVisited')}
+        </AppText>
       </View>
       <View style={styles.legend}>
         {(['visited', 'wishlist', 'lived'] as const).map((status) => {
@@ -71,14 +62,14 @@ export function MapSummary({
 }
 
 const styles = StyleSheet.create({
-  summary: { padding: theme.space.md, gap: theme.space.md },
+  summary: { padding: theme.space.md, gap: theme.space.sm },
   heading: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: theme.space.md,
+    gap: theme.space.sm,
   },
-  text: { flex: 1, minWidth: 150, gap: theme.space.xs },
+  text: { flexShrink: 1 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
 });

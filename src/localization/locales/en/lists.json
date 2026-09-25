@@ -15,7 +15,7 @@
   "emptyListHint": "Add countries and regions to track your visits.",
   "addPlaces": "Add places",
   "editPlaces": "Edit places",
-  "independent": "Progress uses your travel statuses. Editing this list won’t change them.",
+  "independent": "Editing this list won’t change your travel statuses.",
   "count": { "one": "%{amount} place", "other": "%{amount} places" },
   "selectedCount": {
     "one": "%{amount} place selected",

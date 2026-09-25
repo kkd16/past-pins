@@ -47,21 +47,28 @@ export function ListDetailsScreen({
   const guard = useActionGuard(app.data.lists);
 
   function options() {
-    if (!list) return;
+    if (!list || disabled) return;
     const isCurrent = guard();
     ActionSheetIOS.showActionSheetWithOptions(
       {
         title: list.name,
-        options: [t('lists.rename'), t('lists.delete'), t('common.cancel')],
-        destructiveButtonIndex: 1,
-        cancelButtonIndex: 2,
+        options: [
+          t('sharing.listAction'),
+          t('lists.rename'),
+          t('lists.delete'),
+          t('common.cancel'),
+        ],
+        disabledButtonIndices: list.placeIds.length ? [] : [0],
+        destructiveButtonIndex: 2,
+        cancelButtonIndex: 3,
         userInterfaceStyle: theme.appearance.colorScheme,
       },
       (index) => {
         if (!isCurrent()) return;
-        if (index === 0)
+        if (index === 0) onShare();
+        if (index === 1)
           promptListName((name) => app.renameList(id, name), isCurrent, list.name);
-        if (index === 1 && app.deleteList(id)) onBrowse();
+        if (index === 2 && app.deleteList(id)) onBrowse();
       },
     );
   }
@@ -126,18 +133,9 @@ export function ListDetailsScreen({
                         total: formatNumber(stats.total),
                       })}
                     </AppText>
-                    <AppText variant="caption" tone="muted">
-                      {t('lists.independent')}
-                    </AppText>
                     <Button
                       label={t('lists.editPlaces')}
                       onPress={onEdit}
-                      disabled={disabled}
-                    />
-                    <Button
-                      label={t('sharing.listAction')}
-                      variant="quiet"
-                      onPress={onShare}
                       disabled={disabled}
                     />
                   </>

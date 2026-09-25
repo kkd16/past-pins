@@ -19,6 +19,8 @@
   "countryProgress": "%{country}: %{visited} of %{total} %{plural} visited",
   "openCountry": "Opens the map of %{plural}",
   "regionStatus": "%{name}, %{type}, %{status}",
+  "rowMetadata": "%{type} · %{status}",
+  "globalRowMetadata": "%{country} · %{type} · %{status}",
   "changeStatus": "Change status",
   "openRegionHint": "Opens the map and actions",
   "changeRegionStatus": "Change status for %{name}",

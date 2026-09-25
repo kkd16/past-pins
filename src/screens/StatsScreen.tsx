@@ -40,7 +40,7 @@ function StatusTotals({
   onPress: (scope: CountryScope) => void;
 }) {
   return (
-    <View style={styles.totals}>
+    <Surface style={styles.totals}>
       {[
         {
           scope: 'wishlist' as const,
@@ -60,7 +60,7 @@ function StatusTotals({
           count: stats.remaining,
           color: theme.color.accent,
         },
-      ].map(({ scope, label, count, color }) => {
+      ].map(({ scope, label, count, color }, index) => {
         const value = loading ? '—' : formatNumber(count);
         return (
           <AppPressable
@@ -79,30 +79,24 @@ function StatusTotals({
             )}
             disabled={loading}
             onPress={() => onPress(scope)}
-            style={[styles.statistic, largeText && styles.fullWidth]}
+            style={[styles.statistic, index > 0 && styles.statisticBorder]}
           >
-            <Surface style={styles.statisticContent}>
-              <AppText
-                variant={largeText ? 'heading' : 'number'}
-                style={{ color }}
-              >
+            <View
+              style={[
+                styles.statisticContent,
+                largeText && styles.statisticStack,
+              ]}
+            >
+              <AppText style={!largeText && styles.cardLabel}>{label}</AppText>
+              <AppText variant="label" style={{ color }}>
                 {value}
               </AppText>
-              <View style={styles.cardHeading}>
-                <AppText
-                  variant="caption"
-                  tone="muted"
-                  style={styles.cardLabel}
-                >
-                  {label}
-                </AppText>
-                <Icon name="chevronRight" />
-              </View>
-            </Surface>
+            </View>
+            <Icon name="chevronRight" />
           </AppPressable>
         );
       })}
-    </View>
+    </Surface>
   );
 }
 
@@ -316,10 +310,25 @@ const styles = StyleSheet.create({
     gap: theme.space.sm,
   },
   cardLabel: { flex: 1 },
-  totals: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.sm },
-  statistic: { flexGrow: 1, flexBasis: 150 },
-  statisticContent: { flex: 1, padding: theme.space.lg, gap: theme.space.sm },
-  fullWidth: { flexBasis: '100%' },
+  totals: { paddingHorizontal: theme.space.lg },
+  statistic: {
+    minHeight: theme.size.row,
+    paddingVertical: theme.space.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.md,
+  },
+  statisticBorder: {
+    borderTopWidth: theme.stroke.subtle,
+    borderTopColor: theme.color.border,
+  },
+  statisticContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.sm,
+  },
+  statisticStack: { flexDirection: 'column', alignItems: 'flex-start' },
   continents: { paddingHorizontal: theme.space.lg },
   explanation: { paddingHorizontal: theme.space.sm },
   home: {

@@ -549,8 +549,31 @@ describe('app data owner', () => {
     store.setHome('fr');
     store.updatePreferences({ haptics: false });
     expect(await store.setStatus(['fr'], 'visited')).toBe(false);
+    await expect(store.resetApp()).rejects.toThrow('not ready');
     confirmation.resolve(true);
     expect(await change).toBe(true);
+    expect(store.getSnapshot().data).toEqual(defaultAppData());
+  });
+
+  test('failed home confirmation releases the write lock without losing data or Undo', async () => {
+    const confirmation = Promise.withResolvers<boolean>();
+    const f = fixture();
+    const store = createAppDataStore(f.storage, {
+      confirmHomeChange: () => confirmation.promise,
+    });
+    await store.load();
+    store.setHome('ca');
+    await settle(f.storage);
+    const before = store.getSnapshot();
+    const writes = f.writes();
+    const change = store.setStatus(['ca'], 'visited', { preserveLived: false });
+    expect(store.getSnapshot().busy).toBe(true);
+    confirmation.reject(new Error('Confirmation failed'));
+    await expect(change).rejects.toThrow('Confirmation failed');
+    expect(store.getSnapshot()).toEqual(before);
+    expect(f.writes()).toBe(writes);
+    expect(await f.storage.load()).toEqual(before.data);
+    expect(store.undo(before.pendingUndo!.id)).toBe(true);
     expect(store.getSnapshot().data).toEqual(defaultAppData());
   });
 

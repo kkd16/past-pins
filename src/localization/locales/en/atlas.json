@@ -2,6 +2,8 @@
   "globe": "Globe",
   "worldMap": "World map",
   "mapView": "Map view",
+  "mapOptions": "Map options",
+  "gestureHelp": "Map gestures",
   "northUp": "Turn globe north up",
   "resetGlobe": "Reset globe",
   "fitWorld": "Show whole world",

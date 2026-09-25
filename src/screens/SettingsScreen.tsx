@@ -213,6 +213,20 @@ export function SettingsScreen({
             busy={operation === 'restore'}
             onPress={() => void run('restore', importBackup)}
           />
+        </SettingsSection>
+        <SettingsSection title={t('settings.app')}>
+          <SettingsRow
+            title={t('common.about')}
+            disclosure
+            onPress={() => onOpen('about')}
+          />
+          <SettingsRow
+            title={t('common.licenses')}
+            disclosure
+            onPress={() => onOpen('licenses')}
+          />
+        </SettingsSection>
+        <SettingsSection title={t('settings.resetAppSection')}>
           <SettingsRow
             title={t('settings.clearTravel')}
             destructive
@@ -252,13 +266,9 @@ export function SettingsScreen({
               })
             }
           />
-        </SettingsSection>
-        <SettingsSection
-          title={t('settings.resetAppSection')}
-          description={t('settings.resetAppDescription')}
-        >
           <SettingsRow
             title={t('settings.resetApp')}
+            value={t('settings.resetAppDescription')}
             destructive
             disabled={busy || working || status === 'loading'}
             busy={operation === 'resetApp'}
@@ -282,18 +292,6 @@ export function SettingsScreen({
                 }
               })
             }
-          />
-        </SettingsSection>
-        <SettingsSection title={t('settings.app')}>
-          <SettingsRow
-            title={t('common.about')}
-            disclosure
-            onPress={() => onOpen('about')}
-          />
-          <SettingsRow
-            title={t('common.licenses')}
-            disclosure
-            onPress={() => onOpen('licenses')}
           />
         </SettingsSection>
       </ScrollView>
