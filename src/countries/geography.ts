@@ -1,4 +1,5 @@
 import topology from '@rembish/iso-topojson/iso-a2.json';
+import { geoContains } from 'd3-geo';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
 import { feature } from 'topojson-client';
 import type { GeometryCollection, Topology } from 'topojson-specification';
@@ -27,4 +28,12 @@ export function countryPolygons({ geometry }: CountryFeature) {
   return geometry.type === 'Polygon'
     ? [geometry.coordinates]
     : geometry.coordinates;
+}
+
+export function countryAtPoint(point: [number, number]) {
+  return (
+    countryFeatures
+      .find((shape) => geoContains(shape, point))
+      ?.properties.iso_a2.toLowerCase() ?? null
+  );
 }

@@ -1,8 +1,7 @@
 import * as Location from 'expo-location';
-import { geoContains } from 'd3-geo';
 
 import { countryById } from '../countries/catalog';
-import { countryFeatures } from '../countries/geography';
+import { countryAtPoint } from '../countries/geography';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 
@@ -27,9 +26,7 @@ export async function getCurrentCountry([longitude, latitude]: Coordinates) {
   } catch {
     // Country selection still works offline using the map's own boundaries.
   }
-  const code = countryFeatures
-    .find((shape) => geoContains(shape, [longitude, latitude]))
-    ?.properties.iso_a2.toLowerCase();
+  const code = countryAtPoint([longitude, latitude]);
   return code ? countryById.get(code) : undefined;
 }
 

@@ -1,6 +1,4 @@
-import { geoContains } from 'd3-geo';
-
-import { countryFeatures } from '../countries/geography';
+import { countryAtPoint } from '../countries/geography';
 import type { FlatCamera } from './FlatCamera';
 import { flatMarkers } from './geography';
 
@@ -15,9 +13,5 @@ export function pickFlatCountry(
       return marker.id;
   }
   const point = camera.geographicPoint(x, y);
-  return point
-    ? (countryFeatures
-        .find((shape) => geoContains(shape, point))
-        ?.properties.iso_a2.toLowerCase() ?? null)
-    : null;
+  return point ? countryAtPoint(point) : null;
 }

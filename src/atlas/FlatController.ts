@@ -32,23 +32,13 @@ export class FlatController {
     else {
       this.interacting = false;
       // An iOS alert can interrupt an acknowledged camera command.
-      if (this.transition) {
-        this.camera.center = this.transition.to;
-        this.camera.zoom = this.transition.toZoom;
-      }
-      this.stop();
+      this.finishMove();
     }
   }
 
   setReduceMotion(enabled: boolean) {
     this.reduceMotion = enabled;
-    if (enabled) {
-      if (this.transition) {
-        this.camera.center = this.transition.to;
-        this.camera.zoom = this.transition.toZoom;
-      }
-      this.stop();
-    }
+    if (enabled) this.finishMove();
   }
 
   resize(width: number, height: number) {
@@ -120,6 +110,14 @@ export class FlatController {
     this.momentum.stop();
     this.transition = null;
     this.invalidate();
+  }
+
+  private finishMove() {
+    if (this.transition) {
+      this.camera.center = this.transition.to;
+      this.camera.zoom = this.transition.toZoom;
+    }
+    this.stop();
   }
 
   private invalidate() {
