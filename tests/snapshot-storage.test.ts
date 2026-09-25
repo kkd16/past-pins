@@ -19,6 +19,9 @@ function fixture() {
     'CREATE TABLE kv (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)',
   );
   const keyValue: KeyValueStorage = {
+    async clear() {
+      database.exec('DELETE FROM kv');
+    },
     async getItem(key) {
       return (
         database
@@ -40,6 +43,39 @@ function fixture() {
 }
 
 describe('atomic snapshot storage', () => {
+  test('reset waits for queued saves and removes every key, including corrupt data', async () => {
+    const { storage, keyValue, database } = fixture();
+    await keyValue.setItem('old-setting', 'legacy');
+    const save = storage.save(defaultAppData());
+    const clear = storage.clear();
+    await Promise.all([save, clear]);
+    expect(database.query('SELECT COUNT(*) AS count FROM kv').get()).toEqual({
+      count: 0,
+    });
+    expect(await storage.load()).toEqual(defaultAppData());
+    await keyValue.setItem('app-data', '{broken');
+    await storage.clear();
+    expect(await createSnapshotStorage(keyValue).load()).toEqual(defaultAppData());
+  });
+
+  test('failed reset preserves stored data and does not poison later operations', async () => {
+    const { storage, database } = fixture();
+    const data = defaultAppData();
+    data.places.ca = 'visited';
+    await storage.save(data);
+    database.exec(
+      "CREATE TRIGGER fail_delete BEFORE DELETE ON kv BEGIN SELECT RAISE(ABORT, 'delete failed'); END",
+    );
+    await expect(storage.clear()).rejects.toThrow('delete failed');
+    expect(await storage.load()).toEqual(data);
+    database.exec('DROP TRIGGER fail_delete');
+    await storage.clear();
+    expect(await storage.load()).toEqual(defaultAppData());
+    data.places.fr = 'wishlist';
+    await storage.save(data);
+    expect(await storage.load()).toEqual(data);
+  });
+
   test('starts fresh and stores travel plus preferences in one record', async () => {
     const { database, storage, keyValue } = fixture();
     expect(await storage.load()).toEqual(defaultAppData());

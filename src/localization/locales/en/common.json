@@ -16,7 +16,6 @@
   "undo": "Undo",
   "dismissNotification": "Dismiss notification",
   "toastAnnouncement": "%{message}. %{action} available.",
-  "loading": "Loading",
   "unknownError": "Please try again.",
   "none": "None",
   "unknown": "Unknown",

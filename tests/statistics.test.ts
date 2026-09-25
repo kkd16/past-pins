@@ -12,7 +12,7 @@ describe('travel statistics', () => {
     expect(result.lived).toBe(0);
     expect(result.wishlist).toBe(0);
     expect(result.remaining).toBe(countries.length);
-    expect(result.percent).toBe(0);
+    expect(result.visitedRatio).toBe(0);
     expect(result.byContinent.every(({ visited }) => visited === 0)).toBe(true);
   });
 
@@ -22,7 +22,7 @@ describe('travel statistics', () => {
     );
     expect(result.visited).toBe(countries.length);
     expect(result.remaining).toBe(0);
-    expect(result.percent).toBe(100);
+    expect(result.visitedRatio).toBe(1);
     expect(
       result.byContinent.every(({ total, visited }) => total === visited),
     ).toBe(true);
@@ -48,7 +48,7 @@ describe('travel statistics', () => {
     expect(
       first.byContinent.reduce((sum, continent) => sum + continent.total, 0),
     ).toBe(countries.length);
-    expect(first.percent).toBeCloseTo((3 / countries.length) * 100);
+    expect(first.visitedRatio).toBeCloseTo(3 / countries.length);
     delete places.ca;
     const second = getTravelStatistics(places);
     expect(second.visited).toBe(2);

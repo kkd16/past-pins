@@ -15,7 +15,7 @@ export function annotationTranslation(
   return rect ? [rtl ? rect.x + rect.width - width : rect.x, rect.y] : [0, 0];
 }
 
-export function intersects(a: Rect, b: Rect, gap = 8) {
+function intersects(a: Rect, b: Rect, gap: number) {
   return (
     a.x < b.x + b.width + gap &&
     a.x + a.width + gap > b.x &&

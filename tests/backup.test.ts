@@ -1,12 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
 import { countryIds } from '../src/countries/catalog';
-import {
-  decodeBackup,
-  encodeBackup,
-  validateAppData,
-} from '../src/data/backup';
+import { decodeBackup, encodeBackup } from '../src/data/backup';
 import { changeHome, defaultAppData } from '../src/data/model';
+import { validateAppData } from '../src/data/validation';
 
 describe('current backup format', () => {
   test('round trips every catalog place, current home, and all preferences', () => {

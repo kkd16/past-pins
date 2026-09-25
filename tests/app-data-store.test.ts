@@ -15,6 +15,10 @@ function fixture() {
   let writes = 0;
   const feedback: boolean[] = [];
   const storage = createSnapshotStorage({
+    async clear() {
+      if (writeFailure) throw new Error('Write failed');
+      serialized = null;
+    },
     async getItem() {
       return serialized;
     },
@@ -52,6 +56,70 @@ async function settle(storage: AppStorage) {
 }
 
 describe('app data owner', () => {
+  test('complete reset waits for writes, blocks edits, clears Undo and starts fresh', async () => {
+    const f = fixture();
+    await f.store.load();
+    const gate = Promise.withResolvers<void>();
+    const save = f.storage.save;
+    f.storage.save = async (data) => {
+      await gate.promise;
+      await save(data);
+    };
+    f.store.setHome('ca');
+    f.store.updatePreferences({ mapView: 'map', haptics: false });
+    const undo = f.store.getSnapshot().pendingUndo!;
+    const resetting = f.store.resetApp();
+    expect(f.store.getSnapshot().busy).toBe(true);
+    expect(await f.store.setStatus(['fr'], 'visited')).toBe(false);
+    await expect(f.store.resetApp()).rejects.toThrow('not ready');
+    gate.resolve();
+    await resetting;
+    expect(f.store.getSnapshot()).toMatchObject({
+      data: defaultAppData(),
+      status: 'ready',
+      busy: false,
+      saveError: false,
+      pendingUndo: null,
+      resetVersion: 1,
+    });
+    expect(f.store.undo(undo.id)).toBe(false);
+    expect(await f.storage.load()).toEqual(defaultAppData());
+    f.store.setHome('jp');
+    await settle(f.storage);
+    expect((await f.storage.load()).homeCountryId).toBe('jp');
+  });
+
+  test('failed reset retains live data and Undo, and can be retried', async () => {
+    const f = fixture();
+    await f.store.load();
+    f.store.setHome('ca');
+    await settle(f.storage);
+    const before = f.store.getSnapshot();
+    f.failWrites(true);
+    await expect(f.store.resetApp()).rejects.toThrow('Write failed');
+    expect(f.store.getSnapshot()).toEqual(before);
+    expect(await f.storage.load()).toEqual(before.data);
+    f.failWrites(false);
+    await f.store.resetApp();
+    expect(await f.storage.load()).toEqual(defaultAppData());
+  });
+
+  test('complete reset recovers from unreadable saved data without loading it', async () => {
+    const f = fixture();
+    await expect(f.store.resetApp()).rejects.toThrow('not ready');
+    f.storage.load = async () => {
+      throw new Error('Corrupt data');
+    };
+    await f.store.load();
+    expect(f.store.getSnapshot().status).toBe('load-error');
+    await f.store.resetApp();
+    expect(f.store.getSnapshot()).toMatchObject({
+      data: defaultAppData(),
+      status: 'ready',
+      resetVersion: 1,
+    });
+  });
+
   test('gates edits while loading and deduplicates loading', async () => {
     const gate = Promise.withResolvers<AppData>();
     let loads = 0;
@@ -61,6 +129,7 @@ describe('app data owner', () => {
           loads++;
           return gate.promise;
         },
+        async clear() {},
         async save() {},
       },
       {
@@ -340,6 +409,7 @@ describe('app data owner', () => {
           async load() {
             return defaultAppData();
           },
+          async clear() {},
           save: () => (++writes === 1 ? first.promise : second.promise),
         },
         {
@@ -439,6 +509,7 @@ describe('app data owner', () => {
           if (++reads === 1) throw new Error('Corrupt stored data');
           return defaultAppData();
         },
+        async clear() {},
         save: () => write.promise,
       },
       { confirmHomeChange: async () => true },

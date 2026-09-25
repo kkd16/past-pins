@@ -3,7 +3,7 @@ import { Text, type TextProps } from 'react-native';
 import { language } from '../localization';
 import { theme, type TextVariant } from '../theme';
 
-export type AppTextProps = TextProps & {
+type AppTextProps = TextProps & {
   variant?: TextVariant;
   tone?: 'default' | 'muted' | 'accent' | 'visited';
 };

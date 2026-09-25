@@ -128,7 +128,7 @@ export function StatsScreen({
               {loading
                 ? loadingMessage
                 : t('countries.stats.percentVisited', {
-                    percent: formatPercent(stats.percent / 100),
+                    percent: formatPercent(stats.visitedRatio),
                   })}
             </AppText>
           </Surface>

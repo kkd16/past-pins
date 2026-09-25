@@ -4,7 +4,7 @@ import { theme } from '../theme';
 import { AppPressable, type AppPressableProps } from './AppPressable';
 import { AppText } from './AppText';
 
-export type ButtonProps = Omit<AppPressableProps, 'children'> & {
+type ButtonProps = Omit<AppPressableProps, 'children'> & {
   label: string;
   variant?: 'primary' | 'quiet';
 };

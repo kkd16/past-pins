@@ -126,7 +126,11 @@ describe('toast lifecycle', () => {
 
   test('replacing Undo toasts preserves the latest travel change for its matching action', async () => {
     const data = createAppDataStore(
-      { load: async () => defaultAppData(), save: async () => undefined },
+      {
+        load: async () => defaultAppData(),
+        save: async () => undefined,
+        clear: async () => undefined,
+      },
       { confirmHomeChange: async () => true },
     );
     const toasts = createToastStore();

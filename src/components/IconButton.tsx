@@ -4,7 +4,7 @@ import { theme } from '../theme';
 import { AppPressable, type AppPressableProps } from './AppPressable';
 import { Icon, type IconProps } from './Icon';
 
-export type IconButtonProps = Omit<
+type IconButtonProps = Omit<
   AppPressableProps,
   'children' | 'accessibilityLabel'
 > &

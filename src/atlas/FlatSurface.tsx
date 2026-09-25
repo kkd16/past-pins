@@ -7,18 +7,11 @@ import {
 } from 'react';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 
-import { toGeographic } from '../globe/coordinates';
-import world from '../globe/world.json';
 import { theme } from '../theme';
 import { countryColor } from './colors';
 import type { FlatCamera } from './FlatCamera';
-import { flatCountries, oceanPath, projection } from './geography';
+import { flatCountries, flatMarkers, oceanPath } from './geography';
 import type { AtlasViewportProps } from './types';
-
-const markers = world.markers.map(({ id, position }) => ({
-  id,
-  point: projection(toGeographic(position as [number, number, number]))!,
-}));
 
 export type FlatSurfaceHandle = { draw: () => void };
 
@@ -45,7 +38,7 @@ export const FlatSurface = memo(function FlatSurface({
         camera.height / 2 - camera.center[1] * scale,
       ],
     });
-    for (const { id, point } of markers) {
+    for (const { id, point } of flatMarkers) {
       const [cx, cy] = camera.projectPoint(point);
       points.current.get(id)?.setNativeProps({ cx, cy });
     }
@@ -73,7 +66,7 @@ export const FlatSurface = memo(function FlatSurface({
           />
         ))}
       </G>
-      {markers.map(({ id }) => (
+      {flatMarkers.map(({ id }) => (
         <Circle
           key={id}
           ref={(circle) => {

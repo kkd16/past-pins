@@ -1,4 +1,4 @@
-export type ToastOptions = {
+type ToastOptions = {
   message: string;
   action?: { label: string; onPress: () => void | boolean };
   onDismiss?: () => void;

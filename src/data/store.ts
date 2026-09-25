@@ -2,7 +2,7 @@ import { t } from '../localization';
 import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
 import type { AppStorage } from '../storage/snapshot-storage';
-import { validateAppData } from './backup';
+import { validateAppData } from './validation';
 import {
   changeHome,
   changePlaceStatus,
@@ -19,6 +19,7 @@ export type DataSnapshot = {
   status: 'loading' | 'ready' | 'load-error';
   saveError: boolean;
   busy: boolean;
+  resetVersion: number;
   pendingUndo: { id: number; label: string } | null;
 };
 
@@ -34,6 +35,7 @@ export function createAppDataStore(
     status: 'loading',
     saveError: false,
     busy: false,
+    resetVersion: 0,
     pendingUndo: null,
   };
   const listeners = new Set<() => void>();
@@ -91,20 +93,23 @@ export function createAppDataStore(
     return loading;
   }
 
-  async function replace(data: AppData) {
+  async function replace(data: AppData, reset = false) {
     if (snapshot.status === 'loading' || snapshot.busy)
       throw new UserFacingError(t('common.errors.dataNotReady'));
     const next = validateAppData(data);
     publish({ busy: true });
     try {
       await lastWrite;
-      await storage.save(next);
+      if (reset) await storage.clear();
+      else await storage.save(next);
+      ++revision;
       undoTravel = null;
       publish({
         data: next,
         status: 'ready',
         pendingUndo: null,
         saveError: false,
+        resetVersion: snapshot.resetVersion + (reset ? 1 : 0),
       });
     } finally {
       publish({ busy: false });
@@ -193,7 +198,8 @@ export function createAppDataStore(
       if (snapshot.status === 'load-error') void load();
       else if (editable()) persist(snapshot.data);
     },
-    restore: replace,
+    restore: (data: AppData) => replace(data),
+    resetApp: () => replace(defaultAppData(), true),
     async clearTravel() {
       if (!editable())
         throw new UserFacingError(t('common.errors.dataNotReady'));

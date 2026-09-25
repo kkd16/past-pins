@@ -24,9 +24,9 @@ export function ProgressSummary({
   loading: boolean;
   label?: string;
 }) {
-  const percent = total ? (visited / total) * 100 : 0;
+  const visitedRatio = total ? visited / total : 0;
   const reduced = useReducedMotion();
-  const fraction = loading ? 0 : percent / 100;
+  const fraction = loading ? 0 : visitedRatio;
   const progress = useAnimatedValue(fraction);
   useEffect(() => {
     if (reduced) {
@@ -59,7 +59,7 @@ export function ProgressSummary({
               text: t('countries.stats.progressValue', {
                 visited: formatNumber(visited),
                 total: formatNumber(total),
-                percent: formatPercent(percent / 100),
+                percent: formatPercent(visitedRatio),
               }),
             }
       }
@@ -70,7 +70,7 @@ export function ProgressSummary({
           {label}
         </AppText>
         <AppText variant="label" tone="visited" style={styles.number}>
-          {loading ? '—' : formatPercent(percent / 100)}
+          {loading ? '—' : formatPercent(visitedRatio)}
         </AppText>
       </View>
       <View style={styles.track}>

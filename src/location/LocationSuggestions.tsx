@@ -36,6 +36,7 @@ export function LocationSuggestions() {
 
   useEffect(() => {
     if (!ready) return;
+    suggested.current.clear();
     let request = 0;
     async function check() {
       if (AppState.currentState !== 'active') return;
@@ -66,7 +67,7 @@ export function LocationSuggestions() {
       request++;
       subscription.remove();
     };
-  }, [ready]);
+  }, [ready, app.resetVersion]);
 
   return null;
 }

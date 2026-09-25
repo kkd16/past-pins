@@ -25,7 +25,7 @@ export function getTravelStatistics(places: AppData['places']) {
       .length,
     lived: countries.filter((country) => places[country.id] === 'lived').length,
     remaining: total - visited,
-    percent: total ? (visited / total) * 100 : 0,
+    visitedRatio: total ? visited / total : 0,
     byContinent,
   };
 }

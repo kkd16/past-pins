@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useNavigationContainerRef } from 'expo-router';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 
 import { ChoiceRow } from '../components/ChoiceRow';
@@ -15,7 +16,7 @@ import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
 import { theme } from '../theme';
 
-type DataAction = 'export' | 'restore' | 'clear' | 'reset';
+type DataAction = 'export' | 'restore' | 'clear' | 'reset' | 'resetApp';
 
 function confirm(
   title: string,
@@ -39,7 +40,9 @@ export function SettingsScreen({
 }: {
   onOpen: (page: 'home' | 'about' | 'licenses') => void;
 }) {
-  const { showToast } = useToast();
+  const toast = useToast();
+  const { showToast } = toast;
+  const navigation = useNavigationContainerRef();
   const {
     data,
     status,
@@ -48,6 +51,7 @@ export function SettingsScreen({
     restore,
     clearTravel,
     resetPreferences,
+    resetApp,
   } = useAppData();
   const running = useRef(false);
   const [operation, setOperation] = useState<DataAction | null>(null);
@@ -229,6 +233,37 @@ export function SettingsScreen({
                 ) {
                   resetPreferences();
                   showToast({ message: t('settings.preferencesReset') });
+                }
+              })
+            }
+          />
+        </SettingsSection>
+        <SettingsSection
+          title={t('settings.resetAppSection')}
+          description={t('settings.resetAppDescription')}
+        >
+          <SettingsRow
+            title={t('settings.resetApp')}
+            destructive
+            disabled={busy || working || status === 'loading'}
+            busy={operation === 'resetApp'}
+            onPress={() =>
+              void run('resetApp', async () => {
+                if (
+                  await confirm(
+                    t('settings.resetAppTitle'),
+                    t('settings.resetAppMessage'),
+                    t('settings.resetApp'),
+                  )
+                ) {
+                  await resetApp();
+                  const currentToast = toast.getSnapshot();
+                  if (currentToast) toast.dismissToast(currentToast.id);
+                  // New route keys discard every tab's params and screen state.
+                  navigation.resetRoot({
+                    index: 0,
+                    routes: [{ name: '(tabs)' }],
+                  });
                 }
               })
             }

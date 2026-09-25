@@ -4,7 +4,7 @@ import { countryById } from '../countries/catalog';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 
-export type Coordinates = [longitude: number, latitude: number];
+type Coordinates = [longitude: number, latitude: number];
 
 let pending: Promise<Coordinates> | null = null;
 

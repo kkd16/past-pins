@@ -9,7 +9,7 @@ import type { Continent, Country, CountryId } from './types';
 
 const continentById = new Map<string, Continent>();
 
-const locations: Country[] = countryFeatures.map((shape) => {
+export const countries: readonly Country[] = countryFeatures.map((shape) => {
   const { iso_a2: code, name } = shape.properties;
   const details = metadata[code as keyof typeof metadata];
   if (!details || !name) throw new Error(`Missing country metadata: ${code}`);
@@ -31,11 +31,7 @@ const locations: Country[] = countryFeatures.map((shape) => {
     languages: details.languages.map((code) => languages[code].name),
     currencies: details.currency,
   };
-});
-
-export const countries: readonly Country[] = [...locations].sort((a, b) =>
-  compareNames(a.name, b.name),
-);
+}).sort((a, b) => compareNames(a.name, b.name));
 export const countryById = new Map(
   countries.map((country) => [country.id, country]),
 );
