@@ -10,6 +10,7 @@ import { AppText } from '../components/AppText';
 import { t } from '../localization';
 import { InfoPage, InfoSection } from '../settings/InfoPage';
 import { theme } from '../theme';
+import { subdivisionSource } from '../subdivisions/catalog';
 
 const links = [
   { label: 'settings.sourceCode', href: 'https://github.com/kkd16/past-pins' },
@@ -82,6 +83,29 @@ export function AboutScreen() {
         <AboutLink
           href="https://creativecommons.org/licenses/by/4.0/"
           label={t('settings.mapLicense')}
+        />
+      </View>
+      <InfoSection title={t('subdivisions.dataTitle')}>
+        {t('subdivisions.attribution')}
+      </InfoSection>
+      <View style={styles.details}>
+        <AppText tone="muted" selectable>
+          {t('subdivisions.sourceVersion', {
+            version: subdivisionSource.version,
+          })}
+        </AppText>
+        <AppText tone="muted" selectable>
+          {t('subdivisions.sourceSnapshot', {
+            date: subdivisionSource.sourceDate,
+          })}
+        </AppText>
+        <AboutLink
+          href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/"
+          label={t('subdivisions.source')}
+        />
+        <AboutLink
+          href="https://www.naturalearthdata.com/about/terms-of-use/"
+          label={t('subdivisions.license')}
         />
       </View>
     </InfoPage>

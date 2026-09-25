@@ -27,6 +27,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run test:coverage
       - run: bun run globe:check
+      - run: bun run subdivisions:check
       - run: bun run licenses:check
       - run: bun run doctor
       - run: bun run export:ios

@@ -1,5 +1,6 @@
 import { countryIds } from '../countries/catalog';
 import { t } from '../localization';
+import { subdivisionIds } from '../subdivisions/catalog';
 import { UserFacingError } from './errors';
 import { defaultPreferences, type AppData } from './model';
 
@@ -17,7 +18,7 @@ function exactKeys(value: Record<string, unknown>, keys: readonly string[]) {
 export function validateAppData(value: unknown): AppData {
   if (
     !object(value) ||
-    !exactKeys(value, ['places', 'homeCountryId', 'preferences'])
+    !exactKeys(value, ['places', 'subdivisions', 'homeCountryId', 'preferences'])
   ) {
     throw new UserFacingError(t('common.errors.invalidData'));
   }
@@ -32,6 +33,18 @@ export function validateAppData(value: unknown): AppData {
       throw new UserFacingError(t('common.errors.invalidPlaceStatus'));
     }
     places[id] = status;
+  }
+  if (!object(value.subdivisions))
+    throw new UserFacingError(t('common.errors.invalidSubdivisions'));
+  const subdivisions: AppData['subdivisions'] = {};
+  for (const [id, status] of Object.entries(value.subdivisions)) {
+    if (
+      !subdivisionIds.has(id) ||
+      (status !== 'wishlist' && status !== 'visited' && status !== 'lived')
+    ) {
+      throw new UserFacingError(t('common.errors.invalidSubdivisionStatus'));
+    }
+    subdivisions[id] = status;
   }
   const homeCountryId = value.homeCountryId;
   if (
@@ -54,6 +67,7 @@ export function validateAppData(value: unknown): AppData {
     throw new UserFacingError(t('common.errors.invalidPreferences'));
   return {
     places,
+    subdivisions,
     homeCountryId,
     preferences: {
       mapView: prefs.mapView,

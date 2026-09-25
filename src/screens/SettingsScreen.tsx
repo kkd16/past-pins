@@ -85,6 +85,7 @@ export function SettingsScreen({
     const visited = statuses.filter(isVisited).length;
     const lived = statuses.filter((value) => value === 'lived').length;
     const wishlist = statuses.filter((value) => value === 'wishlist').length;
+    const regionStatuses = Object.values(backup.subdivisions);
     const home = backup.homeCountryId
       ? countryById.get(backup.homeCountryId)!.name
       : t('common.none');
@@ -95,6 +96,13 @@ export function SettingsScreen({
           visited: formatNumber(visited),
           lived: formatNumber(lived),
           wishlist: formatNumber(wishlist),
+          regionsVisited: formatNumber(regionStatuses.filter(isVisited).length),
+          regionsLived: formatNumber(
+            regionStatuses.filter((value) => value === 'lived').length,
+          ),
+          regionsWishlist: formatNumber(
+            regionStatuses.filter((value) => value === 'wishlist').length,
+          ),
           home,
         }),
         t('settings.replaceData'),

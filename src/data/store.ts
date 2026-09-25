@@ -1,11 +1,13 @@
 import { t } from '../localization';
 import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
+import { subdivisionIds } from '../subdivisions/catalog';
 import type { AppStorage } from '../storage/snapshot-storage';
 import { validateAppData } from './validation';
 import {
   changeHome,
   changePlaceStatus,
+  changeSubdivisionStatus,
   defaultAppData,
   defaultPreferences,
   type AppData,
@@ -70,6 +72,7 @@ export function createAppDataStore(
     if (data === snapshot.data) return;
     undoTravel = {
       places: snapshot.data.places,
+      subdivisions: snapshot.data.subdivisions,
       homeCountryId: snapshot.data.homeCountryId,
     };
     publish({ data, pendingUndo: { id: ++undoSequence, label } });
@@ -154,6 +157,26 @@ export function createAppDataStore(
       changeTravel(next, t('common.placesUpdated', { count }));
       return true;
     },
+    async setSubdivisionStatus(
+      ids: readonly string[],
+      status: PlaceStatus,
+      options?: { preserveLived?: boolean },
+    ): Promise<boolean> {
+      if (!editable()) return false;
+      if (ids.some((id) => !subdivisionIds.has(id)))
+        throw new UserFacingError(t('common.errors.unknownSubdivision'));
+      const next = changeSubdivisionStatus(
+        snapshot.data,
+        ids,
+        status,
+        options?.preserveLived ?? true,
+      );
+      const count = [...new Set(ids)].filter(
+        (id) => next.subdivisions[id] !== snapshot.data.subdivisions[id],
+      ).length;
+      changeTravel(next, t('common.subdivisionsUpdated', { count }));
+      return true;
+    },
     setHome(id: string | null) {
       if (!editable()) return;
       if (id !== null && !countryIds.has(id))
@@ -203,7 +226,12 @@ export function createAppDataStore(
     async clearTravel() {
       if (!editable())
         throw new UserFacingError(t('common.errors.dataNotReady'));
-      await replace({ ...snapshot.data, places: {}, homeCountryId: null });
+      await replace({
+        ...snapshot.data,
+        places: {},
+        subdivisions: {},
+        homeCountryId: null,
+      });
     },
     resetPreferences() {
       if (!editable()) return;

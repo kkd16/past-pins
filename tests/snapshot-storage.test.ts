@@ -1,7 +1,8 @@
 import { Database } from 'bun:sqlite';
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { defaultAppData } from '../src/data/model';
+import { defaultAppData, type AppData } from '../src/data/model';
+import { subdivisionIds } from '../src/subdivisions/catalog';
 import {
   createSnapshotStorage,
   type KeyValueStorage,
@@ -55,7 +56,9 @@ describe('atomic snapshot storage', () => {
     expect(await storage.load()).toEqual(defaultAppData());
     await keyValue.setItem('app-data', '{broken');
     await storage.clear();
-    expect(await createSnapshotStorage(keyValue).load()).toEqual(defaultAppData());
+    expect(await createSnapshotStorage(keyValue).load()).toEqual(
+      defaultAppData(),
+    );
   });
 
   test('failed reset preserves stored data and does not poison later operations', async () => {
@@ -82,12 +85,47 @@ describe('atomic snapshot storage', () => {
     const data = defaultAppData();
     data.places.ca = 'lived';
     data.homeCountryId = 'ca';
+    data.subdivisions[[...subdivisionIds][0]] = 'visited';
     data.preferences.mapView = 'map';
     await storage.save(data);
     expect(await createSnapshotStorage(keyValue).load()).toEqual(data);
     expect(database.query('SELECT COUNT(*) AS count FROM kv').get()).toEqual({
       count: 1,
     });
+  });
+
+  test('rejects country-only snapshots without silently resetting them', async () => {
+    const { storage, keyValue } = fixture();
+    const legacy: Omit<AppData, 'subdivisions'> = {
+      places: { ca: 'lived', fr: 'wishlist' },
+      homeCountryId: 'ca',
+      preferences: { ...defaultAppData().preferences, haptics: false },
+    };
+    const original = JSON.stringify(legacy);
+    await keyValue.setItem('app-data', original);
+    await expect(storage.load()).rejects.toThrow();
+    expect(await keyValue.getItem('app-data')).toBe(original);
+    await storage.clear();
+    expect(await storage.load()).toEqual(defaultAppData());
+  });
+
+  test('rejects malformed snapshots without overwriting them', async () => {
+    const { storage, keyValue } = fixture();
+    const data = defaultAppData();
+    data.places.ca = 'lived';
+    data.homeCountryId = 'ca';
+    for (const invalid of [
+      { ...data, extra: true },
+      { ...data, preferences: {} },
+      { ...data, places: { ca: 'visited' } },
+      { ...data, subdivisions: null },
+      { ...data, subdivisions: { unknown: 'visited' } },
+    ]) {
+      const original = JSON.stringify(invalid);
+      await keyValue.setItem('app-data', original);
+      await expect(storage.load()).rejects.toThrow();
+      expect(await keyValue.getItem('app-data')).toBe(original);
+    }
   });
 
   test('serializes saves and reads, snapshotting data before queueing', async () => {

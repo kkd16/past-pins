@@ -60,6 +60,7 @@ export default function CountriesRoute() {
         router.setParams({ continent: 'all', scope: 'all', query: undefined });
       }}
       onSelect={selectCountry}
+      onOpenRegions={() => router.push('/regions')}
     />
   );
 }

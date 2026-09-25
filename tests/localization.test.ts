@@ -62,6 +62,7 @@ describe('localization', () => {
     const { formatPercent } = createLocalization(translations, 'en');
     expect(formatPercent(0)).toBe('0%');
     expect(formatPercent(1 / 253)).toBe('0.4%');
+    expect(formatPercent(1 / 4543)).toBe('0.02%');
     expect(formatPercent(1)).toBe('100%');
   });
 

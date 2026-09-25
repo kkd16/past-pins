@@ -4,11 +4,21 @@ import { countryIds } from '../src/countries/catalog';
 import { decodeBackup, encodeBackup } from '../src/data/backup';
 import { changeHome, defaultAppData } from '../src/data/model';
 import { validateAppData } from '../src/data/validation';
+import { subdivisionIds } from '../src/subdivisions/catalog';
+
+function countryOnlyData() {
+  const { places, homeCountryId, preferences } = changeHome(
+    defaultAppData(),
+    'ca',
+  );
+  return { places, homeCountryId, preferences };
+}
 
 describe('current backup format', () => {
-  test('round trips every catalog place, current home, and all preferences', () => {
+  test('round trips every catalog country and region, home, and all preferences', () => {
     const data = changeHome(defaultAppData(), 'ca');
     for (const id of countryIds) data.places[id] = 'lived';
+    for (const id of subdivisionIds) data.subdivisions[id] = 'visited';
     data.places.fr = 'wishlist';
     data.places.jp = 'visited';
     data.preferences = {
@@ -28,6 +38,7 @@ describe('current backup format', () => {
     const parsed = validateAppData(data);
     parsed.preferences.haptics = false;
     parsed.places.ca = 'wishlist';
+    parsed.subdivisions[[...subdivisionIds][0]] = 'visited';
     expect(data).toEqual(defaultAppData());
   });
 
@@ -35,12 +46,20 @@ describe('current backup format', () => {
     expect(() => decodeBackup('this is not JSON')).toThrow('valid JSON');
   });
 
-  test('only accepts the exact current backup envelope', () => {
+  test('requires region data even when the backup version matches', () => {
+    const data = countryOnlyData();
+    expect(() =>
+      decodeBackup(JSON.stringify({ app: 'past-pins', version: 1, data })),
+    ).toThrow();
+  });
+
+  test('only accepts the exact current backup envelope and schema', () => {
     const data = defaultAppData();
     for (const envelope of [
       { app: 'another-app', version: 1, data },
       { app: 'past-pins', version: 0, data },
       { app: 'past-pins', version: 2, data },
+      { app: 'past-pins', version: 3, data },
       { app: 'past-pins', version: 1, data, future: true },
       data,
       { visited: ['ca'] },
@@ -60,6 +79,23 @@ describe('current backup format', () => {
     ])
       expect(() =>
         validateAppData({ ...defaultAppData(), ...patch }),
+      ).toThrow();
+  });
+
+  test('rejects unknown regions, invalid statuses, and malformed region records', () => {
+    const id = [...subdivisionIds][0];
+    for (const subdivisions of [
+      { unknown: 'visited' },
+      { ca: 'visited' },
+      { [id]: 'unvisited' },
+      { [id]: null },
+      { [id]: true },
+      [id],
+      null,
+      undefined,
+    ])
+      expect(() =>
+        validateAppData({ ...defaultAppData(), subdivisions }),
       ).toThrow();
   });
 

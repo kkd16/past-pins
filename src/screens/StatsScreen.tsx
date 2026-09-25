@@ -22,6 +22,7 @@ import { getTravelStatistics } from '../countries/statistics';
 import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
 import { t, formatNumber, formatPercent } from '../localization';
+import { getSubdivisionStatistics } from '../subdivisions/tracking';
 
 function Statistic({
   value,
@@ -66,11 +67,13 @@ export function StatsScreen({
   onChooseHome,
   onOpenCountries,
   onOpenCountry,
+  onOpenRegions,
 }: {
   onOpenSettings: () => void;
   onChooseHome: () => void;
   onOpenCountries: (scope: CountryScope, continent?: string) => void;
   onOpenCountry: (id: string) => void;
+  onOpenRegions: () => void;
 }) {
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
@@ -78,6 +81,10 @@ export function StatsScreen({
   const stats = useMemo(
     () => getTravelStatistics(app.data.places),
     [app.data.places],
+  );
+  const regionStats = useMemo(
+    () => getSubdivisionStatistics(app.data.subdivisions),
+    [app.data.subdivisions],
   );
   const home = app.data.homeCountryId
     ? countryById.get(app.data.homeCountryId)
@@ -228,6 +235,31 @@ export function StatsScreen({
         <AppText variant="caption" tone="muted" style={styles.explanation}>
           {t('countries.stats.explanation')}
         </AppText>
+        <AppPressable
+          accessibilityLabel={
+            loading
+              ? loadingMessage
+              : t('subdivisions.visitedCount', {
+                  count: regionStats.visited,
+                  amount: formatNumber(regionStats.visited),
+                })
+          }
+          accessibilityHint={t('subdivisions.explore')}
+          onPress={onOpenRegions}
+        >
+          <Surface style={styles.journey}>
+            <View style={styles.cardHeading}>
+              <AppText variant="heading" style={styles.cardLabel}>
+                {t('subdivisions.title')}
+              </AppText>
+              <Icon name="chevronRight" />
+            </View>
+            <AppText variant="number" tone="visited">
+              {loading ? '—' : formatNumber(regionStats.visited)}
+            </AppText>
+            <AppText tone="muted">{t('subdivisions.visited')}</AppText>
+          </Surface>
+        </AppPressable>
       </ScrollView>
     </Screen>
   );

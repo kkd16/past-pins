@@ -64,6 +64,17 @@ export default function RootLayout() {
                 options={{ presentation: 'modal', headerShown: false }}
               />
               <Stack.Screen
+                name="regions/index"
+                options={{ title: t('subdivisions.title') }}
+              />
+              <Stack.Screen
+                name="regions/[id]"
+                options={{
+                  title: t('subdivisions.title'),
+                  presentation: 'modal',
+                }}
+              />
+              <Stack.Screen
                 name="country/[id]"
                 options={{
                   headerShown: false,

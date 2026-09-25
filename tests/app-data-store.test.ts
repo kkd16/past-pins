@@ -2,10 +2,13 @@ import { describe, expect, test } from 'bun:test';
 
 import { defaultAppData, type AppData } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
+import { subdivisionIds } from '../src/subdivisions/catalog';
 import {
   createSnapshotStorage,
   type AppStorage,
 } from '../src/storage/snapshot-storage';
+
+const [regionOne, regionTwo, regionThree] = [...subdivisionIds];
 
 function fixture() {
   let serialized: string | null = null;
@@ -66,11 +69,13 @@ describe('app data owner', () => {
       await save(data);
     };
     f.store.setHome('ca');
+    await f.store.setSubdivisionStatus([regionOne], 'visited');
     f.store.updatePreferences({ mapView: 'map', haptics: false });
     const undo = f.store.getSnapshot().pendingUndo!;
     const resetting = f.store.resetApp();
     expect(f.store.getSnapshot().busy).toBe(true);
     expect(await f.store.setStatus(['fr'], 'visited')).toBe(false);
+    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(false);
     await expect(f.store.resetApp()).rejects.toThrow('not ready');
     gate.resolve();
     await resetting;
@@ -142,12 +147,72 @@ describe('app data owner', () => {
     const second = store.load();
     expect(loads).toBe(1);
     expect(await store.setStatus(['ca'], 'visited')).toBe(false);
+    expect(await store.setSubdivisionStatus([regionOne], 'visited')).toBe(false);
     store.setHome('ca');
     store.updatePreferences({ haptics: false });
     expect(store.getSnapshot().data).toEqual(defaultAppData());
     gate.resolve(defaultAppData());
     await Promise.all([first, second]);
     expect(store.getSnapshot().status).toBe('ready');
+  });
+
+  test('region changes persist, preserve country and home data, and undo with preferences intact', async () => {
+    const { store, storage } = fixture();
+    await store.load();
+    store.setHome('ca');
+    await store.setSubdivisionStatus([regionOne], 'lived');
+    const initial = store.getSnapshot().data;
+    await store.setSubdivisionStatus([regionOne, regionTwo, regionThree], 'visited');
+    expect(store.getSnapshot().data.subdivisions).toEqual({
+      [regionOne]: 'lived',
+      [regionTwo]: 'visited',
+      [regionThree]: 'visited',
+    });
+    expect(store.getSnapshot().data.places).toBe(initial.places);
+    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
+    const undo = store.getSnapshot().pendingUndo!;
+    expect(undo.label).toBe('Regions updated');
+    store.updatePreferences({ haptics: false });
+    expect(store.undo(undo.id)).toBe(true);
+    expect(store.getSnapshot().data.subdivisions).toEqual({ [regionOne]: 'lived' });
+    expect(store.getSnapshot().data.places).toBe(initial.places);
+    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
+    expect(store.getSnapshot().data.preferences.haptics).toBe(false);
+    await settle(storage);
+    expect(await storage.load()).toEqual(store.getSnapshot().data);
+  });
+
+  test('region no-ops preserve Undo and labels count changed unique regions', async () => {
+    const { store } = fixture();
+    await store.load();
+    await store.setSubdivisionStatus([regionOne], 'lived');
+    await store.setSubdivisionStatus([regionOne, regionTwo, regionTwo], 'visited');
+    const undo = store.getSnapshot().pendingUndo!;
+    expect(undo.label).toBe('Region updated');
+    await store.setSubdivisionStatus([regionOne, regionTwo], 'visited');
+    expect(store.getSnapshot().pendingUndo).toBe(undo);
+    await store.setSubdivisionStatus([regionOne], 'visited', { preserveLived: false });
+    expect(store.getSnapshot().data.subdivisions[regionOne]).toBe('visited');
+    expect(store.undo(undo.id)).toBe(false);
+    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
+    expect(store.getSnapshot().data.subdivisions[regionOne]).toBe('lived');
+  });
+
+  test('country Undo preserves region progress and region IDs are validated atomically', async () => {
+    const { store, storage } = fixture();
+    await store.load();
+    await store.setSubdivisionStatus([regionOne], 'wishlist');
+    await store.setStatus(['ca'], 'visited');
+    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
+    expect(store.getSnapshot().data.places).toEqual({});
+    expect(store.getSnapshot().data.subdivisions).toEqual({ [regionOne]: 'wishlist' });
+    await settle(storage);
+    const before = store.getSnapshot();
+    await expect(
+      store.setSubdivisionStatus([regionTwo, 'unknown'], 'visited'),
+    ).rejects.toThrow('Unknown region');
+    expect(store.getSnapshot()).toBe(before);
+    expect(await storage.load()).toEqual(before.data);
   });
 
   test('bulk changes create a one-shot Undo that preserves subsequent preference edits', async () => {
@@ -365,10 +430,12 @@ describe('app data owner', () => {
     await f.store.setStatus(['ca'], 'visited');
     const replacement = defaultAppData();
     replacement.places.fr = 'wishlist';
+    replacement.subdivisions[regionOne] = 'lived';
     const restore = f.store.restore(replacement);
     expect(f.store.getSnapshot().busy).toBe(true);
     expect(f.store.getSnapshot().data.places).toEqual({ ca: 'visited' });
     expect(await f.store.setStatus(['jp'], 'visited')).toBe(false);
+    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(false);
     gate.resolve();
     await restore;
     expect(f.store.getSnapshot().data.places).toEqual({ fr: 'wishlist' });
@@ -451,9 +518,11 @@ describe('app data owner', () => {
     const f = fixture();
     await f.store.load();
     f.store.setHome('ca');
+    await f.store.setSubdivisionStatus([regionOne], 'visited');
     f.store.updatePreferences({ haptics: false });
     f.store.resetPreferences();
     expect(f.store.getSnapshot().data.homeCountryId).toBe('ca');
+    expect(f.store.getSnapshot().data.subdivisions).toEqual({ [regionOne]: 'visited' });
     expect(f.store.getSnapshot().data.preferences).toEqual(
       defaultAppData().preferences,
     );
@@ -461,6 +530,7 @@ describe('app data owner', () => {
     f.store.updatePreferences({ mapView: 'map' });
     await f.store.clearTravel();
     expect(f.store.getSnapshot().data.places).toEqual({});
+    expect(f.store.getSnapshot().data.subdivisions).toEqual({});
     expect(f.store.getSnapshot().data.homeCountryId).toBeNull();
     expect(f.store.getSnapshot().data.preferences.mapView).toBe('map');
     expect(f.store.getSnapshot().pendingUndo).toBeNull();

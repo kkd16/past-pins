@@ -1,0 +1,13 @@
+{
+  "name": "Natural Earth",
+  "dataset": "1:10m Admin 1 – States, Provinces",
+  "version": "5.1.1",
+  "release": "v5.1.2",
+  "commit": "f1890d9f152c896d250a77557a5751a93d494776",
+  "sourceDate": "2022-05-05",
+  "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_admin_1_states_provinces.geojson",
+  "sha256": "22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5",
+  "license": "Public domain",
+  "homepage": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/",
+  "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/"
+}

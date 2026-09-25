@@ -1,0 +1,20 @@
+{
+  "inputs": {
+    "source": "01e445ff748c9d0df8d6f701d8e2ad7c6a6620b45cbaab3ec5a7b4d5dad3e7b2",
+    "countries": "0d0e156850aff3bbda8988ec1c35cb032e55312955a7ad7f16ec3ac7e5eb398d",
+    "projectionVersion": "3.1.1",
+    "generator": "9ce1bec8c028ca36db1ed2eb418e0203a9ed8c3222c4ef6af4e849daaa1f5168"
+  },
+  "outputs": {
+    "catalog.json": "98715b833e23948e989dbce124c6f6134b7b23effcf1597cbde650a6ccc21377",
+    "maps.json": "9456ce465d908ac11d8f1cac3a14c8869484e5da3324d6a17252ba12f7cc768f"
+  },
+  "sourceFeatures": 4596,
+  "regions": 4543,
+  "countries": 211,
+  "excluded": {
+    "countryNotInCatalog": 12,
+    "synthetic": 32,
+    "wholeCountry": 9
+  }
+}

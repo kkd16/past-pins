@@ -1,0 +1,56 @@
+{
+  "title": "States & provinces",
+  "regions": "Regions",
+  "explore": "Explore states & provinces",
+  "countryTitle": "Regions in %{country}",
+  "description": "Explore states, provinces, and other regions within countries.",
+  "independentTracking": "Regions and countries are tracked separately. Changing one does not change the other.",
+  "coverage": "%{regions} regions across %{countries} countries and territories",
+  "searchCountries": "Find a country or territory",
+  "searchRegions": "Find a region",
+  "count": {
+    "one": "%{amount} region",
+    "other": "%{amount} regions"
+  },
+  "visitedCount": {
+    "one": "%{amount} region visited",
+    "other": "%{amount} regions visited"
+  },
+  "visited": "Regions visited",
+  "progress": "%{visited} of %{total} regions",
+  "progressValue": "%{visited} of %{total} regions, %{percent}",
+  "countryProgress": "%{country}: %{visited} of %{total} regions visited",
+  "openCountry": "Opens the region map and list",
+  "regionStatus": "%{name}, %{status}",
+  "changeStatus": "Change status",
+  "changeStatusHint": "Choose whether this region is visited, lived, or on your wishlist",
+  "showRegion": "Show %{name} on the map",
+  "selection": "Selected region",
+  "clearSelection": "Clear selected region",
+  "fitCountry": "Show whole country",
+  "mapHint": "Pinch to zoom. Tap a region to select it.",
+  "select": "Select regions",
+  "selectedCount": {
+    "one": "%{amount} region selected",
+    "other": "%{amount} regions selected"
+  },
+  "updateCount": {
+    "one": "Update %{amount} region",
+    "other": "Update %{amount} regions"
+  },
+  "noResults": "No matching regions",
+  "noResultsHint": "Try another search or show all regions.",
+  "noCountries": "No matching countries",
+  "noCountriesHint": "Try another country name.",
+  "showAll": "Show all regions",
+  "unavailable": "Regions aren’t available here yet",
+  "unavailableHint": "This country has no separate regions in the bundled map data.",
+  "browseCountries": "Browse supported countries",
+  "coverageNote": "Coverage and region names follow Natural Earth. Administrative divisions vary by country, and some boundaries may be out of date or disputed.",
+  "dataTitle": "Region map data",
+  "attribution": "Regional boundaries and names come from Natural Earth’s public-domain Admin 1 map. PastPins simplifies the boundaries for offline maps. Source coverage does not include every country or every recent boundary change.",
+  "source": "Natural Earth · Admin 1",
+  "sourceVersion": "Source version %{version}",
+  "sourceSnapshot": "Boundary source last updated: %{date}",
+  "license": "Natural Earth public-domain terms"
+}

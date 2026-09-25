@@ -3,8 +3,10 @@ import { describe, expect, test } from 'bun:test';
 import {
   changeHome,
   changePlaceStatus,
+  changeSubdivisionStatus,
   defaultAppData,
   getPlaceStatus,
+  getSubdivisionStatus,
   isVisited,
 } from '../src/data/model';
 
@@ -62,7 +64,38 @@ describe('travel statuses', () => {
     const two = defaultAppData();
     one.preferences.haptics = false;
     one.places.ca = 'visited';
+    one.subdivisions['region-a'] = 'visited';
     expect(two.preferences.haptics).toBe(true);
     expect(two.places).toEqual({});
+    expect(two.subdivisions).toEqual({});
+  });
+
+  test('regions have exclusive statuses and preserve lived during mark-visited', () => {
+    let data = changeSubdivisionStatus(defaultAppData(), ['region-a'], 'wishlist');
+    expect(getSubdivisionStatus(data, 'region-a')).toBe('wishlist');
+    expect(isVisited(data.subdivisions['region-a'])).toBe(false);
+    data = changeSubdivisionStatus(data, ['region-a'], 'lived');
+    expect(isVisited(data.subdivisions['region-a'])).toBe(true);
+    expect(changeSubdivisionStatus(data, ['region-a'], 'visited')).toBe(data);
+    data = changeSubdivisionStatus(data, ['region-a', 'region-b'], 'visited');
+    expect(data.subdivisions).toEqual({ 'region-a': 'lived', 'region-b': 'visited' });
+    data = changeSubdivisionStatus(data, ['region-a'], 'visited', false);
+    expect(data.subdivisions['region-a']).toBe('visited');
+    data = changeSubdivisionStatus(data, ['region-a'], 'unvisited');
+    expect(data.subdivisions).toEqual({ 'region-b': 'visited' });
+    expect(getSubdivisionStatus(data, 'region-a')).toBe('unvisited');
+    expect(changeSubdivisionStatus(data, [], 'visited')).toBe(data);
+  });
+
+  test('region changes and country changes leave one another independent', () => {
+    const initial = changeHome(defaultAppData(), 'ca');
+    const regions = changeSubdivisionStatus(initial, ['region-a'], 'lived');
+    expect(regions.places).toBe(initial.places);
+    expect(regions.homeCountryId).toBe('ca');
+    expect(initial.subdivisions).toEqual({});
+    const countries = changePlaceStatus(regions, ['ca'], 'unvisited');
+    expect(countries.places).toEqual({});
+    expect(countries.homeCountryId).toBeNull();
+    expect(countries.subdivisions).toBe(regions.subdivisions);
   });
 });

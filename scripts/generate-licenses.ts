@@ -81,6 +81,18 @@ for (const pkg of inventory) {
   }
 }
 
+const subdivisionSource = await Bun.file(
+  join(root, 'scripts/data/subdivisions-source.json'),
+).json();
+notices.set(`natural-earth-admin-1@${subdivisionSource.version}`, {
+  name: 'Natural Earth Admin 1',
+  version: subdivisionSource.version,
+  license: subdivisionSource.license,
+  text: await Bun.file(
+    join(root, 'licenses/natural-earth-public-domain.md'),
+  ).text(),
+});
+
 const generated =
   JSON.stringify(
     [...notices.values()].sort(

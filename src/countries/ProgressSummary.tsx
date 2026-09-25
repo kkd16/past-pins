@@ -18,11 +18,13 @@ export function ProgressSummary({
   total,
   loading,
   label = t('countries.stats.visited'),
+  kind = 'countries',
 }: {
   visited: number;
   total: number;
   loading: boolean;
   label?: string;
+  kind?: 'countries' | 'subdivisions';
 }) {
   const visitedRatio = total ? visited / total : 0;
   const reduced = useReducedMotion();
@@ -56,11 +58,16 @@ export function ProgressSummary({
               min: 0,
               max: total,
               now: visited,
-              text: t('countries.stats.progressValue', {
-                visited: formatNumber(visited),
-                total: formatNumber(total),
-                percent: formatPercent(visitedRatio),
-              }),
+              text: t(
+                kind === 'subdivisions'
+                  ? 'subdivisions.progressValue'
+                  : 'countries.stats.progressValue',
+                {
+                  visited: formatNumber(visited),
+                  total: formatNumber(total),
+                  percent: formatPercent(visitedRatio),
+                },
+              ),
             }
       }
       style={styles.container}
@@ -81,10 +88,15 @@ export function ProgressSummary({
       <AppText variant="caption" tone="muted">
         {loading
           ? '—'
-          : t('countries.stats.progress', {
-              visited: formatNumber(visited),
-              total: formatNumber(total),
-            })}
+          : t(
+              kind === 'subdivisions'
+                ? 'subdivisions.progress'
+                : 'countries.stats.progress',
+              {
+                visited: formatNumber(visited),
+                total: formatNumber(total),
+              },
+            )}
       </AppText>
     </View>
   );

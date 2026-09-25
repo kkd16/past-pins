@@ -2622,6 +2622,12 @@
     "text": "LICENSE\n\nThe MIT License (MIT)\n\nCopyright 2017 Andrey Sitnik <andrey@sitnik.ru>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in\nthe Software without restriction, including without limitation the rights to\nuse, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of\nthe Software, and to permit persons to whom the Software is furnished to do so,\nsubject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS\nFOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR\nCOPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER\nIN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
   },
   {
+    "name": "Natural Earth Admin 1",
+    "version": "5.1.1",
+    "license": "Public domain",
+    "text": "# Natural Earth geographic data\n\nPastPins uses Natural Earth's 1:10m Admin 1 – States, Provinces dataset, version\n5.1.1, from the v5.1.2 release of natural-earth-vector.\n\nMade with Natural Earth. Free vector and raster map data at\nhttps://www.naturalearthdata.com/.\n\nNatural Earth dedicates its raster and vector map data to the public domain.\nPersonal, educational, and commercial use, modification, and redistribution are\npermitted without requesting permission. The authors provide no guarantee of\naccuracy or fitness for a particular use.\n\nTerms: https://www.naturalearthdata.com/about/terms-of-use/\n\nSource: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/\n\nPinned release: https://github.com/nvkelso/natural-earth-vector/tree/f1890d9f152c896d250a77557a5751a93d494776\n\nThe application derives names and IDs from the source attributes and projects,\nsimplifies, and rounds its geometry for mobile display. Natural Earth's default\nboundaries reflect its de facto viewpoint. This is a cartographic dataset, not a\ncurrent legal or governmental register of subdivisions.\n"
+  },
+  {
     "name": "negotiator",
     "version": "0.6.3",
     "license": "MIT",

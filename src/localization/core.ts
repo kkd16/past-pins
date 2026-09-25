@@ -27,6 +27,10 @@ export function createLocalization<const Messages extends object>(
     style: 'percent',
     maximumFractionDigits: 1,
   });
+  const smallPercentFormatter = new Intl.NumberFormat(locale, {
+    style: 'percent',
+    maximumFractionDigits: 2,
+  });
   const collator = new Intl.Collator(language);
 
   return {
@@ -35,7 +39,11 @@ export function createLocalization<const Messages extends object>(
       return i18n.t(key, values);
     },
     formatNumber: numberFormatter.format,
-    formatPercent: percentFormatter.format,
+    formatPercent(value: number) {
+      return value > 0 && value < 0.001
+        ? smallPercentFormatter.format(value)
+        : percentFormatter.format(value);
+    },
     compareNames: collator.compare,
     formatList(values: readonly string[]) {
       return i18n.toSentence([...values]);

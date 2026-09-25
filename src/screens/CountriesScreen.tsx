@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import { DataFeedback } from '../components/DataFeedback';
+import { Button } from '../components/Button';
 import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -40,6 +41,7 @@ export function CountriesScreen({
   onOpenFilters,
   onResetFilters,
   onSelect,
+  onOpenRegions,
 }: {
   filters: CountryFilters;
   query: string;
@@ -50,6 +52,7 @@ export function CountriesScreen({
   onOpenFilters: () => void;
   onResetFilters: () => void;
   onSelect: (id: CountryId) => void;
+  onOpenRegions: () => void;
 }) {
   const app = useAppData();
   const reducedMotion = useReducedMotion();
@@ -150,6 +153,14 @@ export function CountriesScreen({
                 accessibilityLabel={t('countries.searchLabel')}
               />
               <CountryScopeControl value={scope} onChange={onScopeChange} />
+              <Button
+                label={t('subdivisions.explore')}
+                variant="quiet"
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onOpenRegions();
+                }}
+              />
             </View>
             <DataFeedback />
           </>
