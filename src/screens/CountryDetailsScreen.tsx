@@ -16,6 +16,7 @@ import { theme } from '../theme';
 import { t, formatList, language } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
 import { ProgressSummary } from '../countries/ProgressSummary';
+import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 
 export function CountryDetailsScreen({
   id,
@@ -34,6 +35,7 @@ export function CountryDetailsScreen({
 }) {
   const app = useAppData();
   const country = countryById.get(id);
+  const terminology = getCountrySubdivisionTerminology(id);
   const disabled = app.status !== 'ready' || app.busy;
   const regionStats = getSubdivisionStatistics(app.data.subdivisions, id);
   const facts = country
@@ -61,13 +63,14 @@ export function CountryDetailsScreen({
             <Surface style={styles.regions}>
               <ProgressSummary
                 kind="subdivisions"
-                label={t('subdivisions.title')}
+                countryId={id}
+                label={terminology.title}
                 visited={regionStats.visited}
                 total={regionStats.total}
                 loading={app.status !== 'ready'}
               />
               <Button
-                label={t('subdivisions.explore')}
+                label={t('subdivisions.explore', terminology)}
                 onPress={() => onOpenRegions(id)}
               />
             </Surface>

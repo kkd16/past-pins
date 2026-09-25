@@ -12,6 +12,7 @@ import { AppText } from '../components/AppText';
 import { theme } from '../theme';
 import { useReducedMotion } from '../motion/ReducedMotion';
 import { t, formatNumber, formatPercent, language } from '../localization';
+import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 
 export function ProgressSummary({
   visited,
@@ -19,13 +20,16 @@ export function ProgressSummary({
   loading,
   label = t('countries.stats.visited'),
   kind = 'countries',
+  countryId,
 }: {
   visited: number;
   total: number;
   loading: boolean;
   label?: string;
   kind?: 'countries' | 'subdivisions';
+  countryId?: string;
 }) {
+  const terminology = getCountrySubdivisionTerminology(countryId);
   const visitedRatio = total ? visited / total : 0;
   const reduced = useReducedMotion();
   const fraction = loading ? 0 : visitedRatio;
@@ -63,6 +67,7 @@ export function ProgressSummary({
                   ? 'subdivisions.progressValue'
                   : 'countries.stats.progressValue',
                 {
+                  ...terminology,
                   visited: formatNumber(visited),
                   total: formatNumber(total),
                   percent: formatPercent(visitedRatio),
@@ -93,6 +98,7 @@ export function ProgressSummary({
                 ? 'subdivisions.progress'
                 : 'countries.stats.progress',
               {
+                ...terminology,
                 visited: formatNumber(visited),
                 total: formatNumber(total),
               },

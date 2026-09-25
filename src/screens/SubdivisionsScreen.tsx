@@ -29,6 +29,10 @@ import {
   getSubdivisionStatistics,
   selectSubdivisions,
 } from '../subdivisions/tracking';
+import {
+  getCountrySubdivisionTerminology,
+  getSubdivisionKindLabel,
+} from '../subdivisions/terminology';
 import { theme } from '../theme';
 
 const emptySelection: ReadonlySet<string> = new Set();
@@ -51,6 +55,7 @@ export function SubdivisionsScreen({
   const app = useAppData();
   const { setSubdivisionStatus } = app;
   const country = countryById.get(countryId);
+  const terminology = getCountrySubdivisionTerminology(countryId);
   const [view, setView] = useState<SubdivisionView>(
     initialSelectedId || initialScope === 'all' ? 'map' : 'list',
   );
@@ -88,6 +93,7 @@ export function SubdivisionsScreen({
   const selecting = selection?.key === filterKey;
   const selectedIds = selecting ? selection.ids : emptySelection;
   const selectionCount = {
+    ...terminology,
     count: selectedIds.size,
     amount: formatNumber(selectedIds.size),
   };
@@ -206,7 +212,9 @@ export function SubdivisionsScreen({
                 <View style={styles.selectedHeading}>
                   <View style={styles.grow}>
                     <AppText variant="caption" tone="muted">
-                      {t('subdivisions.selection')}
+                      {t('subdivisions.selection', {
+                        type: getSubdivisionKindLabel(selectedRegion.kind),
+                      })}
                     </AppText>
                     <AppText variant="heading">{selectedRegion.name}</AppText>
                     <AppText tone="muted">
@@ -243,6 +251,7 @@ export function SubdivisionsScreen({
                 {app.status === 'ready' && (
                   <AppText variant="label" tone="visited">
                     {t('subdivisions.visitedSummary', {
+                      ...terminology,
                       visited: formatNumber(stats.visited),
                       total: formatNumber(stats.total),
                     })}
@@ -254,7 +263,7 @@ export function SubdivisionsScreen({
               </View>
             )}
             <Button
-              label={t('subdivisions.browseList')}
+              label={t('subdivisions.browseList', terminology)}
               variant="quiet"
               onPress={() => setView('list')}
             />
@@ -291,32 +300,34 @@ export function SubdivisionsScreen({
               <DataFeedback />
               <ProgressSummary
                 kind="subdivisions"
-                label={t('subdivisions.visited')}
+                countryId={countryId}
+                label={t('subdivisions.visited', terminology)}
                 visited={stats.visited}
                 total={stats.total}
                 loading={app.status !== 'ready'}
               />
               <AppText variant="caption" tone="muted">
-                {t('subdivisions.independentTracking')}
+                {t('subdivisions.independentTracking', terminology)}
               </AppText>
               <SearchField
                 value={query}
                 onChangeText={setQuery}
-                placeholder={t('subdivisions.searchRegions')}
-                accessibilityLabel={t('subdivisions.searchRegions')}
+                placeholder={t('subdivisions.search', terminology)}
+                accessibilityLabel={t('subdivisions.search', terminology)}
               />
               <CountryScopeControl value={scope} onChange={setScope} />
               {app.status === 'ready' && (
                 <View style={styles.actions}>
                   <AppText variant="caption" tone="muted" style={styles.grow}>
                     {t('subdivisions.count', {
+                      ...terminology,
                       count: results.length,
                       amount: formatNumber(results.length),
                     })}
                   </AppText>
                   {!selecting && (
                     <Button
-                      label={t('subdivisions.select')}
+                      label={t('subdivisions.select', terminology)}
                       variant="quiet"
                       disabled={disabled || results.length === 0}
                       onPress={() => {
@@ -344,10 +355,14 @@ export function SubdivisionsScreen({
           ListEmptyComponent={
             app.status === 'ready' ? (
               <View style={styles.empty}>
-                <AppText variant="heading">{t('subdivisions.noResults')}</AppText>
-                <AppText tone="muted">{t('subdivisions.noResultsHint')}</AppText>
+                <AppText variant="heading">
+                  {t('subdivisions.noResults', terminology)}
+                </AppText>
+                <AppText tone="muted">
+                  {t('subdivisions.noResultsHint', terminology)}
+                </AppText>
                 <Button
-                  label={t('subdivisions.showAll')}
+                  label={t('subdivisions.showAll', terminology)}
                   variant="quiet"
                   onPress={showAll}
                 />

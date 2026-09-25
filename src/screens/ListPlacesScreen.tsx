@@ -25,6 +25,7 @@ import type { TravelList } from '../data/model';
 import { formatNumber, language, t } from '../localization';
 import { searchPlaces, type Place } from '../places/catalog';
 import { getCountrySubdivisions } from '../subdivisions/catalog';
+import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 import { theme } from '../theme';
 
 type Props = {
@@ -191,6 +192,7 @@ function ListPlacesEditor({
                 />
                 <AppText variant="heading" accessibilityRole="header">
                   {t('subdivisions.countryTitle', {
+                    ...getCountrySubdivisionTerminology(countryId),
                     country: countryById.get(countryId)!.name,
                   })}
                 </AppText>

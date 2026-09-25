@@ -20,6 +20,7 @@ import { selectRegions } from '../places/filter';
 import { PlaceKindControl, type PlacesMode } from '../places/PlaceKindControl';
 import { subdivisionById } from '../subdivisions/catalog';
 import { SubdivisionRow } from '../subdivisions/SubdivisionRow';
+import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 import { theme } from '../theme';
 
 export function RegionsScreen({
@@ -48,6 +49,7 @@ export function RegionsScreen({
   onSaveToLists: (id: string) => void;
 }) {
   const app = useAppData();
+  const terminology = getCountrySubdivisionTerminology();
   const { setSubdivisionStatus, resetVersion } = app;
   const list = useRef<FlatList<Place>>(null);
   const guard = useActionGuard(resetVersion);
@@ -136,6 +138,7 @@ export function RegionsScreen({
               {app.status === 'ready' && (
                 <AppText variant="caption" tone="muted" style={styles.count}>
                   {t('subdivisions.count', {
+                    ...terminology,
                     count: regions.length,
                     amount: formatNumber(regions.length),
                   })}
@@ -160,10 +163,14 @@ export function RegionsScreen({
         ListEmptyComponent={
           app.status === 'ready' ? (
             <View style={styles.empty}>
-              <AppText variant="heading">{t('subdivisions.noResults')}</AppText>
-              <AppText tone="muted">{t('subdivisions.noResultsHint')}</AppText>
+              <AppText variant="heading">
+                {t('subdivisions.noResults', terminology)}
+              </AppText>
+              <AppText tone="muted">
+                {t('subdivisions.noResultsHint', terminology)}
+              </AppText>
               <Button
-                label={t('subdivisions.showAll')}
+                label={t('subdivisions.showAll', terminology)}
                 variant="quiet"
                 onPress={onResetFilters}
               />

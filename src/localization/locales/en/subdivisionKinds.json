@@ -1,0 +1,625 @@
+{
+  "administrative county": {
+    "name": {
+      "one": "administrative county",
+      "other": "administrative counties"
+    },
+    "title": "Administrative counties"
+  },
+  "administrative state": {
+    "name": {
+      "one": "administrative state",
+      "other": "administrative states"
+    },
+    "title": "Administrative states"
+  },
+  "administrative zone": {
+    "name": {
+      "one": "administrative zone",
+      "other": "administrative zones"
+    },
+    "title": "Administrative zones"
+  },
+  "atoll": {
+    "name": {
+      "one": "atoll",
+      "other": "atolls"
+    },
+    "title": "Atolls"
+  },
+  "autonomous city": {
+    "name": {
+      "one": "autonomous city",
+      "other": "autonomous cities"
+    },
+    "title": "Autonomous cities"
+  },
+  "autonomous commune": {
+    "name": {
+      "one": "autonomous commune",
+      "other": "autonomous communes"
+    },
+    "title": "Autonomous communes"
+  },
+  "autonomous community": {
+    "name": {
+      "one": "autonomous community",
+      "other": "autonomous communities"
+    },
+    "title": "Autonomous communities"
+  },
+  "autonomous monastic state": {
+    "name": {
+      "one": "autonomous monastic state",
+      "other": "autonomous monastic states"
+    },
+    "title": "Autonomous monastic states"
+  },
+  "autonomous province": {
+    "name": {
+      "one": "autonomous province",
+      "other": "autonomous provinces"
+    },
+    "title": "Autonomous provinces"
+  },
+  "autonomous region": {
+    "name": {
+      "one": "autonomous region",
+      "other": "autonomous regions"
+    },
+    "title": "Autonomous regions"
+  },
+  "autonomous republic": {
+    "name": {
+      "one": "autonomous republic",
+      "other": "autonomous republics"
+    },
+    "title": "Autonomous republics"
+  },
+  "autonomous sector": {
+    "name": {
+      "one": "autonomous sector",
+      "other": "autonomous sectors"
+    },
+    "title": "Autonomous sectors"
+  },
+  "autonomous territory": {
+    "name": {
+      "one": "autonomous territory",
+      "other": "autonomous territories"
+    },
+    "title": "Autonomous territories"
+  },
+  "canton": {
+    "name": {
+      "one": "canton",
+      "other": "cantons"
+    },
+    "title": "Cantons"
+  },
+  "capital": {
+    "name": {
+      "one": "capital",
+      "other": "capitals"
+    },
+    "title": "Capitals"
+  },
+  "capital city": {
+    "name": {
+      "one": "capital city",
+      "other": "capital cities"
+    },
+    "title": "Capital cities"
+  },
+  "capital district": {
+    "name": {
+      "one": "capital district",
+      "other": "capital districts"
+    },
+    "title": "Capital districts"
+  },
+  "capital metropolitan city": {
+    "name": {
+      "one": "capital metropolitan city",
+      "other": "capital metropolitan cities"
+    },
+    "title": "Capital metropolitan cities"
+  },
+  "capital region": {
+    "name": {
+      "one": "capital region",
+      "other": "capital regions"
+    },
+    "title": "Capital regions"
+  },
+  "capital territory": {
+    "name": {
+      "one": "capital territory",
+      "other": "capital territories"
+    },
+    "title": "Capital territories"
+  },
+  "centrally administered area": {
+    "name": {
+      "one": "centrally administered area",
+      "other": "centrally administered areas"
+    },
+    "title": "Centrally administered areas"
+  },
+  "circuit": {
+    "name": {
+      "one": "circuit",
+      "other": "circuits"
+    },
+    "title": "Circuits"
+  },
+  "city": {
+    "name": {
+      "one": "city",
+      "other": "cities"
+    },
+    "title": "Cities"
+  },
+  "city corporation": {
+    "name": {
+      "one": "city corporation",
+      "other": "city corporations"
+    },
+    "title": "City corporations"
+  },
+  "commune": {
+    "name": {
+      "one": "commune",
+      "other": "communes"
+    },
+    "title": "Communes"
+  },
+  "county": {
+    "name": {
+      "one": "county",
+      "other": "counties"
+    },
+    "title": "Counties"
+  },
+  "department": {
+    "name": {
+      "one": "department",
+      "other": "departments"
+    },
+    "title": "Departments"
+  },
+  "dependency": {
+    "name": {
+      "one": "dependency",
+      "other": "dependencies"
+    },
+    "title": "Dependencies"
+  },
+  "district": {
+    "name": {
+      "one": "district",
+      "other": "districts"
+    },
+    "title": "Districts"
+  },
+  "division": {
+    "name": {
+      "one": "division",
+      "other": "divisions"
+    },
+    "title": "Divisions"
+  },
+  "economic prefecture": {
+    "name": {
+      "one": "economic prefecture",
+      "other": "economic prefectures"
+    },
+    "title": "Economic prefectures"
+  },
+  "emirate": {
+    "name": {
+      "one": "emirate",
+      "other": "emirates"
+    },
+    "title": "Emirates"
+  },
+  "federal city": {
+    "name": {
+      "one": "federal city",
+      "other": "federal cities"
+    },
+    "title": "Federal cities"
+  },
+  "federal dependency": {
+    "name": {
+      "one": "federal dependency",
+      "other": "federal dependencies"
+    },
+    "title": "Federal dependencies"
+  },
+  "federal district": {
+    "name": {
+      "one": "federal district",
+      "other": "federal districts"
+    },
+    "title": "Federal districts"
+  },
+  "federal territory": {
+    "name": {
+      "one": "federal territory",
+      "other": "federal territories"
+    },
+    "title": "Federal territories"
+  },
+  "governorate": {
+    "name": {
+      "one": "governorate",
+      "other": "governorates"
+    },
+    "title": "Governorates"
+  },
+  "highly urbanized city": {
+    "name": {
+      "one": "highly urbanized city",
+      "other": "highly urbanized cities"
+    },
+    "title": "Highly urbanized cities"
+  },
+  "independent city": {
+    "name": {
+      "one": "independent city",
+      "other": "independent cities"
+    },
+    "title": "Independent cities"
+  },
+  "independent component city": {
+    "name": {
+      "one": "independent component city",
+      "other": "independent component cities"
+    },
+    "title": "Independent component cities"
+  },
+  "independent municipality": {
+    "name": {
+      "one": "independent municipality",
+      "other": "independent municipalities"
+    },
+    "title": "Independent municipalities"
+  },
+  "independent town": {
+    "name": {
+      "one": "independent town",
+      "other": "independent towns"
+    },
+    "title": "Independent towns"
+  },
+  "indigenous territory": {
+    "name": {
+      "one": "indigenous territory",
+      "other": "indigenous territories"
+    },
+    "title": "Indigenous territories"
+  },
+  "intendancy": {
+    "name": {
+      "one": "intendancy",
+      "other": "intendancies"
+    },
+    "title": "Intendancies"
+  },
+  "island area": {
+    "name": {
+      "one": "island area",
+      "other": "island areas"
+    },
+    "title": "Island areas"
+  },
+  "kingdom": {
+    "name": {
+      "one": "kingdom",
+      "other": "kingdoms"
+    },
+    "title": "Kingdoms"
+  },
+  "london borough": {
+    "name": {
+      "one": "London borough",
+      "other": "London boroughs"
+    },
+    "title": "London boroughs"
+  },
+  "london borough (city)": {
+    "name": {
+      "one": "London borough (city)",
+      "other": "London boroughs (city)"
+    },
+    "title": "London boroughs (city)"
+  },
+  "london borough (royal)": {
+    "name": {
+      "one": "London borough (royal)",
+      "other": "London boroughs (royal)"
+    },
+    "title": "London boroughs (royal)"
+  },
+  "metropolis": {
+    "name": {
+      "one": "metropolis",
+      "other": "metropolises"
+    },
+    "title": "Metropolises"
+  },
+  "metropolitan borough": {
+    "name": {
+      "one": "metropolitan borough",
+      "other": "metropolitan boroughs"
+    },
+    "title": "Metropolitan boroughs"
+  },
+  "metropolitan city": {
+    "name": {
+      "one": "metropolitan city",
+      "other": "metropolitan cities"
+    },
+    "title": "Metropolitan cities"
+  },
+  "metropolitan department": {
+    "name": {
+      "one": "metropolitan department",
+      "other": "metropolitan departments"
+    },
+    "title": "Metropolitan departments"
+  },
+  "municipality": {
+    "name": {
+      "one": "municipality",
+      "other": "municipalities"
+    },
+    "title": "Municipalities"
+  },
+  "national capital area": {
+    "name": {
+      "one": "national capital area",
+      "other": "national capital areas"
+    },
+    "title": "National capital areas"
+  },
+  "national district": {
+    "name": {
+      "one": "national district",
+      "other": "national districts"
+    },
+    "title": "National districts"
+  },
+  "national territory": {
+    "name": {
+      "one": "national territory",
+      "other": "national territories"
+    },
+    "title": "National territories"
+  },
+  "neutral city": {
+    "name": {
+      "one": "neutral city",
+      "other": "neutral cities"
+    },
+    "title": "Neutral cities"
+  },
+  "overseas department": {
+    "name": {
+      "one": "overseas department",
+      "other": "overseas departments"
+    },
+    "title": "Overseas departments"
+  },
+  "parish": {
+    "name": {
+      "one": "parish",
+      "other": "parishes"
+    },
+    "title": "Parishes"
+  },
+  "prefecture": {
+    "name": {
+      "one": "prefecture",
+      "other": "prefectures"
+    },
+    "title": "Prefectures"
+  },
+  "principality": {
+    "name": {
+      "one": "principality",
+      "other": "principalities"
+    },
+    "title": "Principalities"
+  },
+  "province": {
+    "name": {
+      "one": "province",
+      "other": "provinces"
+    },
+    "title": "Provinces"
+  },
+  "provincial city": {
+    "name": {
+      "one": "provincial city",
+      "other": "provincial cities"
+    },
+    "title": "Provincial cities"
+  },
+  "quarter": {
+    "name": {
+      "one": "quarter",
+      "other": "quarters"
+    },
+    "title": "Quarters"
+  },
+  "region": {
+    "name": {
+      "one": "region",
+      "other": "regions"
+    },
+    "title": "Regions"
+  },
+  "regional council": {
+    "name": {
+      "one": "regional council",
+      "other": "regional councils"
+    },
+    "title": "Regional councils"
+  },
+  "republic": {
+    "name": {
+      "one": "republic",
+      "other": "republics"
+    },
+    "title": "Republics"
+  },
+  "republican city": {
+    "name": {
+      "one": "republican city",
+      "other": "republican cities"
+    },
+    "title": "Republican cities"
+  },
+  "special city": {
+    "name": {
+      "one": "special city",
+      "other": "special cities"
+    },
+    "title": "Special cities"
+  },
+  "special island authority": {
+    "name": {
+      "one": "special island authority",
+      "other": "special island authorities"
+    },
+    "title": "Special island authorities"
+  },
+  "special municipality": {
+    "name": {
+      "one": "special municipality",
+      "other": "special municipalities"
+    },
+    "title": "Special municipalities"
+  },
+  "special district": {
+    "name": {
+      "one": "special district",
+      "other": "special districts"
+    },
+    "title": "Special districts"
+  },
+  "special region": {
+    "name": {
+      "one": "special region",
+      "other": "special regions"
+    },
+    "title": "Special regions"
+  },
+  "special self-governing city": {
+    "name": {
+      "one": "special self-governing city",
+      "other": "special self-governing cities"
+    },
+    "title": "Special self-governing cities"
+  },
+  "state": {
+    "name": {
+      "one": "state",
+      "other": "states"
+    },
+    "title": "States"
+  },
+  "statistical region": {
+    "name": {
+      "one": "statistical region",
+      "other": "statistical regions"
+    },
+    "title": "Statistical regions"
+  },
+  "territorial unit": {
+    "name": {
+      "one": "territorial unit",
+      "other": "territorial units"
+    },
+    "title": "Territorial units"
+  },
+  "territory": {
+    "name": {
+      "one": "territory",
+      "other": "territories"
+    },
+    "title": "Territories"
+  },
+  "town": {
+    "name": {
+      "one": "town",
+      "other": "towns"
+    },
+    "title": "Towns"
+  },
+  "township": {
+    "name": {
+      "one": "township",
+      "other": "townships"
+    },
+    "title": "Townships"
+  },
+  "union territory": {
+    "name": {
+      "one": "union territory",
+      "other": "union territories"
+    },
+    "title": "Union territories"
+  },
+  "unitary authority": {
+    "name": {
+      "one": "unitary authority",
+      "other": "unitary authorities"
+    },
+    "title": "Unitary authorities"
+  },
+  "unitary authority (wales)": {
+    "name": {
+      "one": "unitary authority (Wales)",
+      "other": "unitary authorities (Wales)"
+    },
+    "title": "Unitary authorities (Wales)"
+  },
+  "unitary district": {
+    "name": {
+      "one": "unitary district",
+      "other": "unitary districts"
+    },
+    "title": "Unitary districts"
+  },
+  "unitary district (city)": {
+    "name": {
+      "one": "unitary district (city)",
+      "other": "unitary districts (city)"
+    },
+    "title": "Unitary districts (city)"
+  },
+  "unitary single-tier county": {
+    "name": {
+      "one": "unitary single-tier county",
+      "other": "unitary single-tier counties"
+    },
+    "title": "Unitary single-tier counties"
+  },
+  "urban prefecture": {
+    "name": {
+      "one": "urban prefecture",
+      "other": "urban prefectures"
+    },
+    "title": "Urban prefectures"
+  },
+  "urban county": {
+    "name": {
+      "one": "urban county",
+      "other": "urban counties"
+    },
+    "title": "Urban counties"
+  }
+}

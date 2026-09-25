@@ -23,6 +23,7 @@ import { useAppData } from '../data/AppDataProvider';
 import { theme } from '../theme';
 import { t, formatNumber, formatPercent } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
+import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 import { StampCollectionLink } from '../stamps/StampCollectionLink';
 
 function StatusTotals({
@@ -204,7 +205,8 @@ export function StatsScreen({
           accessibilityLabel={
             loading
               ? loadingMessage
-              : t('places.regionsProgress', {
+              : t('subdivisions.visitedSummary', {
+                  ...getCountrySubdivisionTerminology(),
                   visited: formatNumber(regionStats.visited),
                   total: formatNumber(regionStats.total),
                 })

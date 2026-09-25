@@ -10,6 +10,7 @@ import { isVisited, type PlaceStatus } from '../data/model';
 import { t } from '../localization';
 import { theme } from '../theme';
 import type { Subdivision } from './types';
+import { getSubdivisionKindLabel } from './terminology';
 
 export const SubdivisionRow = memo(function SubdivisionRow({
   region,
@@ -33,6 +34,7 @@ export const SubdivisionRow = memo(function SubdivisionRow({
   onSaveToLists: (id: string) => void;
 }) {
   const presentation = getStatusPresentation(status);
+  const kindLabel = getSubdivisionKindLabel(region.kind);
   const name = countryName
     ? t('lists.regionName', { name: region.name, country: countryName })
     : region.name;
@@ -50,6 +52,7 @@ export const SubdivisionRow = memo(function SubdivisionRow({
         accessibilityState={selecting ? { checked: selected } : undefined}
         accessibilityLabel={t('subdivisions.regionStatus', {
           name,
+          type: kindLabel,
           status: presentation.label,
         })}
         accessibilityHint={
@@ -64,11 +67,9 @@ export const SubdivisionRow = memo(function SubdivisionRow({
               {countryName}
             </AppText>
           )}
-          {region.kind ? (
-            <AppText variant="caption" tone="muted">
-              {region.kind}
-            </AppText>
-          ) : null}
+          <AppText variant="caption" tone="muted">
+            {kindLabel}
+          </AppText>
           <AppText variant="caption" style={{ color: presentation.color }}>
             {presentation.label}
           </AppText>

@@ -8,6 +8,7 @@ import { Icon } from '../components/Icon';
 import { isVisited, type PlaceStatus } from '../data/model';
 import { theme } from '../theme';
 import { formatNumber, t } from '../localization';
+import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 import { getStatusPresentation } from './status';
 import type { Country, CountryId } from './types';
 
@@ -37,6 +38,7 @@ export const CountryRow = memo(function CountryRow({
   onOpenRegions: (countryId: string) => void;
 }) {
   const presentation = getStatusPresentation(status, home);
+  const terminology = getCountrySubdivisionTerminology(country.id);
   return (
     <View
       style={[
@@ -96,11 +98,12 @@ export const CountryRow = memo(function CountryRow({
       {!selecting && regionsTotal > 0 && (
         <AppPressable
           accessibilityLabel={t('subdivisions.countryProgress', {
+            ...terminology,
             country: country.name,
             visited: formatNumber(regionsVisited),
             total: formatNumber(regionsTotal),
           })}
-          accessibilityHint={t('subdivisions.openCountry')}
+          accessibilityHint={t('subdivisions.openCountry', terminology)}
           onPress={() => {
             Keyboard.dismiss();
             onOpenRegions(country.id);
@@ -108,7 +111,8 @@ export const CountryRow = memo(function CountryRow({
           style={styles.regions}
         >
           <AppText variant="caption" tone="accent" style={styles.regionLabel}>
-            {t('places.regionsProgress', {
+            {t('subdivisions.visitedSummary', {
+              ...terminology,
               visited: formatNumber(regionsVisited),
               total: formatNumber(regionsTotal),
             })}

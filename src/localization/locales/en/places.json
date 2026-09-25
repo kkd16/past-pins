@@ -3,14 +3,12 @@
   "modeLabel": "Place type",
   "countries": "Countries",
   "regions": "Regions",
-  "regionSubtitle": "States, provinces & regions",
+  "regionSubtitle": "Explore regions around the world",
   "searchRegions": "Search by region or country",
   "searchAll": "Search countries or regions",
   "searchTitle": "Find a place",
   "noSearchResults": "No matching places",
   "noSearchResultsHint": "Try a country, state, or province.",
-  "countryRegions": "Regions in %{country}",
-  "regionsProgress": "%{visited} of %{total} regions visited",
   "statisticLabel": "%{kind}, %{label}: %{value}",
   "matchingRegions": "Open matching regions"
 }

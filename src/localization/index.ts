@@ -7,6 +7,7 @@ import countries from './locales/en/countries.json';
 import settings from './locales/en/settings.json';
 import location from './locales/en/location.json';
 import subdivisions from './locales/en/subdivisions.json';
+import subdivisionKinds from './locales/en/subdivisionKinds.json';
 import lists from './locales/en/lists.json';
 import stamps from './locales/en/stamps.json';
 import places from './locales/en/places.json';
@@ -20,6 +21,7 @@ export const translations = {
     settings,
     location,
     subdivisions,
+    subdivisionKinds,
     lists,
     stamps,
     places,

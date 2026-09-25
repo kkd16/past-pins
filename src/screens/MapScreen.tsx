@@ -28,6 +28,7 @@ import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
 import { theme } from '../theme';
 import { getCountrySubdivisions } from '../subdivisions/catalog';
+import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
 
 export function MapScreen({
   onSelect,
@@ -240,7 +241,8 @@ export function MapScreen({
             selectedId &&
             getCountrySubdivisions(selectedId).length > 0 && (
               <Button
-                label={t('places.countryRegions', {
+                label={t('subdivisions.countryTitle', {
+                  ...getCountrySubdivisionTerminology(selectedId),
                   country: countryById.get(selectedId)!.name,
                 })}
                 variant="quiet"
