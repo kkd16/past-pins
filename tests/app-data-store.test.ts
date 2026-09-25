@@ -63,6 +63,78 @@ async function settle(storage: AppStorage) {
 }
 
 describe('app data owner', () => {
+  test('onboarding publishes completion and the reminder choice only after one saved snapshot', async () => {
+    const f = fixture();
+    await f.store.load();
+    const gate = Promise.withResolvers<void>();
+    const save = f.storage.save;
+    f.storage.save = async (data) => { await gate.promise; await save(data); };
+    const finishing = f.store.completeOnboarding(true);
+    expect(f.store.getSnapshot()).toMatchObject({
+      busy: true,
+      data: { onboardingCompleted: false, preferences: { countryArrivalAlerts: false } },
+    });
+    await expect(f.store.completeOnboarding(false)).rejects.toThrow('not ready');
+    gate.resolve();
+    await finishing;
+    expect(f.writes()).toBe(1);
+    expect(f.store.getSnapshot()).toMatchObject({
+      busy: false,
+      data: { onboardingCompleted: true, preferences: { countryArrivalAlerts: true } },
+    });
+    const reopened = createAppDataStore(f.storage, { confirmHomeChange: async () => true });
+    await reopened.load();
+    expect(reopened.getSnapshot().data.onboardingCompleted).toBe(true);
+    await f.store.completeOnboarding(false);
+    expect(f.writes()).toBe(1);
+    expect(f.store.getSnapshot().data.preferences.countryArrivalAlerts).toBe(true);
+  });
+
+  test.each([false, true])('failed onboarding save preserves state and retries the %s reminder choice', async (alerts) => {
+    const f = fixture();
+    await f.store.load();
+    f.failWrites(true);
+    await expect(f.store.completeOnboarding(alerts)).rejects.toThrow('Write failed');
+    expect(f.store.getSnapshot()).toMatchObject({ busy: false, data: defaultAppData() });
+    expect(await f.storage.load()).toEqual(defaultAppData());
+    f.failWrites(false);
+    await f.store.completeOnboarding(alerts);
+    expect(await f.storage.load()).toMatchObject({
+      onboardingCompleted: true, preferences: { countryArrivalAlerts: alerts },
+    });
+  });
+
+  test('only full reset clears a completed welcome', async () => {
+    const f = fixture();
+    await expect(f.store.completeOnboarding(false)).rejects.toThrow('not ready');
+    await f.store.load();
+    await f.store.completeOnboarding(false);
+    await f.store.setStatus(['ca'], 'visited');
+    f.store.undo(f.store.getSnapshot().pendingUndo!.id);
+    expect(f.store.getSnapshot().data.onboardingCompleted).toBe(true);
+    f.store.resetPreferences();
+    await f.store.clearTravel();
+    await f.store.restore(defaultAppData());
+    expect((await f.storage.load()).onboardingCompleted).toBe(true);
+    await f.store.resetApp();
+    expect(f.store.getSnapshot().data.onboardingCompleted).toBe(false);
+    expect((await f.storage.load()).onboardingCompleted).toBe(false);
+  });
+
+  test('restore validates the incoming welcome flag before preserving completion', async () => {
+    const f = fixture();
+    await f.store.load();
+    await f.store.completeOnboarding(false);
+    const before = f.store.getSnapshot();
+    const writes = f.writes();
+    for (const onboardingCompleted of [undefined, null, 0, 'true']) {
+      const invalid = { ...defaultAppData(), onboardingCompleted } as unknown as AppData;
+      await expect(f.store.restore(invalid)).rejects.toThrow();
+      expect(f.store.getSnapshot()).toBe(before);
+    }
+    expect(f.writes()).toBe(writes);
+  });
+
   test('complete reset waits for writes, blocks edits, clears Undo and starts fresh', async () => {
     const f = fixture();
     await f.store.load();
@@ -636,6 +708,25 @@ describe('app data owner', () => {
     await restore;
     expect(f.store.getSnapshot().data.places).toEqual({ fr: 'wishlist' });
     expect(await f.storage.load()).toEqual(replacement);
+  });
+
+  test('restore copies incoming data before awaiting storage without changing its source', async () => {
+    const f = fixture();
+    await f.store.load();
+    await f.store.completeOnboarding(false);
+    const replacement = defaultAppData();
+    replacement.places.ca = 'visited';
+    const restoring = f.store.restore(replacement);
+    expect(replacement.onboardingCompleted).toBe(false);
+    replacement.places.ca = 'wishlist';
+    replacement.preferences.countryArrivalAlerts = true;
+    await restoring;
+    expect(f.store.getSnapshot().data).toMatchObject({
+      onboardingCompleted: true,
+      places: { ca: 'visited' },
+      preferences: { countryArrivalAlerts: false },
+    });
+    expect(await f.storage.load()).toEqual(f.store.getSnapshot().data);
   });
 
   test('latest write controls errors; retry saves current state', async () => {

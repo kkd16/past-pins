@@ -105,16 +105,15 @@ export function createAppDataStore(
   async function replace(data: AppData, reset = false) {
     if (snapshot.status === 'loading' || snapshot.busy)
       throw new UserFacingError(t('common.errors.dataNotReady'));
-    const next = validateAppData(data);
     publish({ busy: true });
     try {
       await lastWrite;
       if (reset) await storage.clear();
-      else await storage.save(next);
+      else await storage.save(data);
       ++revision;
       undoTravel = null;
       publish({
-        data: next,
+        data,
         status: 'ready',
         pendingUndo: null,
         saveError: false,
@@ -156,6 +155,16 @@ export function createAppDataStore(
       };
     },
     load,
+    async completeOnboarding(countryArrivalAlerts: boolean) {
+      if (!editable())
+        throw new UserFacingError(t('common.errors.dataNotReady'));
+      if (snapshot.data.onboardingCompleted) return;
+      await replace({
+        ...snapshot.data,
+        onboardingCompleted: true,
+        preferences: { ...snapshot.data.preferences, countryArrivalAlerts },
+      });
+    },
     async setStatus(
       ids: readonly string[],
       status: PlaceStatus,
@@ -305,7 +314,12 @@ export function createAppDataStore(
       if (snapshot.status === 'load-error') void load();
       else if (editable()) persist(snapshot.data);
     },
-    restore: (data: AppData) => replace(data),
+    async restore(data: AppData) {
+      const next = validateAppData(data);
+      // Restoring travel data must not restart a completed welcome flow.
+      next.onboardingCompleted ||= snapshot.data.onboardingCompleted;
+      await replace(next);
+    },
     resetApp: () => replace(defaultAppData(), true),
     async clearTravel() {
       if (!editable())

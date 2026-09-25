@@ -21,6 +21,7 @@ function countryOnlyData() {
 describe('current backup format', () => {
   test('round trips every catalog country and region, home, and all preferences', () => {
     const data = changeHome(defaultAppData(), 'ca');
+    data.onboardingCompleted = true;
     for (const id of countryIds) data.places[id] = 'lived';
     for (const id of subdivisionIds) data.subdivisions[id] = 'visited';
     data.places.fr = 'wishlist';
@@ -64,6 +65,20 @@ describe('current backup format', () => {
 
   test('rejects non-JSON input', () => {
     expect(() => decodeBackup('this is not JSON')).toThrow('valid JSON');
+  });
+
+  test('requires a boolean onboarding flag in the current snapshot and backup', () => {
+    const { onboardingCompleted: _completed, ...data } = defaultAppData();
+    expect(() => validateAppData(data)).toThrow();
+    for (const onboardingCompleted of [undefined, null, 0, 'true']) {
+      expect(() => decodeBackup(JSON.stringify({
+        app: 'past-pins', version: 1, data: { ...data, onboardingCompleted },
+      }))).toThrow();
+    }
+    for (const onboardingCompleted of [false, true]) {
+      const snapshot = { ...data, onboardingCompleted };
+      expect(decodeBackup(encodeBackup(snapshot))).toEqual(snapshot);
+    }
   });
 
   test('requires region data even when the backup version matches', () => {

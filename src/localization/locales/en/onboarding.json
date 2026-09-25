@@ -1,0 +1,23 @@
+{
+  "welcomeTitle": "Welcome to PastPins",
+  "welcomeDescription": "Your travels and wishlist, saved on your iPhone.",
+  "findTitle": "Find a place",
+  "findDescription": "Tap a country on the map, or search in Places.",
+  "markTitle": "Make it yours",
+  "markDescription": "Mark places Visited, Wishlist, or Lived.",
+  "exploreTitle": "Keep exploring",
+  "exploreDescription": "Organize trips in Lists. See your progress and country stamps in Stats.",
+  "continue": "Continue",
+  "remindersTitle": "A nudge when you arrive",
+  "remindersDescription": "Get a nudge to mark a new country as visited. You choose what gets marked.",
+  "notificationsTitle": "Notifications",
+  "notificationsDescription": "Deliver your country arrival reminders.",
+  "locationTitle": "Background location",
+  "locationDescription": "Allow Always access to recognize arrivals in the background.",
+  "optional": "Entirely optional. You can change reminders in Settings anytime.",
+  "enableReminders": "Enable reminders",
+  "working": "Setting up…",
+  "startExploring": "Start exploring",
+  "remindersOff": "Reminders are off. You can turn them on later in Settings.",
+  "saveError": "Couldn’t save your setup. Try again to continue."
+}

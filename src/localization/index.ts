@@ -12,6 +12,7 @@ import lists from './locales/en/lists.json';
 import stamps from './locales/en/stamps.json';
 import places from './locales/en/places.json';
 import sharing from './locales/en/sharing.json';
+import onboarding from './locales/en/onboarding.json';
 
 export const translations = {
   en: {
@@ -26,6 +27,7 @@ export const translations = {
     stamps,
     places,
     sharing,
+    onboarding,
   },
 };
 export const {

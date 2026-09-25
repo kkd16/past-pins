@@ -28,14 +28,18 @@ export function parseArrival(data: Record<string, unknown> | undefined): Arrival
     : null;
 }
 
-export function arrivalsEnabled(snapshot: DataSnapshot) {
+export function arrivalDataReady(snapshot: DataSnapshot) {
   return snapshot.status === 'ready' && !snapshot.busy && !snapshot.saveError &&
-    snapshot.data.preferences.countryArrivalAlerts;
+    snapshot.data.onboardingCompleted;
+}
+
+export function arrivalsEnabled(snapshot: DataSnapshot) {
+  return arrivalDataReady(snapshot) && snapshot.data.preferences.countryArrivalAlerts;
 }
 
 export function createArrivalTracker(
   storage: Pick<KeyValueStorage, 'getItem' | 'setItem'>,
-  app: { load(): Promise<void>; getSnapshot(): DataSnapshot },
+  getSnapshot: () => DataSnapshot,
   notifications: {
     send(arrival: Arrival): Promise<string | null>;
     remove(identifier: string): Promise<void>;
@@ -60,10 +64,9 @@ export function createArrivalTracker(
   }
 
   async function process(locations: readonly ArrivalLocation[]) {
-    if (app.getSnapshot().status === 'loading') await app.load();
-    const snapshot = app.getSnapshot();
+    const snapshot = getSnapshot();
     const current = () => {
-      const latest = app.getSnapshot();
+      const latest = getSnapshot();
       return arrivalsEnabled(latest) && latest.resetVersion === snapshot.resetVersion &&
         latest.data.places === snapshot.data.places;
     };
@@ -117,11 +120,11 @@ export function createArrivalTracker(
     async isCurrent(arrival: Arrival) {
       // A tap can arrive before the notification's bookkeeping finishes saving.
       await pending;
-      const snapshot = app.getSnapshot();
+      const snapshot = getSnapshot();
       if (!arrivalsEnabled(snapshot)) return false;
       const state = await read();
-      return arrivalsEnabled(app.getSnapshot()) &&
-        app.getSnapshot().data === snapshot.data &&
+      const latest = getSnapshot();
+      return arrivalsEnabled(latest) && latest.data === snapshot.data &&
         state.notifiedAt[arrival.countryId] === arrival.notifiedAt;
     },
   };

@@ -102,6 +102,7 @@ describe('atomic snapshot storage', () => {
   test('rejects country-only snapshots without silently resetting them', async () => {
     const { storage, keyValue } = fixture();
     const legacy: Omit<AppData, 'subdivisions' | 'lists'> = {
+      onboardingCompleted: false,
       places: { ca: 'lived', fr: 'wishlist' },
       homeCountryId: 'ca',
       preferences: { ...defaultAppData().preferences, haptics: false },

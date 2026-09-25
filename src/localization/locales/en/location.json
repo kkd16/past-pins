@@ -7,6 +7,7 @@
   "arrivalTitle": "Welcome to %{country}! 🌍",
   "arrivalBody": "A new place to explore. Tap to add %{country} to your visited countries.",
   "arrivalUnavailable": "Arrival alerts unavailable",
+  "arrivalStartFailed": "Couldn’t start arrival reminders. They’re off for now. Try again in Settings.",
   "arrivalPermissions": "In iOS Settings, allow notifications and set location access for PastPins to Always, then turn on country arrival alerts.",
   "arrivalBuildRequired": "Country arrival alerts require an installed build of PastPins. Background location is unavailable in Expo Go.",
   "openSettings": "Open iOS Settings",

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
-import { act } from 'react';
+import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import type { NotificationPermissionsStatus, NotificationResponse } from 'expo-notifications';
 
@@ -8,7 +8,10 @@ import { native, navigation } from './setup';
 import { arrivalDatabase, arrivalStorage, constants, location, notifications, notificationState, tasks } from './native-location';
 
 const { appData } = await import('../src/data/app-data');
-const { arrivalTracker, requestArrivalPermissions, syncArrivalMonitoring, checkCurrentArrival } =
+const showToast = mock();
+mock.module('../src/feedback/ToastProvider', () => ({ useToast: () => ({ showToast }) }));
+const { requestArrivalPermissions } = await import('../src/location/arrival-permissions');
+const { arrivalTracker, syncArrivalMonitoring, checkCurrentArrival } =
   await import('../src/location/arrival-notifications');
 const backgroundTask = tasks.defineTask.mock.calls[0][1];
 mock.module('../src/data/AppDataProvider', () => ({
@@ -29,6 +32,8 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 beforeEach(async () => {
   await appData.load();
   await appData.resetApp();
+  await appData.completeOnboarding(false);
+  showToast.mockClear();
   constants.executionEnvironment = 'bare';
   notificationState.response = null;
   native.AppState.currentState = 'active';
@@ -85,6 +90,11 @@ async function makeArrival() {
 function Confirmation({ countryId = 'ca' }: { countryId?: string }) {
   useArrivalConfirmation(countryId, String(token));
   return null;
+}
+
+function ArrivalRuntime() {
+  useSyncExternalStore(appData.subscribe, appData.getSnapshot);
+  return <><ArrivalAlertsSetting disabled={false} /><CountryArrivalNotifications /></>;
 }
 
 test('permissions are requested only by opting in, in notification/foreground/background order', async () => {
@@ -145,6 +155,32 @@ test('headless locations use the shared saved statuses and produce localized not
   expect(appData.getSnapshot().data.places.fr).toBeUndefined();
 });
 
+test.each(['ready', 'load-error'] as const)('a headless launch waits for data and respects a %s result', async (status) => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  const current = appData.getSnapshot();
+  const snapshot = spyOn(appData, 'getSnapshot').mockReturnValue({ ...current, status: 'loading' });
+  const gate = Promise.withResolvers<void>();
+  const load = spyOn(appData, 'load').mockImplementation(async () => {
+    await gate.promise;
+    snapshot.mockReturnValue({ ...current, status });
+  });
+  try {
+    const task = backgroundTask({ data: { locations: [
+      { timestamp: Date.now(), coords: { longitude: -75.69, latitude: 45.42 } },
+    ] } });
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(notifications.getPermissionsAsync).not.toHaveBeenCalled();
+    expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+    gate.resolve();
+    await task;
+    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(status === 'ready' ? 1 : 0);
+  } finally {
+    gate.resolve();
+    load.mockRestore();
+    snapshot.mockRestore();
+  }
+});
+
 test('disabling clears pending and delivered notifications and cached responses', async () => {
   await makeArrival();
   appData.resetPreferences();
@@ -199,10 +235,117 @@ test.each(['blur', 'reset', 'restore', 'lived'])(
 test('old notifications cannot prompt after a reset even if alerts are re-enabled', async () => {
   await makeArrival();
   await appData.resetApp();
-  appData.updatePreferences({ countryArrivalAlerts: true });
+  await appData.completeOnboarding(true);
   expect(await arrivalTracker.isCurrent({ countryId: 'ca', notifiedAt: token })).toBe(false);
   await act(async () => root.render(<Confirmation />));
   expect(native.Alert.alert).not.toHaveBeenCalled();
+});
+
+test('onboarding blocks background arrivals and notification navigation until saved', async () => {
+  await makeArrival();
+  const response = notificationState.response;
+  await appData.resetApp();
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  notificationState.response = response;
+  notifications.scheduleNotificationAsync.mockClear();
+  await backgroundTask({ data: { locations: [{ timestamp: Date.now() + 1, coords: { longitude: 2.35, latitude: 48.86 } }] } });
+  await act(async () => root.render(<CountryArrivalNotifications />));
+  expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  expect(location.startLocationUpdatesAsync).not.toHaveBeenCalled();
+  expect(navigation.router.push).not.toHaveBeenCalled();
+});
+
+test('monitoring startup failure turns reminders off and shows a notice after onboarding', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  location.startLocationUpdatesAsync.mockRejectedValue(new Error('Start failed'));
+  const warning = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    expect(appData.getSnapshot().data.onboardingCompleted).toBe(true);
+    expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(false);
+    expect(showToast).toHaveBeenCalledTimes(1);
+    expect(showToast).toHaveBeenCalledWith({ message: t('location.arrivalStartFailed') });
+  } finally {
+    warning.mockRestore();
+  }
+});
+
+test('a temporary location failure keeps arrival monitoring enabled', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  location.getCurrentPositionAsync.mockRejectedValue(new Error('No location fix'));
+  const warning = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(true);
+    expect(showToast).not.toHaveBeenCalled();
+  } finally {
+    warning.mockRestore();
+  }
+});
+
+test('a full reset stops monitoring while returning to onboarding', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  await act(async () => root.render(<CountryArrivalNotifications />));
+  location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+  await appData.resetApp();
+  await act(async () => root.render(<CountryArrivalNotifications />));
+  expect(location.stopLocationUpdatesAsync).toHaveBeenCalled();
+  expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
+});
+
+test.each(['disable', 'reset'])(
+  '%s stops background tracking even when permission checks fail', async (action) => {
+    appData.updatePreferences({ countryArrivalAlerts: true });
+    location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+    if (action === 'disable') appData.updatePreferences({ countryArrivalAlerts: false });
+    else await appData.resetApp();
+    location.hasServicesEnabledAsync.mockRejectedValue(new Error('Location service unavailable'));
+    await expect(syncArrivalMonitoring()).resolves.toBe(false);
+    expect(location.stopLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+    expect(location.hasServicesEnabledAsync).not.toHaveBeenCalled();
+    expect(notifications.cancelAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1);
+  },
+);
+
+test('a permission check begun before reset cannot undo a newly saved opt-in', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  const checking = Promise.withResolvers<void>();
+  const permission = Promise.withResolvers<NotificationPermissionsStatus>();
+  notifications.getPermissionsAsync.mockImplementationOnce(async () => {
+    checking.resolve();
+    return permission.promise;
+  });
+  const syncing = syncArrivalMonitoring();
+  await checking.promise;
+  await appData.resetApp();
+  await appData.completeOnboarding(true);
+  permission.resolve(denied);
+  expect(await syncing).toBe(false);
+  expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(true);
+  expect(await syncArrivalMonitoring()).toBe(true);
+  expect(location.startLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+});
+
+test('a delayed monitoring failure does not disable restored reminder preferences', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  const starting = Promise.withResolvers<void>();
+  const startup = Promise.withResolvers<void>();
+  location.startLocationUpdatesAsync.mockImplementationOnce(async () => {
+    starting.resolve();
+    return startup.promise;
+  });
+  const warning = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    await starting.promise;
+    await appData.restore({ ...appData.getSnapshot().data, places: { jp: 'visited' } });
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    await act(async () => startup.reject(new Error('Start failed')));
+    expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(true);
+    expect(showToast).not.toHaveBeenCalled();
+  } finally {
+    warning.mockRestore();
+  }
 });
 
 test('invalid payloads and unknown countries cannot navigate', async () => {
@@ -260,15 +403,42 @@ test('a status edit during the final permission check prevents notification sche
   expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
 });
 
-test('Settings keeps alerts off and reports a native startup failure', async () => {
-  location.startLocationUpdatesAsync.mockRejectedValueOnce(new Error('Start failed'));
+test('Settings saves the opt-in and leaves monitoring startup to the root observer', async () => {
   await act(async () => root.render(<ArrivalAlertsSetting disabled={false} />));
   const toggle = root.container.queryAll((node) => node.type === 'ToggleRow')[0];
   await act(async () => toggle.props.onValueChange(true));
+  expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(true);
+  expect(location.startLocationUpdatesAsync).not.toHaveBeenCalled();
+});
+
+test('the root observer handles a Settings startup failure once', async () => {
+  location.startLocationUpdatesAsync.mockRejectedValue(new Error('Start failed'));
+  const warning = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await act(async () => root.render(<ArrivalRuntime />));
+    const toggle = root.container.queryAll((node) => node.type === 'ToggleRow')[0];
+    await act(async () => toggle.props.onValueChange(true));
+    expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(false);
+    expect(location.startLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+    expect(native.Alert.alert).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledTimes(1);
+    expect(showToast).toHaveBeenCalledWith({ message: t('location.arrivalStartFailed') });
+  } finally {
+    warning.mockRestore();
+  }
+});
+
+test('Settings opt-out stops monitoring through the root observer without requesting access', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+  await act(async () => root.render(<ArrivalRuntime />));
+  const toggle = root.container.queryAll((node) => node.type === 'ToggleRow')[0];
+  await act(async () => toggle.props.onValueChange(false));
   expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(false);
-  expect(native.Alert.alert).toHaveBeenCalledWith(
-    t('location.arrivalUnavailable'), t('common.unknownError'), expect.any(Array),
-  );
+  expect(location.stopLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+  expect(notifications.cancelAllScheduledNotificationsAsync).toHaveBeenCalled();
+  expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
 });
 
 test('a delayed Settings permission failure cannot overwrite restored preferences', async () => {
@@ -305,3 +475,114 @@ test('a failed data load waits for Retry and preserves a pending notification ta
     load.mockRestore();
   }
 });
+
+test('a failed save keeps a notification tap available until Retry save succeeds', async () => {
+  await makeArrival();
+  const response = notificationState.response;
+  const failed = { ...appData.getSnapshot(), saveError: true };
+  const snapshot = spyOn(appData, 'getSnapshot').mockReturnValue(failed);
+  location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+  try {
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    expect(navigation.router.push).not.toHaveBeenCalled();
+    expect(location.stopLocationUpdatesAsync).toHaveBeenCalled();
+    expect(notificationState.response).toBe(response);
+    snapshot.mockRestore();
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    expect(navigation.router.push).toHaveBeenCalledTimes(1);
+    expect(navigation.router.push).toHaveBeenCalledWith({
+      pathname: '/country/[id]', params: { id: 'ca', arrival: String(token) },
+    });
+  } finally {
+    snapshot.mockRestore();
+  }
+});
+
+test('arrival confirmation resumes when Retry save makes the data ready', async () => {
+  await makeArrival();
+  const failed = { ...appData.getSnapshot(), saveError: true };
+  const snapshot = spyOn(appData, 'getSnapshot').mockReturnValue(failed);
+  try {
+    await act(async () => root.render(<Confirmation />));
+    expect(native.Alert.alert).not.toHaveBeenCalled();
+    snapshot.mockRestore();
+    await act(async () => root.render(<Confirmation />));
+    expect(native.Alert.alert).toHaveBeenCalledTimes(1);
+  } finally {
+    snapshot.mockRestore();
+  }
+});
+
+test('an explicit opt-out clears notifications even if saving that choice fails', async () => {
+  await makeArrival();
+  location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+  const save = spyOn(arrivalStorage, 'save').mockRejectedValueOnce(new Error('Disk full'));
+  try {
+    appData.updatePreferences({ countryArrivalAlerts: false });
+    await arrivalStorage.load();
+    expect(appData.getSnapshot().saveError).toBe(true);
+    expect(await syncArrivalMonitoring()).toBe(false);
+    expect(location.stopLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+    expect(notifications.cancelAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(notifications.dismissAllNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(notificationState.response).toBeNull();
+  } finally {
+    save.mockRestore();
+  }
+});
+
+test('resuming retries a failed notification read once without duplicating navigation', async () => {
+  await makeArrival();
+  const response = notificationState.response;
+  const read = spyOn(arrivalStorage, 'getItem').mockRejectedValue(new Error('Read failed'));
+  const warning = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    expect(navigation.router.push).not.toHaveBeenCalled();
+    expect(notificationState.response).toBe(response);
+    read.mockRestore();
+    await act(async () => {
+      for (const [, listener] of native.AppState.addEventListener.mock.calls) {
+        listener('active');
+        listener('active');
+      }
+    });
+    expect(navigation.router.push).toHaveBeenCalledTimes(1);
+    expect(notificationState.response).toBeNull();
+  } finally {
+    read.mockRestore();
+    warning.mockRestore();
+  }
+});
+
+test.each(['saveError', 'busy'] as const)(
+  '%s beginning during a notification read preserves its tap until recovery', async (state) => {
+    await makeArrival();
+    const response = notificationState.response;
+    const pending = Promise.withResolvers<void>();
+    const getItem = arrivalStorage.getItem;
+    const read = spyOn(arrivalStorage, 'getItem').mockImplementation(async (key) => {
+      await pending.promise;
+      return getItem(key);
+    });
+    await act(async () => root.render(<CountryArrivalNotifications />));
+    const interrupted = { ...appData.getSnapshot(), [state]: true };
+    const snapshot = spyOn(appData, 'getSnapshot').mockReturnValue(interrupted);
+    try {
+      await act(async () => pending.resolve());
+      expect(navigation.router.push).not.toHaveBeenCalled();
+      expect(notificationState.response).toBe(response);
+      snapshot.mockRestore();
+      read.mockRestore();
+      await act(async () => {
+        for (const [, listener] of native.AppState.addEventListener.mock.calls) listener('active');
+      });
+      expect(navigation.router.push).toHaveBeenCalledTimes(1);
+      expect(notificationState.response).toBeNull();
+    } finally {
+      pending.resolve();
+      snapshot.mockRestore();
+      read.mockRestore();
+    }
+  },
+);

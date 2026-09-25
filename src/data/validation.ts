@@ -64,12 +64,14 @@ export function validateAppData(value: unknown): AppData {
   if (
     !object(value) ||
     !exactKeys(value, [
+      'onboardingCompleted',
       'places',
       'subdivisions',
       'lists',
       'homeCountryId',
       'preferences',
-    ])
+    ]) ||
+    typeof value.onboardingCompleted !== 'boolean'
   ) {
     throw new UserFacingError(t('common.errors.invalidData'));
   }
@@ -119,6 +121,7 @@ export function validateAppData(value: unknown): AppData {
   )
     throw new UserFacingError(t('common.errors.invalidPreferences'));
   return {
+    onboardingCompleted: value.onboardingCompleted,
     places,
     subdivisions,
     lists,

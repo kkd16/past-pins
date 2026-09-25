@@ -59,15 +59,23 @@ mock.module('expo-localization', () => ({
 }));
 
 export const navigation = {
-  router: { push: mock(), dismissTo: mock(), back: mock() },
+  router: { push: mock(), navigate: mock(), dismissTo: mock(), back: mock() },
   routeId: 'ca',
   focused: true,
 };
 
 mock.module('expo-router', () => ({
+  Stack: Object.assign(
+    (props: { children?: ReactNode }) => createElement('Stack', props),
+    {
+      Screen: (props: { name: string }) => createElement('Stack.Screen', props),
+      Protected: ({ guard, children }: { guard: boolean; children?: ReactNode }) => guard ? children : null,
+    },
+  ),
   router: navigation.router,
   useLocalSearchParams: () => ({ id: navigation.routeId }),
   useRootNavigationState: () => ({ key: 'root' }),
+  useIsFocused: () => navigation.focused,
   useFocusEffect: (effect: EffectCallback) => {
     const focused = navigation.focused;
     useEffect(() => (focused ? effect() : undefined), [effect, focused]);

@@ -1,4 +1,3 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
@@ -13,10 +12,11 @@ import { appStorage } from '../storage/app-storage';
 import {
   ARRIVAL_TYPE, arrivalsEnabled, createArrivalTracker, parseArrival,
 } from './arrivals';
+import { arrivalMonitoringAvailable, arrivalPermissionsGranted, notificationsAllowed } from './arrival-permissions';
 
 const TASK_NAME = 'past-pins-country-arrivals';
 
-export const arrivalTracker = createArrivalTracker(appStorage, appData, {
+export const arrivalTracker = createArrivalTracker(appStorage, appData.getSnapshot, {
   async send(arrival) {
     const permission = await Notifications.getPermissionsAsync();
     if (!notificationsAllowed(permission))
@@ -65,34 +65,6 @@ Notifications.setNotificationHandler({
   },
 });
 
-function notificationsAllowed(permission: Notifications.NotificationPermissionsStatus) {
-  return permission.granted || permission.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
-}
-
-async function available() {
-  return Constants.executionEnvironment !== ExecutionEnvironment.StoreClient &&
-    await TaskManager.isAvailableAsync();
-}
-
-async function arrivalPermissionsGranted() {
-  return await Location.hasServicesEnabledAsync() &&
-    (await Location.getBackgroundPermissionsAsync()).granted &&
-    notificationsAllowed(await Notifications.getPermissionsAsync());
-}
-
-export async function requestArrivalPermissions() {
-  if (!(await available())) throw new UserFacingError(t('location.arrivalBuildRequired'));
-  if (!(await Location.hasServicesEnabledAsync()))
-    throw new UserFacingError(t('location.servicesDisabled'));
-  const notifications = await Notifications.requestPermissionsAsync({
-    ios: { allowAlert: true, allowSound: true, allowBadge: false },
-  });
-  if (!notificationsAllowed(notifications) ||
-    !(await Location.requestForegroundPermissionsAsync()).granted ||
-    !(await Location.requestBackgroundPermissionsAsync()).granted
-  ) throw new UserFacingError(t('location.arrivalPermissions'));
-}
-
 async function clearArrivalNotifications() {
   // Arrival alerts are the app's only notifications.
   await Notifications.cancelAllScheduledNotificationsAsync();
@@ -105,8 +77,10 @@ export function syncArrivalMonitoring(): Promise<boolean> {
   const result = monitoring.catch(() => false).then(async () => {
     const snapshot = appData.getSnapshot();
     if (snapshot.status === 'loading' || snapshot.busy) return false;
-    if (!(await available())) return false;
-    const permitted = await arrivalPermissionsGranted();
+    if (!(await arrivalMonitoringAvailable())) return false;
+    // Opting out must stop an existing task even if permission reads fail.
+    const shouldMonitor = arrivalsEnabled(snapshot);
+    const permitted = shouldMonitor && await arrivalPermissionsGranted();
     let started = await Location.hasStartedLocationUpdatesAsync(TASK_NAME);
     const enabled = arrivalsEnabled(appData.getSnapshot()) && permitted;
     if (enabled) {
@@ -121,10 +95,15 @@ export function syncArrivalMonitoring(): Promise<boolean> {
       if (arrivalsEnabled(appData.getSnapshot())) return true;
     }
     if (started) await Location.stopLocationUpdatesAsync(TASK_NAME);
-    // Keep pending taps available until a failed data load is explicitly retried.
-    if (appData.getSnapshot().status === 'ready') {
+    // Preserve taps through data recovery unless the user has explicitly opted out.
+    const current = appData.getSnapshot();
+    if (current.status === 'ready' && !current.busy &&
+      (!current.saveError || !current.data.preferences.countryArrivalAlerts)) {
       await clearArrivalNotifications();
-      if (!permitted) appData.updatePreferences({ countryArrivalAlerts: false });
+      // An older permission check must not undo a newly saved opt-in or restore.
+      if (shouldMonitor && !permitted &&
+        appData.getSnapshot().data.preferences === snapshot.data.preferences)
+        appData.updatePreferences({ countryArrivalAlerts: false });
     }
     return false;
   });

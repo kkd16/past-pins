@@ -29,11 +29,11 @@ async function fixture() {
   const storage = createSnapshotStorage({ getItem, setItem, clear: async () => { values.clear(); } });
   const app = createAppDataStore(storage, { confirmHomeChange: async () => true });
   await app.load();
-  app.updatePreferences({ countryArrivalAlerts: true });
+  await app.completeOnboarding(true);
   await storage.load();
   const send = mock(async (_arrival: Arrival): Promise<string | null> => 'native-notification');
   const remove = mock(async (_id: string) => {});
-  const makeTracker = () => createArrivalTracker(storage, app, { send, remove });
+  const makeTracker = () => createArrivalTracker(storage, app.getSnapshot, { send, remove });
   return { values, app, storage, getItem, setItem, send, remove, tracker: makeTracker(), makeTracker };
 }
 
@@ -156,16 +156,17 @@ describe('country arrivals', () => {
     expect(f.values.get('country-arrivals')).toBe(history);
     await f.app.resetApp();
     expect(f.values.has('country-arrivals')).toBe(false);
-    f.app.updatePreferences({ countryArrivalAlerts: true });
+    await f.app.completeOnboarding(true);
     expect(await f.tracker.isCurrent({ countryId: 'ca', notifiedAt: start })).toBe(false);
   });
 
-  test('unreadable travel data cannot be treated as an empty visited list', async () => {
+  test.each(['loading', 'load-error'] as const)('%s travel data cannot be treated as an empty visited list', async (status) => {
     const f = await fixture();
     const app = createAppDataStore({
       ...f.storage, load: async () => { throw new Error('Corrupt data'); },
     }, { confirmHomeChange: async () => true });
-    const tracker = createArrivalTracker(f.storage, app, { send: f.send, remove: f.remove });
+    if (status === 'load-error') await app.load();
+    const tracker = createArrivalTracker(f.storage, app.getSnapshot, { send: f.send, remove: f.remove });
     await tracker.process([fix('ca')]);
     expect(f.send).not.toHaveBeenCalled();
   });

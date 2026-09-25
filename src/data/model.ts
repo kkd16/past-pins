@@ -19,6 +19,7 @@ export type Preferences = {
 };
 
 export type AppData = {
+  onboardingCompleted: boolean;
   places: Partial<Record<string, SavedStatus>>;
   subdivisions: Partial<Record<string, SavedStatus>>;
   lists: TravelList[];
@@ -37,6 +38,7 @@ export const defaultPreferences: Readonly<Preferences> = {
 
 export function defaultAppData(): AppData {
   return {
+    onboardingCompleted: false,
     places: {},
     subdivisions: {},
     lists: [],

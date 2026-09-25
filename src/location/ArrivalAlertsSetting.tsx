@@ -8,31 +8,31 @@ import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { SettingsSection } from '../settings/SettingsSection';
-import { requestArrivalPermissions, syncArrivalMonitoring } from './arrival-notifications';
+import { requestArrivalPermissions } from './arrival-permissions';
 
 export function ArrivalAlertsSetting({ disabled }: { disabled: boolean }) {
   const app = useAppData();
-  const guard = useActionGuard(app.resetVersion);
+  const guard = useActionGuard(app.data);
   const running = useRef(false);
   const [working, setWorking] = useState(false);
 
   async function change(enabled: boolean) {
     if (running.current || disabled) return;
-    const isCurrent = guard();
-    let expectedData = app.data;
+    const focused = guard();
+    const isCurrent = () => focused() && appData.getSnapshot().data === app.data;
+    if (!isCurrent()) return;
+    if (!enabled) {
+      app.updatePreferences({ countryArrivalAlerts: false });
+      return;
+    }
     running.current = true;
     setWorking(true);
     try {
-      if (enabled) await requestArrivalPermissions();
-      if (!isCurrent() || appData.getSnapshot().data !== app.data) return;
-      app.updatePreferences({ countryArrivalAlerts: enabled });
-      expectedData = appData.getSnapshot().data;
-      await syncArrivalMonitoring();
+      await requestArrivalPermissions(isCurrent);
+      if (isCurrent()) app.updatePreferences({ countryArrivalAlerts: true });
     } catch (error) {
       // Permission prompts can outlive the screen that requested them.
-      const current = appData.getSnapshot();
-      if (!isCurrent() || current.data !== expectedData || current.busy) return;
-      if (enabled) app.updatePreferences({ countryArrivalAlerts: false });
+      if (!isCurrent()) return;
       Alert.alert(
         t('location.arrivalUnavailable'),
         error instanceof UserFacingError ? error.message : t('common.unknownError'),
