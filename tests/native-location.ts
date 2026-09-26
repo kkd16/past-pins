@@ -45,7 +45,8 @@ export const tasks = {
 mock.module('expo-task-manager', () => tasks);
 export const constants = { executionEnvironment: 'bare' };
 mock.module('expo-constants', () => ({ default: constants, ExecutionEnvironment: { StoreClient: 'storeClient' } }));
-mock.module('expo-haptics', () => ({ selectionAsync: mock(async () => {}) }));
+export const haptics = { selectionAsync: mock(async () => {}) };
+mock.module('expo-haptics', () => haptics);
 
 export const arrivalDatabase = new Map<string, string>();
 export const arrivalStorage = createSnapshotStorage({

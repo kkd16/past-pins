@@ -3,10 +3,11 @@ import type { NotificationPermissionsStatus } from 'expo-notifications';
 import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 
+import { countryById } from '../src/countries/catalog';
 import { defaultAppData } from '../src/data/model';
-import { t } from '../src/localization';
+import { formatNumber, t } from '../src/localization';
 import { native, navigation } from './setup';
-import { arrivalStorage, constants, location, notifications, tasks } from './native-location';
+import { arrivalStorage, constants, haptics, location, notifications, tasks } from './native-location';
 
 const { appData } = await import('../src/data/app-data');
 const motion = { reduced: false };
@@ -17,7 +18,10 @@ mock.module('../src/data/AppDataProvider', () => ({
   }),
 }));
 mock.module('../src/components/AppText', () => ({ AppText: 'Text' }));
+mock.module('../src/components/AppPressable', () => ({ AppPressable: 'AppPressable' }));
 mock.module('../src/components/Button', () => ({ Button: 'Button' }));
+mock.module('../src/components/Checkmark', () => ({ Checkmark: 'Checkmark' }));
+mock.module('../src/components/Icon', () => ({ Icon: 'Icon' }));
 mock.module('../src/components/Screen', () => ({ Screen: 'Screen' }));
 mock.module('../src/components/DataFeedback', () => ({ DataFeedback: 'DataFeedback' }));
 mock.module('../src/stamps/CountryStamp', () => ({ CountryStamp: 'CountryStamp' }));
@@ -44,6 +48,8 @@ beforeEach(async () => {
   location.startLocationUpdatesAsync.mockClear();
   notifications.requestPermissionsAsync.mockReset().mockResolvedValue(granted);
   tasks.isAvailableAsync.mockReset().mockResolvedValue(true);
+  haptics.selectionAsync.mockReset().mockResolvedValue(undefined);
+  native.useWindowDimensions.mockReset().mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
   native.AccessibilityInfo.announceForAccessibilityWithOptions.mockClear();
   root = createRoot({ isStrictMode: true });
 });
@@ -68,13 +74,80 @@ function routes() {
   return root.container.queryAll((node) => node.type === 'Stack.Screen').map((node) => node.props.name);
 }
 
-test('Welcome introduces the app and continues through Router without requesting access', async () => {
+function stamp(id: string) {
+  const label = t('onboarding.sampleStamp', { country: countryById.get(id)!.name });
+  const stamps = root.container.queryAll((node) => node.type === 'AppPressable' && node.props.accessibilityLabel === label);
+  expect(stamps).toHaveLength(1);
+  return stamps[0];
+}
+
+function expectStampCount(count: number) {
+  const message = count === 0 ? t('onboarding.tapToStamp') : t('onboarding.stampsCollected', {
+    count, amount: formatNumber(count),
+  });
+  expect(root.container.queryAll((node) => node.type === 'Text' && node.props.children === message)).toHaveLength(1);
+}
+
+test('Welcome can continue without trying a stamp or requesting access', async () => {
   await act(async () => root.render(<WelcomeRoute />));
   await press(t('onboarding.continue'));
   expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/reminders');
   expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
   expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
+});
+
+test.each([1, 2])('sample stamps at font scale %s never enter saved travel data, even after setup', async (fontScale) => {
+  native.useWindowDimensions.mockReturnValue({ width: 320, height: 568, scale: 2, fontScale });
+  await appData.setStatus(['jp'], 'wishlist');
+  const saved = await arrivalStorage.load();
+  await act(async () => root.render(<WelcomeRoute />));
+  expectStampCount(0);
+  for (const [index, id] of ['ca', 'fr', 'jp'].entries()) {
+    expect(stamp(id).props.accessibilityRole).toBe('checkbox');
+    expect(stamp(id).props.accessibilityState.checked).toBe(false);
+    await act(async () => stamp(id).props.onPress());
+    expect(stamp(id).props.accessibilityState.checked).toBe(true);
+    expectStampCount(index + 1);
+  }
+  expect(root.container.queryAll((node) => node.type === 'CountryStamp' && node.props.collected)).toHaveLength(3);
+  await act(async () => stamp('fr').props.onPress());
+  expect(stamp('fr').props.accessibilityState.checked).toBe(false);
+  expect(stamp('ca').props.accessibilityState.checked).toBe(true);
+  expectStampCount(2);
+  await press(t('onboarding.continue'));
+  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/reminders');
+  expect(await arrivalStorage.load()).toEqual(saved);
+  await act(async () => root.render(<RemindersScreen />));
+  await press(t('location.notNow'));
+  expect(await arrivalStorage.load()).toEqual({ ...saved, onboardingCompleted: true });
+  expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+  expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
+});
+
+test('quick repeat taps can undo a sample stamp without losing other selections', async () => {
+  await act(async () => root.render(<WelcomeRoute />));
+  const toggle = stamp('ca').props.onPress;
+  await act(async () => { toggle(); stamp('jp').props.onPress(); toggle(); });
+  expect(stamp('ca').props.accessibilityState.checked).toBe(false);
+  expect(stamp('jp').props.accessibilityState.checked).toBe(true);
+  expectStampCount(1);
+});
+
+test('stamp feedback honors the haptics preference and tolerates native feedback errors', async () => {
+  await appData.updatePreferences({ haptics: false });
+  await act(async () => root.render(<WelcomeRoute />));
+  await act(async () => stamp('ca').props.onPress());
+  expect(haptics.selectionAsync).not.toHaveBeenCalled();
+  await act(async () => appData.updatePreferences({ haptics: true }));
+  haptics.selectionAsync.mockRejectedValueOnce(new Error('Haptics unavailable'));
+  await act(async () => stamp('jp').props.onPress());
+  expect(haptics.selectionAsync).toHaveBeenCalledTimes(1);
+  expect(stamp('jp').props.accessibilityState.checked).toBe(true);
+  expectStampCount(2);
+  await press(t('onboarding.continue'));
+  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/reminders');
 });
 
 test('Not now saves completion with reminders off and makes no permission requests', async () => {

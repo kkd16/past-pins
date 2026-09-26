@@ -1,15 +1,20 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { Icon } from '../components/Icon';
+import { countryById } from '../countries/catalog';
 import { appData } from '../data/app-data';
 import { useAppData } from '../data/AppDataProvider';
-import { t } from '../localization';
+import { language, t } from '../localization';
 import { requestArrivalPermissions } from '../location/arrival-permissions';
 import { useActionGuard } from '../navigation/useActionGuard';
-import { OnboardingDetail, OnboardingPage } from '../onboarding/OnboardingPage';
+import { OnboardingPage } from '../onboarding/OnboardingPage';
+import { theme } from '../theme';
+
+const previewCountry = countryById.get('jp')!.name;
 
 type SetupState =
   | { status: 'offer' | 'working' | 'off' }
@@ -72,6 +77,7 @@ export function RemindersScreen() {
 
   return (
     <OnboardingPage
+      step={2}
       title={t('onboarding.remindersTitle')}
       description={t('onboarding.remindersDescription')}
       actions={
@@ -94,15 +100,26 @@ export function RemindersScreen() {
         </>
       }
     >
-      <OnboardingDetail
-        title={t('onboarding.notificationsTitle')}
-        description={t('onboarding.notificationsDescription')}
-      />
-      <OnboardingDetail
-        title={t('onboarding.locationTitle')}
-        description={t('onboarding.locationDescription')}
-      />
+      <View style={styles.preview} accessible accessibilityLanguage={language}>
+        <View style={styles.previewHeading}>
+          <Icon name="pin" color={theme.color.accent} />
+          <AppText variant="caption" tone="muted" style={styles.previewLabel}>
+            {t('onboarding.reminderPreview')}
+          </AppText>
+        </View>
+        <AppText variant="heading">
+          {t('location.arrivalTitle', { country: previewCountry })}
+        </AppText>
+        <AppText>{t('location.arrivalBody', { country: previewCountry })}</AppText>
+      </View>
+      <AppText tone="muted">{t('onboarding.permissions')}</AppText>
       <AppText variant="caption" tone="muted">{t('onboarding.optional')}</AppText>
     </OnboardingPage>
   );
 }
+
+const styles = StyleSheet.create({
+  preview: { ...theme.surface.floating, padding: theme.space.lg, gap: theme.space.sm },
+  previewHeading: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
+  previewLabel: { flex: 1 },
+});

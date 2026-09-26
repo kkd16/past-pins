@@ -34,6 +34,7 @@ export const native = {
   Animated: { View: 'AnimatedView' },
   Easing: {},
   useAnimatedValue: () => ({ interpolate: () => 0, setValue() {} }),
+  useWindowDimensions: mock(() => ({ width: 375, height: 812, scale: 3, fontScale: 1 })),
   FlatList: function FlatList({ ref, ...props }: {
     ref: Ref<unknown>;
     data?: readonly unknown[];

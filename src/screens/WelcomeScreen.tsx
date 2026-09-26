@@ -1,50 +1,102 @@
-import { StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useState } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
+import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { Checkmark } from '../components/Checkmark';
 import { countryById } from '../countries/catalog';
-import { t } from '../localization';
-import { OnboardingDetail, OnboardingPage } from '../onboarding/OnboardingPage';
+import { useAppData } from '../data/AppDataProvider';
+import { formatNumber, t } from '../localization';
+import { OnboardingPage } from '../onboarding/OnboardingPage';
 import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
 
+const sampleCountries = ['ca', 'fr', 'jp'].map((id) => countryById.get(id)!);
+
 export function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
+  const { data } = useAppData();
+  const { fontScale } = useWindowDimensions();
+  const largeText = fontScale > theme.accessibility.largeTextScale;
+  // A local preview only: trying a stamp must never change someone's travel history.
+  const [collected, setCollected] = useState<string[]>([]);
+
+  function toggle(id: string) {
+    setCollected((current) => current.includes(id)
+      ? current.filter((value) => value !== id)
+      : [...current, id]);
+    if (data.preferences.haptics)
+      void Haptics.selectionAsync().catch(() => undefined);
+  }
+
   return (
     <OnboardingPage
+      step={1}
       title={t('onboarding.welcomeTitle')}
       description={t('onboarding.welcomeDescription')}
-      artwork={
-        <View style={styles.stamps} accessibilityElementsHidden pointerEvents="none">
-          {(['ca', 'fr', 'jp'] as const).map((id, index) => (
-            <View key={id} style={[styles.stamp, { transform: [{ rotate: `${(index - 1) * 8}deg` }] }]}>
-              <CountryStamp country={countryById.get(id)!} collected size="100%" />
-            </View>
-          ))}
-        </View>
-      }
       actions={<Button label={t('onboarding.continue')} onPress={onContinue} />}
     >
-      <OnboardingDetail
-        title={t('onboarding.findTitle')}
-        description={t('onboarding.findDescription')}
-      />
-      <OnboardingDetail
-        title={t('onboarding.markTitle')}
-        description={t('onboarding.markDescription')}
-      />
-      <OnboardingDetail
-        title={t('onboarding.exploreTitle')}
-        description={t('onboarding.exploreDescription')}
-      />
+      <View style={styles.playground}>
+        <View style={styles.heading}>
+          <AppText variant="heading">{t('onboarding.tryStamp')}</AppText>
+          <AppText variant="caption" tone="muted">{t('onboarding.previewOnly')}</AppText>
+        </View>
+        <View style={[styles.stamps, largeText && styles.stampsLarge]}>
+          {sampleCountries.map((country, index) => {
+            const checked = collected.includes(country.id);
+            return (
+              <AppPressable
+                key={country.id}
+                style={[styles.stamp, largeText && styles.stampLarge]}
+                accessibilityRole="checkbox"
+                accessibilityLabel={t('onboarding.sampleStamp', { country: country.name })}
+                accessibilityHint={t(checked ? 'onboarding.removeStampHint' : 'onboarding.collectStampHint')}
+                accessibilityState={{ checked }}
+                onPress={() => toggle(country.id)}
+              >
+                <View
+                  style={[
+                    styles.artwork,
+                    largeText && styles.artworkLarge,
+                    { transform: [{ rotate: `${(index - 1) * 6}deg` }] },
+                  ]}
+                  accessibilityElementsHidden
+                  pointerEvents="none"
+                >
+                  <CountryStamp country={country} collected={checked} size="100%" />
+                </View>
+                <AppText variant="label" style={[styles.country, largeText && styles.countryLarge]}>
+                  {country.name}
+                </AppText>
+                <Checkmark checked={checked} />
+              </AppPressable>
+            );
+          })}
+        </View>
+        <AppText variant="label" tone="accent" style={styles.feedback}>
+          {collected.length === 0
+            ? t('onboarding.tapToStamp')
+            : t('onboarding.stampsCollected', {
+              count: collected.length,
+              amount: formatNumber(collected.length),
+            })}
+        </AppText>
+      </View>
     </OnboardingPage>
   );
 }
 
 const styles = StyleSheet.create({
-  stamps: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: theme.space.lg,
-    gap: theme.space.sm,
-  },
-  stamp: { width: '28%', maxWidth: 112, aspectRatio: 1 },
+  playground: { ...theme.surface.panel, padding: theme.space.lg, gap: theme.space.xl },
+  heading: { gap: theme.space.xs },
+  stamps: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.space.md },
+  stampsLarge: { flexDirection: 'column', alignItems: 'stretch' },
+  stamp: { flex: 1, minWidth: 0, alignItems: 'center', gap: theme.space.md },
+  stampLarge: { flex: 0, flexDirection: 'row', paddingVertical: theme.space.xs },
+  artwork: { width: '100%', maxWidth: 112, aspectRatio: 1 },
+  artworkLarge: { width: 64, flexShrink: 0 },
+  country: { textAlign: 'center' },
+  countryLarge: { flex: 1, textAlign: 'auto' },
+  feedback: { textAlign: 'center' },
 });
