@@ -390,7 +390,6 @@ const styles = StyleSheet.create({
   home: {
     padding: theme.space.lg,
     gap: theme.space.sm,
-    alignItems: 'flex-start',
     backgroundColor: theme.color.surfaceCool,
   },
   homeLabel: {

@@ -146,7 +146,6 @@ export function CountryDetailsContent({
         <Button
           label={t('countries.details.showMap')}
           variant="quiet"
-          style={styles.mapAction}
           onPress={onShowMap}
         />
         {ready && (
@@ -234,7 +233,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     backgroundColor: theme.color.surfaceRaised,
   },
-  mapAction: { alignSelf: 'flex-start' },
   facts: { padding: theme.space.lg, gap: theme.space.lg },
   fact: { gap: theme.space.xs },
   regions: {

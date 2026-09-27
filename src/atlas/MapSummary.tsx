@@ -1,12 +1,10 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
+import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
-import { Surface } from '../components/Surface';
-import { getStatusPresentation } from '../countries/status';
 import { isVisited, type AppData } from '../data/model';
-import { formatNumber, language, t } from '../localization';
+import { formatNumber, t } from '../localization';
 import { theme } from '../theme';
 
 export function MapSummary({
@@ -16,60 +14,40 @@ export function MapSummary({
   places: AppData['places'];
   onOpenCountries: () => void;
 }) {
-  const statuses = Object.values(places);
-  const visited = statuses.filter(isVisited).length;
+  const visited = Object.values(places).filter(isVisited).length;
+  const label = t('atlas.visitedCount', {
+    count: visited,
+    total: formatNumber(visited),
+  });
 
   return (
-    <Surface variant="floating" style={styles.summary}>
-      <View
-        accessible
-        accessibilityLanguage={language}
-        accessibilityLabel={t('atlas.visitedCount', {
-          count: visited,
-          total: formatNumber(visited),
-        })}
-        style={styles.heading}
-      >
-        <AppText variant="heading" tone="visited">
-          {formatNumber(visited)}
-        </AppText>
-        <AppText variant="label" style={styles.text}>
-          {t('atlas.placesVisited')}
-        </AppText>
-      </View>
-      <View style={styles.legend}>
-        {(['visited', 'wishlist', 'lived'] as const).map((status) => {
-          const { icon, color, label } = getStatusPresentation(status);
-          return (
-            <View key={status} style={styles.legendItem}>
-              <Icon name={icon} color={color} size={theme.size.iconSmall} />
-              <AppText variant="caption" style={{ color }}>
-                {label}
-              </AppText>
-            </View>
-          );
-        })}
-      </View>
-      {!statuses.length && (
-        <Button
-          label={t('atlas.addPlace')}
-          onPress={onOpenCountries}
-          variant="quiet"
-        />
-      )}
-    </Surface>
+    <AppPressable
+      onPress={onOpenCountries}
+      accessibilityHint={t('atlas.openCountries')}
+      style={styles.summary}
+    >
+      <AppText variant="heading" tone="visited" style={styles.text}>
+        {label}
+      </AppText>
+      <Icon
+        name="chevronRight"
+        size={theme.size.iconSmall}
+        color={theme.color.accent}
+      />
+    </AppPressable>
   );
 }
 
 const styles = StyleSheet.create({
-  summary: { padding: theme.space.md, gap: theme.space.sm },
-  heading: {
+  summary: {
+    ...theme.surface.floating,
+    backgroundColor: theme.color.visitedSurface,
+    borderColor: theme.color.controlBorder,
+    padding: theme.space.md,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: theme.space.sm,
   },
   text: { flexShrink: 1 },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.space.md },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: theme.space.xs },
 });

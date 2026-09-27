@@ -1,6 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FullWindowOverlay } from 'react-native-screens';
 
 import { appData } from '../data/app-data';
@@ -16,7 +16,6 @@ export function AppToastHost() {
   const busy = useAppData((snapshot) => snapshot.busy);
   const store = useToast();
   const toast = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const insets = useSafeAreaInsets();
   const undoId = useRef<number | undefined>(undefined);
   const dismissUndo = useRef<(() => void) | undefined>(undefined);
 
@@ -38,28 +37,33 @@ export function AppToastHost() {
 
   return (
     <FullWindowOverlay unstable_accessibilityContainerViewIsModal={false}>
-      <View
+      <KeyboardAvoidingView
+        behavior="padding"
         pointerEvents="box-none"
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            paddingTop: insets.top + theme.space.md,
-            paddingLeft: insets.left + theme.space.lg,
-            paddingRight: insets.right + theme.space.lg,
-          },
-        ]}
+        style={styles.overlay}
       >
-        {toast && (
-          <Toast
-            key={toast.id}
-            toast={toast}
-            actionDisabled={busy}
-            onDismiss={() => store.dismissToast(toast.id)}
-            onRemove={() => store.removeToast(toast.id)}
-            onAction={() => store.pressAction(toast.id)}
-          />
-        )}
-      </View>
+        <SafeAreaView
+          edges={['bottom', 'left', 'right']}
+          pointerEvents="box-none"
+          style={styles.content}
+        >
+          {toast && (
+            <Toast
+              key={toast.id}
+              toast={toast}
+              actionDisabled={busy}
+              onDismiss={() => store.dismissToast(toast.id)}
+              onRemove={() => store.removeToast(toast.id)}
+              onAction={() => store.pressAction(toast.id)}
+            />
+          )}
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </FullWindowOverlay>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
+  content: { paddingHorizontal: theme.space.lg, paddingVertical: theme.space.md },
+});

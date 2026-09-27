@@ -11,12 +11,12 @@
   "scopes": {
     "collected": "Collected",
     "all": "All stamps",
-    "remaining": "To collect"
+    "remaining": "Remaining"
   },
   "search": "Search stamps",
   "stampLabel": "%{country}, %{status}",
   "collected": "Collected",
-  "notCollected": "To collect",
+  "notCollected": "Not collected",
   "openStamp": "Opens country details and stamp",
   "openCollection": "Open stamp collection",
   "emptyTitle": "Start your collection",

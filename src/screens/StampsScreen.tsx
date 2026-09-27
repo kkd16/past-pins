@@ -153,7 +153,6 @@ export function StampsScreen({
                   {startCollection && (
                     <Button
                       label={t('stamps.browseCountries')}
-                      style={styles.browse}
                       onPress={() => {
                         Keyboard.dismiss();
                         onBrowseCountries();
@@ -191,17 +190,9 @@ export function StampsScreen({
                     collected={collected}
                     size={Math.min(itemWidth, 232)}
                   />
-                  <View style={styles.label}>
-                    <AppText variant="label">{item.name}</AppText>
-                    {scope === 'all' && (
-                      <AppText
-                        variant="caption"
-                        tone={collected ? 'accent' : 'muted'}
-                      >
-                        {status}
-                      </AppText>
-                    )}
-                  </View>
+                  <AppText variant="label" style={styles.label}>
+                    {item.name}
+                  </AppText>
                 </AppPressable>
               );
             }}
@@ -243,9 +234,8 @@ const styles = StyleSheet.create({
   selectedScope: { backgroundColor: theme.color.selectedSurface },
   columns: { gap: theme.space.lg },
   stamp: { gap: theme.space.md, alignItems: 'center' },
-  label: { gap: theme.space.xs, alignSelf: 'stretch' },
+  label: { alignSelf: 'stretch' },
   separator: { height: theme.space.xl },
   footer: { paddingTop: theme.space.xl },
   empty: { gap: theme.space.md, paddingVertical: theme.space.xl },
-  browse: { alignSelf: 'flex-start', marginTop: theme.space.sm },
 });

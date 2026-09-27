@@ -51,7 +51,7 @@ export function Toast({
         {
           translateY: progress.interpolate({
             inputRange: [0, 1],
-            outputRange: [-theme.motion.lift, 0],
+            outputRange: [theme.motion.lift, 0],
           }),
         },
       ],
