@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>{{home.title}}</title>
+    <meta name="description" content="{{home.description}}" />
+    <link rel="canonical" href="https://kkd16.github.io/past-pins/" />
+    <link rel="stylesheet" href="/past-pins/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">{{shared.skip}}</a>
+    <header class="site-header">
+      <a class="brand" href="/past-pins/">{{shared.name}}</a>
+      <nav aria-label="{{shared.navigation}}">
+        <a href="/past-pins/" aria-current="page">{{shared.home}}</a>
+        <a href="/past-pins/privacy/">{{shared.privacy}}</a>
+        <a href="/past-pins/support/">{{shared.support}}</a>
+      </nav>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <div class="hero">
+        <p class="eyebrow">{{home.eyebrow}}</p>
+        <h1>{{home.heading}}</h1>
+        <p class="intro">{{home.intro}}</p>
+        <p class="status">{{home.status}}</p>
+      </div>
+
+      <section class="features">
+        <h2>{{home.featuresTitle}}</h2>
+        <dl>
+          <div>
+            <dt>{{home.mapTitle}}</dt>
+            <dd>{{home.mapText}}</dd>
+          </div>
+          <div>
+            <dt>{{home.offlineTitle}}</dt>
+            <dd>{{home.offlineText}}</dd>
+          </div>
+          <div>
+            <dt>{{home.choiceTitle}}</dt>
+            <dd>{{home.choiceText}}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section>
+        <h2>{{home.aboutTitle}}</h2>
+        <p>{{home.aboutText}}</p>
+      </section>
+      <div class="actions">
+        <a href="/past-pins/support/">{{home.supportLink}}</a>
+        <a href="/past-pins/privacy/">{{home.privacyLink}}</a>
+      </div>
+      <p class="muted">{{home.licenseText}}</p>
+    </main>
+
+    <footer>
+      <p>{{shared.copyright}}</p>
+      <div class="footer-links">
+        <a href="https://github.com/kkd16/past-pins">{{shared.source}}</a>
+        <a href="https://github.com/kkd16/past-pins/blob/main/LICENSE"
+          >{{shared.license}}</a
+        >
+        <a href="https://github.com/kkd16/past-pins/blob/main/COPYING.iOS"
+          >{{shared.exception}}</a
+        >
+      </div>
+    </footer>
+  </body>
+</html>

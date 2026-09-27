@@ -169,8 +169,11 @@ The website builds to plain HTML and CSS, with no browser scripts or new depende
 | To change… | Edit |
 | --- | --- |
 | Page text | [website.json](src/localization/locales/en/website.json) |
-| Layout and links | [website/build.ts](website/build.ts) |
+| Layout and links | [Home](website/index.html), [Privacy](website/privacy/index.html), [Support](website/support/index.html) |
 | Appearance | [website/styles.css](website/styles.css) |
+
+Each page is an explicit HTML template. [build.ts](website/build.ts) replaces
+message placeholders with localized text and copies the CSS into `_site/`.
 
 ### Build and deploy
 
