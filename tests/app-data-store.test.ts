@@ -16,24 +16,29 @@ import {
 const [regionOne, regionTwo, regionThree] = [...subdivisionIds];
 
 function fixture() {
-  let serialized: string | null = null;
+  const values = new Map<string, string>();
   let writeFailure = false;
   let confirm = true;
   let confirmations = 0;
   let writes = 0;
   const feedback: boolean[] = [];
   const storage = createSnapshotStorage({
-    async clear() {
-      if (writeFailure) throw new Error('Write failed');
-      serialized = null;
-    },
-    async getItem() {
-      return serialized;
-    },
-    async setItem(_key, value) {
+    async multiSet(entries) {
       writes++;
       if (writeFailure) throw new Error('Write failed');
-      serialized = value;
+      for (const [key, value] of entries) values.set(key, value);
+    },
+    async clear() {
+      if (writeFailure) throw new Error('Write failed');
+      values.clear();
+    },
+    async getItem(key) {
+      return values.get(key) ?? null;
+    },
+    async setItem(key, value) {
+      writes++;
+      if (writeFailure) throw new Error('Write failed');
+      values.set(key, value);
     },
   });
   const store = createAppDataStore(storage, {
@@ -95,7 +100,7 @@ describe('app data owner', () => {
     const f = fixture();
     await f.store.load();
     f.failWrites(true);
-    await expect(f.store.completeOnboarding(alerts)).rejects.toThrow('Write failed');
+    await expect(f.store.completeOnboarding(alerts)).rejects.toThrow('storage-write');
     expect(f.store.getSnapshot()).toMatchObject({ busy: false, data: defaultAppData() });
     expect(await f.storage.load()).toEqual(defaultAppData());
     f.failWrites(false);
@@ -113,7 +118,7 @@ describe('app data owner', () => {
     await f.store.setStatus(['ca'], 'visited');
     f.store.undo(f.store.getSnapshot().pendingUndo!.id);
     expect(f.store.getSnapshot().data.onboardingCompleted).toBe(true);
-    f.store.resetPreferences();
+    await f.store.resetPreferences();
     await f.store.clearTravel();
     await f.store.restore(defaultAppData());
     expect((await f.storage.load()).onboardingCompleted).toBe(true);
@@ -186,7 +191,7 @@ describe('app data owner', () => {
     await settle(f.storage);
     const before = f.store.getSnapshot();
     f.failWrites(true);
-    await expect(f.store.resetApp()).rejects.toThrow('Write failed');
+    await expect(f.store.resetApp()).rejects.toThrow('reset-failed');
     expect(f.store.getSnapshot()).toEqual(before);
     expect(await f.storage.load()).toEqual(before.data);
     f.failWrites(false);
@@ -670,7 +675,7 @@ describe('app data owner', () => {
     await started.promise;
     expect(f.store.getSnapshot()).toEqual({ ...prior, busy: true });
     gate.resolve();
-    await expect(restoring).rejects.toThrow('Write failed');
+    await expect(restoring).rejects.toThrow('storage-write');
     expect(f.store.getSnapshot()).toEqual(prior);
     expect(await f.storage.load()).toEqual(prior.data);
     f.failWrites(false);
@@ -797,7 +802,7 @@ describe('app data owner', () => {
     f.failWrites(true);
     await f.store.setStatus(['ca'], 'visited');
     const replacement = f.store.restore(defaultAppData());
-    await expect(replacement).rejects.toThrow('Write failed');
+    await expect(replacement).rejects.toThrow('storage-write');
     expect(f.store.getSnapshot().saveError).toBe(true);
     expect(f.store.getSnapshot().data.places.ca).toBe('visited');
     expect(f.store.getSnapshot().pendingUndo).not.toBeNull();
@@ -810,7 +815,7 @@ describe('app data owner', () => {
     await f.store.setSubdivisionStatus([regionOne], 'visited');
     const listId = f.store.createList('Next trip', ['ca'])!;
     f.store.updatePreferences({ haptics: false });
-    f.store.resetPreferences();
+    await f.store.resetPreferences();
     expect(f.store.getSnapshot().data.homeCountryId).toBe('ca');
     expect(f.store.getSnapshot().data.subdivisions).toEqual({
       [regionOne]: 'visited',
@@ -856,7 +861,7 @@ describe('app data owner', () => {
     replacement.places.ca = 'lived';
     replacement.homeCountryId = 'ca';
     f.failWrites(true);
-    await expect(f.store.restore(replacement)).rejects.toThrow('Write failed');
+    await expect(f.store.restore(replacement)).rejects.toThrow('storage-write');
     expect(f.store.getSnapshot().status).toBe('load-error');
     expect(f.store.getSnapshot().data).toEqual(defaultAppData());
     await expect(f.store.clearTravel()).rejects.toThrow('not ready');
@@ -893,4 +898,54 @@ describe('app data owner', () => {
     expect(store.getSnapshot().status).toBe('ready');
     expect(store.getSnapshot().data).toEqual(replacement);
   });
+});
+
+test('preference reset only publishes success after persistence and retains unsaved warnings on failure', async () => {
+  const f = fixture();
+  await f.store.load();
+  f.store.updatePreferences({ haptics: false });
+  await settle(f.storage);
+  const before = f.store.getSnapshot().data;
+  f.failWrites(true);
+  await expect(f.store.resetPreferences()).rejects.toThrow('storage-write');
+  expect(f.store.getSnapshot()).toMatchObject({ data: before, busy: false });
+  expect((await f.storage.load()).preferences.haptics).toBe(false);
+  f.failWrites(false);
+  await f.store.resetPreferences();
+  expect((await f.storage.load()).preferences.haptics).toBe(true);
+});
+
+test('clearing travel data also removes recovery copies and reset removes every owned database key', async () => {
+  const f = fixture();
+  await f.store.load();
+  await f.store.setStatus(['ca'], 'visited');
+  await f.store.restore(defaultAppData());
+  expect(await f.storage.listCheckpoints()).toHaveLength(1);
+  await f.store.clearTravel();
+  expect(await f.storage.listCheckpoints()).toEqual([]);
+  await f.store.restore(defaultAppData());
+  await f.storage.setItem('country-arrivals', '{}');
+  await f.store.resetApp();
+  expect(await f.storage.listCheckpoints()).toEqual([]);
+  expect(await f.storage.getItem('country-arrivals')).toBeNull();
+  expect(await f.storage.readRaw()).toBeNull();
+});
+
+test('recovery blocks edits, including an already-open home confirmation, but permits explicit restore', async () => {
+  const f = fixture();
+  const confirmation = Promise.withResolvers<boolean>();
+  const store = createAppDataStore(f.storage, { confirmHomeChange: () => confirmation.promise });
+  await store.load();
+  store.setHome('ca');
+  const pending = store.setStatus(['ca'], 'unvisited');
+  store.enterRecovery();
+  confirmation.resolve(true);
+  expect(await pending).toBe(false);
+  expect(await store.setStatus(['fr'], 'visited')).toBe(false);
+  store.updatePreferences({ haptics: false });
+  expect(store.getSnapshot().data).toMatchObject({ homeCountryId: 'ca', preferences: { haptics: true } });
+  await store.restore(defaultAppData());
+  expect(store.getSnapshot().recovery).toBe(true);
+  store.leaveRecovery();
+  expect(await store.setStatus(['fr'], 'visited')).toBe(true);
 });

@@ -8,6 +8,7 @@ import { defaultAppData } from '../src/data/model';
 import { formatNumber, t } from '../src/localization';
 import { native, navigation } from './setup';
 import { arrivalStorage, constants, haptics, location, notifications, tasks } from './native-location';
+import './native-sharing';
 
 const { appData } = await import('../src/data/app-data');
 const motion = { reduced: false };
@@ -467,13 +468,13 @@ test('a failed save after denied permissions retries with reminders off', async 
 
 test('route guards expose only Welcome until completion, and reset removes the main routes', async () => {
   await act(async () => root.render(<AppNavigator />));
-  expect(routes()).toEqual(['onboarding']);
+  expect(routes()).toEqual(['onboarding', 'recovery']);
   await act(async () => appData.completeOnboarding(false));
   expect(routes()[0]).toBe('(tabs)');
   expect(routes()).toContain('country/[id]');
   expect(routes()).not.toContain('onboarding');
   await act(async () => appData.resetApp());
-  expect(routes()).toEqual(['onboarding']);
+  expect(routes()).toEqual(['onboarding', 'recovery']);
 });
 
 test.each(['loading', 'load-error'] as const)('startup during %s does not mistake unread data for a first launch', async (status) => {
@@ -484,7 +485,11 @@ test.each(['loading', 'load-error'] as const)('startup during %s does not mistak
     if (status === 'loading') {
       expect(routes()).toEqual([]);
       expect(root.container.queryAll((node) => node.type === 'DataFeedback')).toHaveLength(1);
-    } else expect(routes()).toContain('settings/index');
+    } else {
+      expect(routes()).toEqual([]);
+      expect(button(t('recovery.savedFile'))).toBeDefined();
+      expect(button(t('settings.resetApp'))).toBeDefined();
+    }
   } finally {
     await act(async () => root.render(<></>));
     snapshot.mockRestore();

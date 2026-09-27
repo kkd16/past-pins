@@ -6,6 +6,7 @@ import { AppState } from 'react-native';
 import { useAppData } from '../data/AppDataProvider';
 import { appData } from '../data/app-data';
 import { useToast } from '../feedback/ToastProvider';
+import { diagnostics } from '../recovery/diagnostics-file';
 import { t } from '../localization';
 import { arrivalDataReady, parseArrival } from './arrivals';
 import { arrivalTracker, checkCurrentArrival, syncArrivalMonitoring } from './arrival-notifications';
@@ -36,14 +37,14 @@ export function CountryArrivalNotifications() {
           appData.updatePreferences({ countryArrivalAlerts: false });
           showToast({ message: t('location.arrivalStartFailed') });
         }
-        console.warn('Country arrival monitoring failed:', error);
+        diagnostics.record('reminders', error);
         return;
       }
       try {
         if (active && enabled) await checkCurrentArrival();
       } catch (error) {
         // A temporary position failure leaves monitoring available for later arrivals.
-        console.warn('Country arrival check failed:', error);
+        diagnostics.record('reminders', error);
       }
     }
     void reconcile();
@@ -51,7 +52,7 @@ export function CountryArrivalNotifications() {
       if (state === 'active') void reconcile();
     });
     return () => { active = false; subscription.remove(); };
-  }, [app.status, app.busy, app.saveError, app.resetVersion,
+  }, [app.status, app.busy, app.recovery, app.saveError, app.resetVersion,
     app.data.onboardingCompleted, app.data.preferences, showToast]);
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export function CountryArrivalNotifications() {
           params: { id: arrival.countryId, arrival: String(arrival.notifiedAt) },
         });
       } catch (error) {
-        console.warn('Could not open country arrival:', error);
+        diagnostics.record('reminders', error);
       } finally {
         opening = false;
       }

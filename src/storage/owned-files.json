@@ -1,0 +1,5 @@
+{
+  "databaseName": "past-pins-app.db",
+  "diagnosticsFile": "PastPins-diagnostics.json",
+  "resetPreference": "pastPinsResetOnNextLaunch"
+}

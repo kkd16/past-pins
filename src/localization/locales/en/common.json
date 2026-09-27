@@ -40,18 +40,8 @@
   "listUpdated": "List updated",
   "listDeleted": "List deleted",
   "errors": {
-    "invalidData": "This file does not contain valid Past Pins data.",
-    "invalidPlaces": "The saved places are invalid.",
-    "invalidPlaceStatus": "The file contains an unknown place or status.",
-    "invalidSubdivisions": "The saved regions are invalid.",
-    "invalidSubdivisionStatus": "The file contains an unknown region or status.",
-    "invalidLists": "The saved lists are invalid.",
     "invalidListName": "Use 1–%{count} characters on one line.",
     "unknownListPlace": "The list contains an unknown country or region.",
-    "invalidHome": "Current home must be one of your lived places.",
-    "invalidPreferences": "The saved preferences are invalid.",
-    "invalidJson": "This isn’t a valid backup file.",
-    "invalidBackup": "Choose a backup exported by this version of Past Pins.",
     "dataNotReady": "Data is not ready. Try again shortly.",
     "unknownCountry": "Unknown country.",
     "unknownSubdivision": "Unknown region."

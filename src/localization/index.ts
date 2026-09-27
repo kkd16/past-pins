@@ -13,6 +13,7 @@ import stamps from './locales/en/stamps.json';
 import places from './locales/en/places.json';
 import sharing from './locales/en/sharing.json';
 import onboarding from './locales/en/onboarding.json';
+import recovery from './locales/en/recovery.json';
 
 export const translations = {
   en: {
@@ -28,11 +29,13 @@ export const translations = {
     places,
     sharing,
     onboarding,
+    recovery,
   },
 };
 export const {
   t,
   language,
+  formatDate,
   formatNumber,
   formatPercent,
   formatList,

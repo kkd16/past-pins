@@ -1,7 +1,10 @@
+import { encodeBackup } from '../src/data/backup';
 import { Database } from 'bun:sqlite';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { defaultAppData, type AppData } from '../src/data/model';
+import { createDocumentCodec } from '../src/data/document';
+import { validateV1 } from '../src/data/schemas/v1';
 import { subdivisionIds } from '../src/subdivisions/catalog';
 import {
   createSnapshotStorage,
@@ -20,6 +23,13 @@ function fixture() {
     'CREATE TABLE kv (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)',
   );
   const keyValue: KeyValueStorage = {
+    async multiSet(entries) {
+      database.transaction(() => {
+        for (const [key, value] of entries) database.query(
+          'INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+        ).run(key, value);
+      })();
+    },
     async clear() {
       database.exec('DELETE FROM kv');
     },
@@ -46,7 +56,7 @@ function fixture() {
 describe('atomic snapshot storage', () => {
   test('reset waits for queued saves and removes every key, including corrupt data', async () => {
     const { storage, keyValue, database } = fixture();
-    await keyValue.setItem('old-setting', 'legacy');
+    await keyValue.setItem('other-key', 'example');
     const save = storage.save(defaultAppData());
     const clear = storage.clear();
     await Promise.all([save, clear]);
@@ -69,7 +79,7 @@ describe('atomic snapshot storage', () => {
     database.exec(
       "CREATE TRIGGER fail_delete BEFORE DELETE ON kv BEGIN SELECT RAISE(ABORT, 'delete failed'); END",
     );
-    await expect(storage.clear()).rejects.toThrow('delete failed');
+    await expect(storage.clear()).rejects.toThrow('reset-failed');
     expect(await storage.load()).toEqual(data);
     database.exec('DROP TRIGGER fail_delete');
     await storage.clear();
@@ -99,15 +109,15 @@ describe('atomic snapshot storage', () => {
     });
   });
 
-  test('rejects country-only snapshots without silently resetting them', async () => {
+  test('rejects documents missing required data without resetting them', async () => {
     const { storage, keyValue } = fixture();
-    const legacy: Omit<AppData, 'subdivisions' | 'lists'> = {
+    const incomplete: Omit<AppData, 'subdivisions' | 'lists'> = {
       onboardingCompleted: false,
       places: { ca: 'lived', fr: 'wishlist' },
       homeCountryId: 'ca',
       preferences: { ...defaultAppData().preferences, haptics: false },
     };
-    const original = JSON.stringify(legacy);
+    const original = JSON.stringify({ app: 'past-pins', schemaVersion: 1, data: incomplete });
     await keyValue.setItem('app-data', original);
     await expect(storage.load()).rejects.toThrow();
     expect(await keyValue.getItem('app-data')).toBe(original);
@@ -118,7 +128,7 @@ describe('atomic snapshot storage', () => {
   test('rejects snapshots without lists and preserves the stored record until reset', async () => {
     const { storage, keyValue } = fixture();
     const { lists: _lists, ...data } = defaultAppData();
-    const original = JSON.stringify(data);
+    const original = JSON.stringify({ app: 'past-pins', schemaVersion: 1, data });
     await keyValue.setItem('app-data', original);
     await expect(storage.load()).rejects.toThrow();
     expect(await keyValue.getItem('app-data')).toBe(original);
@@ -137,7 +147,7 @@ describe('atomic snapshot storage', () => {
       { ...data, subdivisions: { unknown: 'visited' } },
       { ...data, lists: null },
     ]) {
-      const original = JSON.stringify(invalid);
+      const original = JSON.stringify({ app: 'past-pins', schemaVersion: 1, data: invalid });
       await keyValue.setItem('app-data', original);
       await expect(storage.load()).rejects.toThrow();
       expect(await keyValue.getItem('app-data')).toBe(original);
@@ -196,7 +206,7 @@ describe('atomic snapshot storage', () => {
     );
     const replacement = defaultAppData();
     replacement.preferences.haptics = false;
-    await expect(storage.save(replacement)).rejects.toThrow('write failed');
+    await expect(storage.save(replacement)).rejects.toThrow('storage-write');
     expect(await storage.load()).toEqual(initial);
     database.exec('DROP TRIGGER fail_update');
     await storage.save(replacement);
@@ -222,7 +232,141 @@ describe('atomic snapshot storage', () => {
     await keyValue.setItem('app-data', '{broken');
     await expect(storage.load()).rejects.toThrow();
     expect(await keyValue.getItem('app-data')).toBe('{broken');
-    await keyValue.setItem('app-data', JSON.stringify(defaultAppData()));
+    await keyValue.setItem('app-data', encodeBackup(defaultAppData()));
+    expect(await storage.load()).toEqual(defaultAppData());
+  });
+});
+
+describe('upgrade checkpoints', () => {
+  test.each(['throw', 'invalid-output'] as const)('migration %s preserves the original document and every checkpoint', async (failure) => {
+    const { storage, keyValue } = fixture();
+    const data = defaultAppData();
+    data.places.ca = 'visited';
+    const original = `${encodeBackup(data)}\n`;
+    await keyValue.setItem('app-data', original);
+    await storage.save(data, { checkpoints: 'create' });
+    await keyValue.setItem('app-data', original);
+    const history = await keyValue.getItem('data-checkpoints');
+    let fail = true;
+    const codec = createDocumentCodec<AppData>([
+      { version: 1, validate: validateV1 },
+      { version: 2, validate: validateV1, upgrade(value) {
+        if (fail && failure === 'throw') throw new Error('Migration bug');
+        if (fail) return { unexpected: true };
+        const next = validateV1(value);
+        next.preferences.haptics = false;
+        return next;
+      } },
+    ]);
+    const upgrade = createSnapshotStorage(keyValue, codec);
+    await expect(upgrade.load()).rejects.toThrow('migration-failed');
+    expect(await upgrade.readRaw()).toBe(original);
+    expect(await keyValue.getItem('data-checkpoints')).toBe(history);
+    fail = false;
+    expect((await upgrade.load()).preferences.haptics).toBe(false);
+    expect((await upgrade.listCheckpoints())[0]).toMatchObject({ document: original, reason: 'migration' });
+    const committed = await keyValue.getItem('data-checkpoints');
+    await upgrade.load();
+    expect(await keyValue.getItem('data-checkpoints')).toBe(committed);
+  });
+
+  test('a failed migration transaction rolls back the primary and history before retry', async () => {
+    const { storage, keyValue, database } = fixture();
+    await storage.save(defaultAppData());
+    await storage.save(defaultAppData(), { checkpoints: 'create' });
+    const original = await storage.readRaw();
+    const history = await keyValue.getItem('data-checkpoints');
+    const codec = createDocumentCodec<AppData>([
+      { version: 1, validate: validateV1 },
+      { version: 2, validate: validateV1, upgrade: validateV1 },
+    ]);
+    const upgrade = createSnapshotStorage(keyValue, codec);
+    database.exec("CREATE TRIGGER fail_migration BEFORE UPDATE ON kv WHEN NEW.key = 'data-checkpoints' BEGIN SELECT RAISE(ABORT, 'disk full'); END");
+    await expect(upgrade.load()).rejects.toThrow('storage-write');
+    expect(await upgrade.readRaw()).toBe(original);
+    expect(await keyValue.getItem('data-checkpoints')).toBe(history);
+    database.exec('DROP TRIGGER fail_migration');
+    await upgrade.load();
+    expect(JSON.parse((await upgrade.readRaw())!).schemaVersion).toBe(2);
+    expect(await upgrade.listCheckpoints()).toHaveLength(2);
+  });
+
+  test('imports retain the original bytes, preserve the last three copies, and ordinary saves leave copies alone', async () => {
+    const { storage, keyValue } = fixture();
+    const original = ' { unreadable original bytes';
+    await keyValue.setItem('app-data', original);
+    const data = defaultAppData();
+    await storage.save(data, { checkpoints: 'create' });
+    expect((await storage.listCheckpoints())[0].document).toBe(original);
+    for (const id of ['ca', 'fr', 'jp']) {
+      data.places[id] = 'visited';
+      await storage.save(data, { checkpoints: 'create' });
+    }
+    const history = await storage.listCheckpoints();
+    expect(history).toHaveLength(3);
+    expect(new Set(history.map((copy) => copy.id)).size).toBe(3);
+    expect(history.map((copy) => JSON.parse(copy.document).data.places)).toEqual([
+      { ca: 'visited', fr: 'visited' }, { ca: 'visited' }, {},
+    ]);
+    data.preferences.haptics = false;
+    await storage.save(data);
+    expect(await storage.listCheckpoints()).toEqual(history);
+    const restored = await storage.readCheckpoint(history[1].id);
+    await storage.save(restored, { checkpoints: 'create' });
+    expect((await storage.load()).places).toEqual({ ca: 'visited' });
+    expect(JSON.parse((await storage.listCheckpoints())[0].document).data).toEqual(data);
+  });
+
+  test('a checkpoint write failure rolls back both records and retry succeeds', async () => {
+    const { database, storage } = fixture();
+    const initial = defaultAppData();
+    initial.places.ca = 'visited';
+    await storage.save(initial);
+    await storage.save(initial, { checkpoints: 'create' });
+    const before = await storage.listCheckpoints();
+    database.exec("CREATE TRIGGER fail_checkpoint BEFORE UPDATE ON kv WHEN NEW.key = 'data-checkpoints' BEGIN SELECT RAISE(ABORT, 'disk full'); END");
+    await expect(storage.save(defaultAppData(), { checkpoints: 'create' })).rejects.toThrow('storage-write');
+    expect(await storage.load()).toEqual(initial);
+    expect(await storage.listCheckpoints()).toEqual(before);
+    database.exec('DROP TRIGGER fail_checkpoint');
+    await storage.save(defaultAppData(), { checkpoints: 'create' });
+    expect(await storage.load()).toEqual(defaultAppData());
+    expect(await storage.listCheckpoints()).toHaveLength(2);
+  });
+
+  test('future data is preserved byte-for-byte and is available for raw export', async () => {
+    const { storage, keyValue } = fixture();
+    const text = ' { "app": "past-pins", "schemaVersion": 999, "data": { "future": true } }\n';
+    await keyValue.setItem('app-data', text);
+    await expect(storage.load()).rejects.toThrow('unsupported-version');
+    expect(await storage.readRaw()).toBe(text);
+    expect(await keyValue.getItem('data-checkpoints')).toBeNull();
+  });
+
+  test('missing primary with recovery history is not silently treated as a new user', async () => {
+    const { storage, database } = fixture();
+    await storage.save(defaultAppData());
+    await storage.save(defaultAppData(), { checkpoints: 'create' });
+    database.exec("DELETE FROM kv WHERE key='app-data'");
+    await expect(storage.load()).rejects.toThrow('invalid-document');
+    const [copy] = await storage.listCheckpoints();
+    await storage.save(await storage.readCheckpoint(copy.id), { checkpoints: 'create' });
+    expect(await storage.load()).toEqual(defaultAppData());
+  });
+
+  test('corrupt checkpoint metadata blocks replacement, and full reset remains available', async () => {
+    const { storage, keyValue } = fixture();
+    await storage.save(defaultAppData());
+    const original = await storage.readRaw();
+    for (const history of ['{bad', JSON.stringify([{ id: 'bad-date', createdAt: Number.MAX_SAFE_INTEGER, reason: 'restore', document: original }])]) {
+      await keyValue.setItem('data-checkpoints', history);
+      await expect(storage.listCheckpoints()).rejects.toThrow('invalid-document');
+      await expect(storage.save(defaultAppData(), { checkpoints: 'create' })).rejects.toThrow('invalid-document');
+      expect(await storage.readRaw()).toBe(original);
+      expect(await keyValue.getItem('data-checkpoints')).toBe(history);
+    }
+    await storage.clear();
+    expect(await storage.listCheckpoints()).toEqual([]);
     expect(await storage.load()).toEqual(defaultAppData());
   });
 });

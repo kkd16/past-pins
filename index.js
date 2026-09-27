@@ -1,2 +1,2 @@
-import './src/location/arrival-notifications';
+import './src/location/arrival-task';
 import 'expo-router/entry';

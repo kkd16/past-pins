@@ -1,51 +1,10 @@
-export type SavedStatus = 'wishlist' | 'visited' | 'lived';
-export type PlaceStatus = SavedStatus | 'unvisited';
+import { defaultV1Data, v1Preferences, V1_LIST_NAME_LENGTH, type AppDataV1, type PlaceStatus } from './schemas/v1';
 
-export const MAX_LIST_NAME_LENGTH = 80;
-
-export type TravelList = {
-  id: string;
-  name: string;
-  placeIds: string[];
-};
-
-export type Preferences = {
-  mapView: 'globe' | 'map';
-  countryLabels: boolean;
-  mapSummary: boolean;
-  haptics: boolean;
-  countryArrivalAlerts: boolean;
-  countryGrouping: 'continent' | 'alphabetical';
-};
-
-export type AppData = {
-  onboardingCompleted: boolean;
-  places: Partial<Record<string, SavedStatus>>;
-  subdivisions: Partial<Record<string, SavedStatus>>;
-  lists: TravelList[];
-  homeCountryId: string | null;
-  preferences: Preferences;
-};
-
-export const defaultPreferences: Readonly<Preferences> = {
-  mapView: 'globe',
-  countryLabels: true,
-  mapSummary: true,
-  haptics: true,
-  countryArrivalAlerts: false,
-  countryGrouping: 'continent',
-};
-
-export function defaultAppData(): AppData {
-  return {
-    onboardingCompleted: false,
-    places: {},
-    subdivisions: {},
-    lists: [],
-    homeCountryId: null,
-    preferences: { ...defaultPreferences },
-  };
-}
+export type { SavedStatus, PlaceStatus, TravelList, Preferences } from './schemas/v1';
+export type AppData = AppDataV1;
+export const defaultPreferences = v1Preferences;
+export const MAX_LIST_NAME_LENGTH = V1_LIST_NAME_LENGTH;
+export const defaultAppData = defaultV1Data;
 
 export function isVisited(status: PlaceStatus | undefined): boolean {
   return status === 'visited' || status === 'lived';

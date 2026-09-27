@@ -2,7 +2,8 @@ import { t } from '../localization';
 import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
 import { subdivisionIds } from '../subdivisions/catalog';
-import type { AppStorage } from '../storage/snapshot-storage';
+import { dataError, type DataError } from './data-error';
+import type { AppStorage, SaveOptions } from '../storage/snapshot-storage';
 import {
   validateAppData,
   validateListName,
@@ -24,6 +25,8 @@ export type DataSnapshot = {
   data: AppData;
   status: 'loading' | 'ready' | 'load-error';
   saveError: boolean;
+  loadError?: DataError;
+  recovery?: boolean;
   busy: boolean;
   resetVersion: number;
   pendingUndo: { id: number; label: string } | null;
@@ -34,6 +37,7 @@ export function createAppDataStore(
   effects: {
     confirmHomeChange: (id: string) => Promise<boolean>;
     feedback?: (enabled: boolean) => void;
+    report?: (operation: 'load' | 'save' | 'reset' | 'restore', error: DataError) => void;
   },
 ) {
   let snapshot: DataSnapshot = {
@@ -58,7 +62,7 @@ export function createAppDataStore(
   }
 
   function editable() {
-    return snapshot.status === 'ready' && !snapshot.busy;
+    return snapshot.status === 'ready' && !snapshot.busy && !snapshot.recovery;
   }
 
   function persist(data: AppData) {
@@ -69,7 +73,10 @@ export function createAppDataStore(
     }
     lastWrite = storage.save(data).then(
       () => finish(false),
-      () => finish(true),
+      (error) => {
+        effects.report?.('save', dataError(error, 'storage-write'));
+        finish(true);
+      },
     );
   }
 
@@ -93,8 +100,12 @@ export function createAppDataStore(
     loading = storage
       .load()
       .then(
-        (data) => publish({ data, status: 'ready', saveError: false }),
-        () => publish({ status: 'load-error' }),
+        (data) => publish({ data, status: 'ready', saveError: false, loadError: undefined }),
+        (error) => {
+          const failure = dataError(error, 'storage-read');
+          effects.report?.('load', failure);
+          publish({ status: 'load-error', loadError: failure });
+        },
       )
       .finally(() => {
         loading = null;
@@ -102,14 +113,14 @@ export function createAppDataStore(
     return loading;
   }
 
-  async function replace(data: AppData, reset = false) {
+  async function replace(data: AppData, { reset = false, ...options }: SaveOptions & { reset?: boolean } = {}) {
     if (snapshot.status === 'loading' || snapshot.busy)
       throw new UserFacingError(t('common.errors.dataNotReady'));
     publish({ busy: true });
     try {
       await lastWrite;
       if (reset) await storage.clear();
-      else await storage.save(data);
+      else await storage.save(data, options);
       ++revision;
       undoTravel = null;
       publish({
@@ -117,8 +128,12 @@ export function createAppDataStore(
         status: 'ready',
         pendingUndo: null,
         saveError: false,
+        loadError: undefined,
         resetVersion: snapshot.resetVersion + (reset ? 1 : 0),
       });
+    } catch (error) {
+      effects.report?.(reset ? 'reset' : 'restore', dataError(error, reset ? 'reset-failed' : 'storage-write'));
+      throw error;
     } finally {
       publish({ busy: false });
     }
@@ -155,6 +170,8 @@ export function createAppDataStore(
       };
     },
     load,
+    enterRecovery() { publish({ recovery: true }); },
+    leaveRecovery() { publish({ recovery: false }); },
     async completeOnboarding(countryArrivalAlerts: boolean) {
       if (!editable())
         throw new UserFacingError(t('common.errors.dataNotReady'));
@@ -187,6 +204,7 @@ export function createAppDataStore(
         } finally {
           publish({ busy: false });
         }
+        if (!editable()) return false;
       }
       const count = [...new Set(ids)].filter(
         (id) => next.places[id] !== snapshot.data.places[id],
@@ -318,9 +336,9 @@ export function createAppDataStore(
       const next = validateAppData(data);
       // Restoring travel data must not restart a completed welcome flow.
       next.onboardingCompleted ||= snapshot.data.onboardingCompleted;
-      await replace(next);
+      await replace(next, { checkpoints: 'create' });
     },
-    resetApp: () => replace(defaultAppData(), true),
+    resetApp: () => replace(defaultAppData(), { reset: true }),
     async clearTravel() {
       if (!editable())
         throw new UserFacingError(t('common.errors.dataNotReady'));
@@ -330,14 +348,11 @@ export function createAppDataStore(
         subdivisions: {},
         lists: [],
         homeCountryId: null,
-      });
+      }, { checkpoints: 'discard' });
     },
-    resetPreferences() {
-      if (!editable()) return;
-      const data = { ...snapshot.data, preferences: { ...defaultPreferences } };
-      undoTravel = null;
-      publish({ data, pendingUndo: null });
-      persist(data);
+    async resetPreferences() {
+      if (!editable()) throw new UserFacingError(t('common.errors.dataNotReady'));
+      await replace({ ...snapshot.data, preferences: { ...defaultPreferences } });
     },
   };
 }

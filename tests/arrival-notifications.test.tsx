@@ -167,7 +167,9 @@ test.each(['ready', 'load-error'] as const)('a headless launch waits for data an
   const current = appData.getSnapshot();
   const snapshot = spyOn(appData, 'getSnapshot').mockReturnValue({ ...current, status: 'loading' });
   const gate = Promise.withResolvers<void>();
+  const started = Promise.withResolvers<void>();
   const load = spyOn(appData, 'load').mockImplementation(async () => {
+    started.resolve();
     await gate.promise;
     snapshot.mockReturnValue({ ...current, status });
   });
@@ -175,6 +177,7 @@ test.each(['ready', 'load-error'] as const)('a headless launch waits for data an
     const task = backgroundTask({ data: { locations: [
       { timestamp: Date.now(), coords: { longitude: -75.69, latitude: 45.42 } },
     ] } });
+    await started.promise;
     expect(load).toHaveBeenCalledTimes(1);
     expect(notifications.getPermissionsAsync).not.toHaveBeenCalled();
     expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
@@ -190,7 +193,7 @@ test.each(['ready', 'load-error'] as const)('a headless launch waits for data an
 
 test('disabling clears pending and delivered notifications and cached responses', async () => {
   await makeArrival();
-  appData.resetPreferences();
+  await appData.resetPreferences();
   await syncArrivalMonitoring();
   expect(notifications.cancelAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1);
   expect(notifications.dismissAllNotificationsAsync).toHaveBeenCalledTimes(1);
@@ -388,7 +391,7 @@ test('turning off during native startup stops the just-started task', async () =
   location.startLocationUpdatesAsync.mockImplementationOnce(async () => { started.resolve(); await start.promise; });
   const syncing = syncArrivalMonitoring();
   await started.promise;
-  appData.resetPreferences();
+  await appData.resetPreferences();
   start.resolve();
   expect(await syncing).toBe(false);
   expect(location.stopLocationUpdatesAsync).toHaveBeenCalledTimes(1);

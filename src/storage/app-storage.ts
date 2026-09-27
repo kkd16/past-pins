@@ -1,14 +1,19 @@
 import { SQLiteStorage } from 'expo-sqlite/kv-store';
 import { Directory, File, Paths } from 'expo-file-system';
 
+import { assertStartupResetComplete } from '../../modules/past-pins-recovery/src/PastPinsRecoveryModule';
+import { diagnostics } from '../recovery/diagnostics-file';
+import ownedFiles from './owned-files.json';
 import { createSnapshotStorage } from './snapshot-storage';
 
-const database = new SQLiteStorage('past-pins-app.db');
+const database = new SQLiteStorage(ownedFiles.databaseName);
 
 export const appStorage = createSnapshotStorage({
-  getItem: (key) => database.getItem(key),
-  setItem: (key, value) => database.setItem(key, value),
+  getItem: async (key) => { assertStartupResetComplete(); return database.getItem(key); },
+  setItem: async (key, value) => { assertStartupResetComplete(); await database.setItem(key, value); },
+  multiSet: async (entries) => { assertStartupResetComplete(); await database.multiSet(entries); },
   async clear() {
+    assertStartupResetComplete();
     // Remove backup leftovers, including imports interrupted by an app exit.
     // Leave Expo's runtime caches alone (especially when running in Expo Go).
     if (Paths.cache.exists) {
@@ -21,6 +26,7 @@ export const appStorage = createSnapshotStorage({
         }
       }
     }
+    await diagnostics.clear();
     await database.clear();
   },
 });

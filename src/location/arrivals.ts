@@ -10,6 +10,7 @@ export const ARRIVAL_TYPE = 'country-arrival';
 
 export type Arrival = { countryId: string; notifiedAt: number };
 type ArrivalState = {
+  schemaVersion: 1;
   countryId: string | null;
   observedAt: number;
   notifiedAt: Record<string, number>;
@@ -29,7 +30,7 @@ export function parseArrival(data: Record<string, unknown> | undefined): Arrival
 }
 
 export function arrivalDataReady(snapshot: DataSnapshot) {
-  return snapshot.status === 'ready' && !snapshot.busy && !snapshot.saveError &&
+  return snapshot.status === 'ready' && !snapshot.busy && !snapshot.recovery && !snapshot.saveError &&
     snapshot.data.onboardingCompleted;
 }
 
@@ -47,20 +48,24 @@ export function createArrivalTracker(
 ) {
   let pending = Promise.resolve();
 
-  async function read(): Promise<ArrivalState> {
+  async function read(): Promise<{ state: ArrivalState; rebuilding: boolean }> {
     const text = await storage.getItem(STORAGE_KEY);
-    if (text === null) return { countryId: null, observedAt: 0, notifiedAt: {} };
-    const state = JSON.parse(text) as ArrivalState;
-    if (!state ||
-      (state.countryId !== null && !countryIds.has(state.countryId)) ||
-      !Number.isFinite(state.observedAt) || state.observedAt < 0 ||
-      !state.notifiedAt || typeof state.notifiedAt !== 'object' ||
-      Array.isArray(state.notifiedAt) ||
-      Object.entries(state.notifiedAt).some(([id, time]) =>
-        !countryIds.has(id) || !Number.isFinite(time) || time <= 0,
-      )
-    ) throw new Error('Invalid country arrival state.');
-    return state;
+    const empty: ArrivalState = { schemaVersion: 1, countryId: null, observedAt: 0, notifiedAt: {} };
+    if (text === null) return { state: empty, rebuilding: false };
+    try {
+      const state = JSON.parse(text) as ArrivalState;
+      if (!state || state.schemaVersion !== 1 || Object.keys(state).length !== 4 ||
+        (state.countryId !== null && !countryIds.has(state.countryId)) ||
+        !Number.isFinite(state.observedAt) || state.observedAt < 0 ||
+        !state.notifiedAt || typeof state.notifiedAt !== 'object' || Array.isArray(state.notifiedAt) ||
+        Object.entries(state.notifiedAt).some(([id, time]) =>
+          !countryIds.has(id) || !Number.isFinite(time) || time <= 0,
+        )
+      ) throw new Error('Invalid reminder state');
+      return { state, rebuilding: false };
+    } catch {
+      return { state: empty, rebuilding: true };
+    }
   }
 
   async function process(locations: readonly ArrivalLocation[]) {
@@ -79,18 +84,20 @@ export function createArrivalTracker(
       (!latest || item.timestamp > latest.timestamp) ? item : latest,
     null);
     if (!location) return;
-    const state = await read();
+    const { state, rebuilding } = await read();
     if (!current() || location.timestamp <= state.observedAt) return;
     const detected = countryAtPoint([location.coords.longitude, location.coords.latitude]);
+    if (rebuilding && !detected) return;
     // Remember observation order, but ocean is not evidence of a new country.
     const countryId = detected && countryIds.has(detected) ? detected : state.countryId;
     const now = Date.now();
     const previous = countryId ? state.notifiedAt[countryId] : undefined;
-    const arrival = countryId && countryId !== state.countryId &&
+    const arrival = !rebuilding && countryId && countryId !== state.countryId &&
       !isVisited(snapshot.data.places[countryId]) &&
       (previous === undefined || now - previous >= REMINDER_INTERVAL)
       ? { countryId, notifiedAt: now } : null;
     const next: ArrivalState = {
+      schemaVersion: 1,
       countryId,
       observedAt: location.timestamp,
       notifiedAt: arrival ? { ...state.notifiedAt, [arrival.countryId]: now } : state.notifiedAt,
@@ -122,9 +129,9 @@ export function createArrivalTracker(
       await pending;
       const snapshot = getSnapshot();
       if (!arrivalsEnabled(snapshot)) return false;
-      const state = await read();
+      const { state, rebuilding } = await read();
       const latest = getSnapshot();
-      return arrivalsEnabled(latest) && latest.data === snapshot.data &&
+      return !rebuilding && arrivalsEnabled(latest) && latest.data === snapshot.data &&
         state.notifiedAt[arrival.countryId] === arrival.notifiedAt;
     },
   };

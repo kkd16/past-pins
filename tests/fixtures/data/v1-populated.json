@@ -1,0 +1,44 @@
+{
+  "app": "past-pins",
+  "schemaVersion": 1,
+  "data": {
+    "onboardingCompleted": true,
+    "places": {
+      "ca": "lived",
+      "fr": "visited",
+      "jp": "wishlist"
+    },
+    "subdivisions": {
+      "ne:1159307647": "visited",
+      "ne:1159307651": "lived",
+      "ne:1159307653": "wishlist"
+    },
+    "lists": [
+      {
+        "id": "list-trip",
+        "name": "Québec & 日本 🗺",
+        "placeIds": [
+          "ca",
+          "jp",
+          "ne:1159307647",
+          "ne:1159307651",
+          "ne:1159307653"
+        ]
+      },
+      {
+        "id": "list-empty",
+        "name": "Later",
+        "placeIds": []
+      }
+    ],
+    "homeCountryId": "ca",
+    "preferences": {
+      "mapView": "map",
+      "countryLabels": false,
+      "mapSummary": false,
+      "haptics": false,
+      "countryArrivalAlerts": true,
+      "countryGrouping": "alphabetical"
+    }
+  }
+}

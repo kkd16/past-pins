@@ -58,6 +58,9 @@ mock.module('react-native', () => native);
 mock.module('expo-localization', () => ({
   getLocales: () => [{ languageTag: 'en-CA' }],
 }));
+mock.module('expo-application', () => ({
+  nativeApplicationVersion: '1.0.0', nativeBuildVersion: '1',
+}));
 
 export const navigation = {
   router: { push: mock(), navigate: mock(), dismissTo: mock(), back: mock() },

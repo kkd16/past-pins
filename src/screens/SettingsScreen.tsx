@@ -7,7 +7,8 @@ import { Screen } from '../components/Screen';
 import { ToggleRow } from '../components/ToggleRow';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
-import { UserFacingError } from '../data/errors';
+import { recoveryMessage } from '../recovery/error-message';
+import { confirmDestructiveAction } from '../feedback/confirmDestructiveAction';
 import { useToast } from '../feedback/ToastProvider';
 import { formatNumber, t } from '../localization';
 import { ArrivalAlertsSetting } from '../location/ArrivalAlertsSetting';
@@ -21,7 +22,7 @@ type DataAction = 'export' | 'restore' | 'clear' | 'reset' | 'resetApp';
 export function SettingsScreen({
   onOpen,
 }: {
-  onOpen: (page: 'home' | 'about' | 'licenses') => void;
+  onOpen: (page: 'home' | 'about' | 'licenses' | 'recovery') => void;
 }) {
   const toast = useToast();
   const { showToast } = toast;
@@ -69,24 +70,6 @@ export function SettingsScreen({
     },
   ] as const;
 
-  function confirm(title: string, message: string, action: string) {
-    const isCurrent = guard();
-    return new Promise<boolean>((resolve) =>
-      Alert.alert(title, message, [
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
-          onPress: () => resolve(false),
-        },
-        {
-          text: action,
-          style: 'destructive',
-          onPress: () => resolve(isCurrent()),
-        },
-      ]),
-    );
-  }
-
   async function run(name: DataAction, action: () => Promise<void>) {
     const isCurrent = guard();
     if (running.current || busy || status === 'loading' || !isCurrent()) return;
@@ -98,9 +81,7 @@ export function SettingsScreen({
       if (isCurrent())
         Alert.alert(
           t('settings.couldNotFinish'),
-          error instanceof UserFacingError
-            ? error.message
-            : t('common.unknownError'),
+          recoveryMessage(error),
         );
     } finally {
       running.current = false;
@@ -116,7 +97,7 @@ export function SettingsScreen({
       ? countryById.get(backup.homeCountryId)!.name
       : t('common.none');
     if (
-      await confirm(
+      await confirmDestructiveAction(
         t('settings.replaceTitle'),
         t('settings.replaceSummary', {
           countries: formatNumber(Object.keys(backup.places).length),
@@ -125,6 +106,7 @@ export function SettingsScreen({
           home,
         }),
         t('settings.replaceData'),
+        isCurrent,
       )
     ) {
       await restore(backup);
@@ -213,6 +195,11 @@ export function SettingsScreen({
           description={t('settings.dataDescription')}
         >
           <SettingsRow
+            title={t('recovery.title')}
+            disclosure
+            onPress={() => onOpen('recovery')}
+          />
+          <SettingsRow
             title={t('settings.exportBackup')}
             disabled={disabled}
             busy={operation === 'export'}
@@ -247,7 +234,7 @@ export function SettingsScreen({
               disabled={name === 'resetApp' ? recoveryDisabled : disabled}
               busy={operation === name}
               onPress={() => void run(name, async () => {
-                if (!await confirm(t(title), t(message), t(label))) return;
+                if (!await confirmDestructiveAction(t(title), t(message), t(label), guard())) return;
                 await action();
                 if (success) showToast({ message: t(success) });
                 else {

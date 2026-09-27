@@ -26,7 +26,7 @@ async function fixture() {
   const values = new Map<string, string>();
   const getItem = mock(async (key: string) => values.get(key) ?? null);
   const setItem = mock(async (key: string, value: string) => { values.set(key, value); });
-  const storage = createSnapshotStorage({ getItem, setItem, clear: async () => { values.clear(); } });
+  const storage = createSnapshotStorage({ getItem, setItem, multiSet: async (entries) => { for (const [key, value] of entries) values.set(key, value); }, clear: async () => { values.clear(); } });
   const app = createAppDataStore(storage, { confirmHomeChange: async () => true });
   await app.load();
   await app.completeOnboarding(true);
@@ -105,21 +105,40 @@ describe('country arrivals', () => {
     await expect(f.tracker.process([fix('ca')])).rejects.toThrow('Schedule failed');
     expect(f.values.has('country-arrivals')).toBe(false);
     f.setItem.mockRejectedValueOnce(new Error('Disk full'));
-    await expect(f.tracker.process([fix('ca')])).rejects.toThrow('Disk full');
+    await expect(f.tracker.process([fix('ca')])).rejects.toThrow('storage-write');
     expect(f.remove.mock.calls).toEqual([['native-notification']]);
     expect(f.values.has('country-arrivals')).toBe(false);
     await f.tracker.process([fix('ca')]);
     expect(await f.tracker.isCurrent({ countryId: 'ca', notifiedAt: start })).toBe(true);
   });
 
-  test('a failed or corrupt state read never sends or overwrites bookkeeping', async () => {
+  test('an IO failure preserves reminder bookkeeping and sends nothing', async () => {
     const f = await fixture();
-    f.getItem.mockRejectedValueOnce(new Error('Read failed'));
-    await expect(f.tracker.process([fix('ca')])).rejects.toThrow('Read failed');
     f.values.set('country-arrivals', '{}');
-    await expect(f.tracker.process([fix('ca')])).rejects.toThrow('Invalid country arrival');
+    f.getItem.mockRejectedValueOnce(new Error('Read failed'));
+    await expect(f.tracker.process([fix('ca')])).rejects.toThrow('storage-read');
+
     expect(f.send).not.toHaveBeenCalled();
     expect(f.values.get('country-arrivals')).toBe('{}');
+  });
+
+  test.each(['{}', '{broken', '{"schemaVersion":2}'])('corrupt metadata %s rebuilds without a duplicate reminder', async (text) => {
+    const f = await fixture();
+    f.values.set('country-arrivals', text);
+    await f.tracker.process([fix('ocean')]);
+    expect(f.values.get('country-arrivals')).toBe(text);
+    await f.tracker.process([fix('ca')]);
+    expect(f.send).not.toHaveBeenCalled();
+    expect(JSON.parse(f.values.get('country-arrivals')!)).toEqual({
+      schemaVersion: 1, countryId: 'ca', observedAt: now, notifiedAt: {},
+    });
+    now++;
+    await f.makeTracker().process([fix('ca')]);
+    expect(f.send).not.toHaveBeenCalled();
+    now++;
+    await f.tracker.process([fix('fr')]);
+    expect(f.send).toHaveBeenCalledTimes(1);
+    expect(f.send.mock.calls[0][0].countryId).toBe('fr');
   });
 
   test.each(['disable', 'reset', 'visit'] as const)('a pending send cannot survive %s', async (action) => {
@@ -146,7 +165,7 @@ describe('country arrivals', () => {
     const f = await fixture();
     await f.tracker.process([fix('ca')]);
     const history = f.values.get('country-arrivals');
-    f.app.resetPreferences();
+    await f.app.resetPreferences();
     now++;
     await f.tracker.process([fix('fr')]);
     expect(f.send).toHaveBeenCalledTimes(1);

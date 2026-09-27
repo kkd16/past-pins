@@ -3,6 +3,8 @@ import { Stack } from 'expo-router';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { RecoveryScreen } from '../recovery/RecoveryScreen';
 import { t } from '../localization';
 import { useStackScreenOptions } from './useStackScreenOptions';
 
@@ -16,7 +18,8 @@ export function AppNavigator() {
   const screenOptions = useStackScreenOptions();
   if (status === 'loading') return <Screen><DataFeedback /></Screen>;
 
-  // Keep Settings available for restore/reset if the stored snapshot is unreadable.
+  if (status === 'load-error') return <RecoveryScreen store={appData} />;
+
   const welcome = status === 'ready' && !data.onboardingCompleted;
   return (
     <Stack screenOptions={screenOptions}>
@@ -56,6 +59,7 @@ export function AppNavigator() {
       <Stack.Protected guard={welcome}>
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       </Stack.Protected>
+      <Stack.Screen name="recovery" options={{ title: t('recovery.title') }} />
     </Stack>
   );
 }

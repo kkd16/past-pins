@@ -14,12 +14,16 @@ function discardCachedFile(file: File) {
 }
 
 export async function shareBackup(data: AppData) {
+  await shareDataFile(encodeBackup(data), 'Backup');
+}
+
+export async function shareDataFile(text: string, kind: 'Backup' | 'Recovery' | 'Diagnostics') {
   const file = new File(
     Paths.cache,
-    `Past-Pins-${new Date().toISOString().slice(0, 10)}.json`,
+    `Past-Pins-${kind}-${new Date().toISOString().slice(0, 10)}.json`,
   );
   try {
-    file.write(encodeBackup(data));
+    file.write(text);
     await Sharing.shareAsync(file.uri, { UTI: 'public.json' });
   } finally {
     discardCachedFile(file);

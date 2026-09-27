@@ -1,0 +1,19 @@
+{
+  "app": "past-pins",
+  "schemaVersion": 1,
+  "data": {
+    "onboardingCompleted": false,
+    "places": {},
+    "subdivisions": {},
+    "lists": [],
+    "homeCountryId": null,
+    "preferences": {
+      "mapView": "globe",
+      "countryLabels": true,
+      "mapSummary": true,
+      "haptics": true,
+      "countryArrivalAlerts": false,
+      "countryGrouping": "continent"
+    }
+  }
+}

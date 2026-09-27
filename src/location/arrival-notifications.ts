@@ -1,6 +1,5 @@
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import * as TaskManager from 'expo-task-manager';
 import { AppState } from 'react-native';
 
 import { countryById } from '../countries/catalog';
@@ -13,8 +12,8 @@ import {
   ARRIVAL_TYPE, arrivalsEnabled, createArrivalTracker, parseArrival,
 } from './arrivals';
 import { arrivalMonitoringAvailable, arrivalPermissionsGranted, notificationsAllowed } from './arrival-permissions';
+import { ARRIVAL_TASK_NAME as TASK_NAME } from './arrival-task';
 
-const TASK_NAME = 'past-pins-country-arrivals';
 
 export const arrivalTracker = createArrivalTracker(appStorage, appData.getSnapshot, {
   async send(arrival) {
@@ -40,18 +39,12 @@ export const arrivalTracker = createArrivalTracker(appStorage, appData.getSnapsh
   },
 });
 
-// Headless tasks are registered before Router mounts any screens.
-TaskManager.defineTask<{ locations: Location.LocationObject[] }>(TASK_NAME, async ({ data, error }) => {
-  if (error || !data) return;
-  try {
-    if (appData.getSnapshot().status === 'loading') await appData.load();
-    if (arrivalsEnabled(appData.getSnapshot()) && await arrivalPermissionsGranted())
-      await arrivalTracker.process(data.locations);
-    else await syncArrivalMonitoring();
-  } catch (error) {
-    console.warn('Country arrival check failed:', error);
-  }
-});
+export async function handleBackgroundArrivals(locations: Location.LocationObject[]) {
+  if (appData.getSnapshot().status === 'loading') await appData.load();
+  if (arrivalsEnabled(appData.getSnapshot()) && await arrivalPermissionsGranted())
+    await arrivalTracker.process(locations);
+  else await syncArrivalMonitoring();
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {

@@ -139,6 +139,7 @@ test.each(resets)('leaving Settings prevents a pending %s confirmation from chan
 
 test.each([
   ['settings.clearTravel', 'save'],
+  ['settings.resetPreferences', 'save'],
   ['settings.resetApp', 'clear'],
 ] as const)('%s failures preserve data and allow a retry', async (label, method) => {
   const before = appData.getSnapshot().data;
@@ -152,7 +153,10 @@ test.each([
     expect(toast.getSnapshot()).toBeNull();
     await press(t(label));
     await answer(true);
-    expect(appData.getSnapshot().data.places).toEqual({});
+    if (label === 'settings.resetPreferences') {
+      expect(appData.getSnapshot().data.preferences).toEqual(defaultPreferences);
+      expect(appData.getSnapshot().data.places).toEqual(before.places);
+    } else expect(appData.getSnapshot().data.places).toEqual({});
   } finally {
     fail.mockRestore();
   }
