@@ -1,0 +1,25 @@
+PastPins — an offline travel atlas for iPhone
+Copyright (C) 2026 Kyle Deliyannides and contributors
+
+Except for separately identified third-party material, PastPins source code,
+assets, website, and documentation are licensed under the GNU General Public
+License, version 3 or (at your option) any later version. See LICENSE for the
+complete license and COPYING.iOS for the additional Apple App Store permission.
+
+This grant and the Apple App Store permission also cover all PastPins work
+authored and owned by Kyle Deliyannides in this repository before these license
+files were added, including that work in earlier commits and tags. The absence
+of a license file in an earlier revision does not exclude that work from this
+grant. When distributing an earlier revision, include this NOTICE, LICENSE,
+and COPYING.iOS. This grant does not relicense third-party material or work
+owned by others.
+
+PastPins is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+Source code and build instructions: https://github.com/kkd16/past-pins
+
+Third-party software, data, and their original notices retain their respective
+licenses. See licenses/, dependency license files, and the Expo MIT notice in
+modules/past-pins-recovery/LICENSE. The project license does not replace them.

@@ -62,7 +62,7 @@
     "licenses:check": "bun scripts/generate-licenses.ts --check",
     "dev": "expo start --go --tunnel",
     "test:coverage": "bun run test --coverage",
-    "check": "bun run lint && bun run typecheck && bun run test:coverage && bun run globe:check && bun run subdivisions:check && bun run licenses:check",
+    "check": "bun run lint && bun run typecheck && bun run test:coverage && bun run globe:check && bun run subdivisions:check && bun run licenses:check && bun run website:build",
     "check:all": "bun run verify",
     "doctor": "bunx expo-doctor",
     "export:ios": "expo export --platform ios",
@@ -73,7 +73,8 @@
     "subdivisions:refresh": "bun scripts/generate-subdivisions.ts --refresh",
     "subdivisions:check": "bun scripts/generate-subdivisions.ts --check",
     "verify": "bash scripts/verify.sh",
-    "worklets:check": "expo export --platform ios --dev --no-bytecode --output-dir dist/dev && bun scripts/check-worklets.ts"
+    "worklets:check": "expo export --platform ios --dev --no-bytecode --output-dir dist/dev && bun scripts/check-worklets.ts",
+    "website:build": "bun website/build.ts"
   },
   "private": true,
   "overrides": {
@@ -82,5 +83,6 @@
   "packageManager": "bun@1.4.2",
   "engines": {
     "node": ">=22.13.0"
-  }
+  },
+  "license": "GPL-3.0-or-later"
 }

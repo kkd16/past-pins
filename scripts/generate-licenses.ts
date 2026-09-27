@@ -45,6 +45,23 @@ function licenseFiles(directory: string): string[] {
 }
 
 const notices = new Map<string, Notice>();
+const project = await Bun.file(join(root, 'package.json')).json();
+notices.set(`PastPins@${project.version}`, {
+  name: 'PastPins',
+  version: project.version,
+  license: 'GPL-3.0-or-later with Apple App Store permission',
+  text: (await Promise.all(
+    ['NOTICE', 'LICENSE', 'COPYING.iOS'].map(async (file) =>
+      `${file}\n\n${(await Bun.file(join(root, file)).text()).trim()}`,
+    ),
+  )).join('\n\n---\n\n'),
+});
+notices.set('expo-local-module-template', {
+  name: 'Expo local-module template',
+  version: 'SDK 57',
+  license: 'MIT',
+  text: await Bun.file(join(root, 'modules/past-pins-recovery/LICENSE')).text(),
+});
 const missing: string[] = [];
 for (const pkg of inventory) {
   for (const directory of pkg.paths) {
@@ -109,14 +126,14 @@ if (values.check) {
     (await Bun.file(output).text()) !== generated
   ) {
     throw new Error(
-      'Third-party notices are stale. Run bun run licenses:generate.',
+      'License notices are stale. Run bun run licenses:generate.',
     );
   }
-  console.log(`Third-party notices match ${notices.size} installed packages.`);
+  console.log(`License notices match ${notices.size} project and third-party entries.`);
 } else {
   await Bun.write(output, generated);
   console.log(
-    `Generated ${notices.size} third-party notices (${Math.round(generated.length / 1024)} KB).`,
+    `Generated ${notices.size} license notices (${Math.round(generated.length / 1024)} KB).`,
   );
 }
 if (missing.length)

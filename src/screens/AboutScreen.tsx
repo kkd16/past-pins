@@ -1,7 +1,7 @@
 import { isRunningInExpoGo } from 'expo';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import notices from '../../licenses/notices.json';
@@ -13,6 +13,8 @@ import { theme } from '../theme';
 import { subdivisionSource } from '../subdivisions/catalog';
 
 const links = [
+  { label: 'settings.privacyPolicy', href: 'https://kkd16.github.io/past-pins/privacy/' },
+  { label: 'settings.support', href: 'https://kkd16.github.io/past-pins/support/' },
   { label: 'settings.sourceCode', href: 'https://github.com/kkd16/past-pins' },
   { label: 'settings.github', href: 'https://github.com/kkd16' },
   {
@@ -65,6 +67,19 @@ export function AboutScreen() {
           <AboutLink key={href} href={href} label={t(label)} />
         ))}
       </View>
+      <InfoSection title={t('settings.appLicense')}>
+        {t('settings.licenseSummary')}
+      </InfoSection>
+      <AboutLink
+        href={{
+          pathname: '/settings/license',
+          params: {
+            name: 'PastPins',
+            version: notices.find((notice) => notice.name === 'PastPins')!.version,
+          },
+        }}
+        label={t('settings.appLicense')}
+      />
       <InfoSection title={t('settings.mapData')}>
         {t('settings.mapAttribution')}
       </InfoSection>
@@ -116,7 +131,7 @@ function AboutLink({
   href,
   label,
 }: {
-  href: `https://${string}`;
+  href: Href;
   label: string;
 }) {
   return (
