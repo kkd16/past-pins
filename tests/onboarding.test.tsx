@@ -27,10 +27,20 @@ mock.module('../src/components/DataFeedback', () => ({ DataFeedback: 'DataFeedba
 mock.module('../src/stamps/CountryStamp', () => ({ CountryStamp: 'CountryStamp' }));
 mock.module('../src/motion/ReducedMotion', () => ({ useReducedMotion: () => motion.reduced }));
 
-const { RemindersScreen } = await import('../src/screens/RemindersScreen');
+const { default: LocationPermissionRoute } = await import('../src/app/onboarding/location');
+const { default: BackgroundPermissionRoute } = await import('../src/app/onboarding/background');
+const { default: NotificationPermissionRoute } = await import('../src/app/onboarding/notifications');
 const { AppNavigator } = await import('../src/navigation/AppNavigator');
 const { default: WelcomeRoute } = await import('../src/app/onboarding');
 const { default: OnboardingLayout } = await import('../src/app/onboarding/_layout');
+const permissionSteps = [
+  { name: 'location', Screen: LocationPermissionRoute, action: 'onboarding.allowLocation',
+    request: location.requestForegroundPermissionsAsync, next: '/onboarding/background' } as const,
+  { name: 'background', Screen: BackgroundPermissionRoute, action: 'onboarding.allowBackground',
+    request: location.requestBackgroundPermissionsAsync, next: '/onboarding/notifications' } as const,
+  { name: 'notifications', Screen: NotificationPermissionRoute, action: 'onboarding.allowNotifications',
+    request: notifications.requestPermissionsAsync, next: null } as const,
+];
 let root: Root;
 const granted = { granted: true } as NotificationPermissionsStatus;
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -45,8 +55,11 @@ beforeEach(async () => {
   location.hasServicesEnabledAsync.mockReset().mockResolvedValue(true);
   location.requestForegroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   location.requestBackgroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
+  location.getForegroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
+  location.getBackgroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   location.startLocationUpdatesAsync.mockClear();
   notifications.requestPermissionsAsync.mockReset().mockResolvedValue(granted);
+  notifications.getPermissionsAsync.mockReset().mockResolvedValue(granted);
   tasks.isAvailableAsync.mockReset().mockResolvedValue(true);
   haptics.selectionAsync.mockReset().mockResolvedValue(undefined);
   native.useWindowDimensions.mockReset().mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
@@ -91,7 +104,7 @@ function expectStampCount(count: number) {
 test('Welcome can continue without trying a stamp or requesting access', async () => {
   await act(async () => root.render(<WelcomeRoute />));
   await press(t('onboarding.continue'));
-  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/reminders');
+  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/location');
   expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
   expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
@@ -116,9 +129,9 @@ test.each([1, 2])('sample stamps at font scale %s never enter saved travel data,
   expect(stamp('ca').props.accessibilityState.checked).toBe(true);
   expectStampCount(2);
   await press(t('onboarding.continue'));
-  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/reminders');
+  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/location');
   expect(await arrivalStorage.load()).toEqual(saved);
-  await act(async () => root.render(<RemindersScreen />));
+  await act(async () => root.render(<NotificationPermissionRoute />));
   await press(t('location.notNow'));
   expect(await arrivalStorage.load()).toEqual({ ...saved, onboardingCompleted: true });
   expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
@@ -147,11 +160,11 @@ test('stamp feedback honors the haptics preference and tolerates native feedback
   expect(stamp('jp').props.accessibilityState.checked).toBe(true);
   expectStampCount(2);
   await press(t('onboarding.continue'));
-  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/reminders');
+  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/location');
 });
 
-test('Not now saves completion with reminders off and makes no permission requests', async () => {
-  await act(async () => root.render(<RemindersScreen />));
+test.each(permissionSteps)('Not now on $name finishes without requesting any permissions', async ({ Screen }) => {
+  await act(async () => root.render(<Screen />));
   await press(t('location.notNow'));
   expect(await arrivalStorage.load()).toMatchObject({
     onboardingCompleted: true, preferences: { countryArrivalAlerts: false },
@@ -161,15 +174,19 @@ test('Not now saves completion with reminders off and makes no permission reques
   expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
 });
 
-test('opt-in requests permissions in order and persists the choice before monitoring can start', async () => {
+test('each slide requests only its own permission and only the last slide finishes setup', async () => {
   const order: string[] = [];
   notifications.requestPermissionsAsync.mockImplementation(async () => { order.push('notifications'); return granted; });
   location.requestForegroundPermissionsAsync.mockImplementation(async () => { order.push('foreground'); return granted; });
   location.requestBackgroundPermissionsAsync.mockImplementation(async () => { order.push('background'); return granted; });
-  await act(async () => root.render(<RemindersScreen />));
-  expect(order).toEqual([]);
-  await press(t('onboarding.enableReminders'));
-  expect(order).toEqual(['notifications', 'foreground', 'background']);
+  for (const [index, { Screen, action, next }] of permissionSteps.entries()) {
+    await act(async () => root.render(<Screen />));
+    expect(order).toHaveLength(index);
+    await press(t(action));
+    expect(order).toEqual(['foreground', 'background', 'notifications'].slice(0, index + 1));
+    expect(appData.getSnapshot().data.onboardingCompleted).toBe(next === null);
+    if (next) expect(navigation.router.navigate).toHaveBeenLastCalledWith(next);
+  }
   expect(await arrivalStorage.load()).toMatchObject({
     onboardingCompleted: true, preferences: { countryArrivalAlerts: true },
   });
@@ -177,57 +194,156 @@ test('opt-in requests permissions in order and persists the choice before monito
   expect(location.startLocationUpdatesAsync).not.toHaveBeenCalled();
 });
 
-test.each(['notifications', 'foreground', 'background', 'services', 'expo-go', 'native error'])(
-  '%s failure leaves a clear way to continue with reminders off', async (failure) => {
-    if (failure === 'notifications') notifications.requestPermissionsAsync.mockResolvedValue({ granted: false } as NotificationPermissionsStatus);
-    if (failure === 'foreground') location.requestForegroundPermissionsAsync.mockResolvedValue({ granted: false });
-    // Includes Allow Once followed by a silently denied Always request on iOS.
-    if (failure === 'background') location.requestBackgroundPermissionsAsync.mockResolvedValue({ granted: false });
-    if (failure === 'services') location.hasServicesEnabledAsync.mockResolvedValue(false);
-    if (failure === 'expo-go') constants.executionEnvironment = 'storeClient';
-    if (failure === 'native error') notifications.requestPermissionsAsync.mockRejectedValue(new Error('Native error'));
-    await act(async () => root.render(<RemindersScreen />));
-    await press(t('onboarding.enableReminders'));
+test.each(permissionSteps)(
+  'denying $name leaves a way to finish without requesting other permissions', async ({ Screen, action, request }) => {
+    // Background denial also covers iOS silently denying Always after Allow Once.
+    request.mockResolvedValue({ granted: false } as NotificationPermissionsStatus);
+    await act(async () => root.render(<Screen />));
+    await press(t(action));
     expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
     expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(false);
     expect(native.AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenCalledWith(
-      t('onboarding.remindersOff'), { queue: true },
+      t('onboarding.setupLater'), { queue: true },
     );
-    const requests = notifications.requestPermissionsAsync.mock.calls.length;
     await press(t('onboarding.startExploring'));
-    expect(notifications.requestPermissionsAsync.mock.calls.length).toBe(requests);
+    expect(request).toHaveBeenCalledTimes(1);
+    for (const step of permissionSteps)
+      if (step.request !== request) expect(step.request).not.toHaveBeenCalled();
+    expect(navigation.router.navigate).not.toHaveBeenCalled();
     expect(await arrivalStorage.load()).toMatchObject({
       onboardingCompleted: true, preferences: { countryArrivalAlerts: false },
     });
-    if (failure === 'notifications') expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
-    if (failure === 'foreground') expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
   },
 );
 
-test('repeated presses cannot overlap prompts or skip while the opt-in is pending', async () => {
+test.each(permissionSteps)('repeated presses on $name cannot overlap prompts or skip while pending', async ({ Screen, action, request, next }) => {
   const permission = Promise.withResolvers<NotificationPermissionsStatus>();
-  notifications.requestPermissionsAsync.mockReturnValueOnce(permission.promise);
-  await act(async () => root.render(<RemindersScreen />));
-  const enable = button(t('onboarding.enableReminders')).props.onPress;
+  request.mockReturnValueOnce(permission.promise);
+  await act(async () => root.render(<Screen />));
+  const enable = button(t(action)).props.onPress;
   const skip = button(t('location.notNow')).props.onPress;
   await act(async () => { enable(); enable(); skip(); });
-  expect(notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+  expect(request).toHaveBeenCalledTimes(1);
   expect(button(t('onboarding.working')).props.disabled).toBe(true);
   expect(button(t('location.notNow')).props.disabled).toBe(true);
   expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
   await act(async () => permission.resolve(granted));
-  expect(appData.getSnapshot().data.onboardingCompleted).toBe(true);
+  expect(appData.getSnapshot().data.onboardingCompleted).toBe(next === null);
+});
+
+test.each(permissionSteps)('native errors on $name leave setup skippable', async ({ Screen, action, request }) => {
+  request.mockRejectedValueOnce(new Error('Native error'));
+  await act(async () => root.render(<Screen />));
+  await press(t(action));
+  expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
+  await press(t('onboarding.startExploring'));
+  expect((await arrivalStorage.load()).preferences.countryArrivalAlerts).toBe(false);
+  expect(request).toHaveBeenCalledTimes(1);
+  expect(navigation.router.navigate).not.toHaveBeenCalled();
+});
+
+test.each(permissionSteps)('disabled Location Services on $name never starts a permission prompt', async ({ Screen, action }) => {
+  location.hasServicesEnabledAsync.mockResolvedValue(false);
+  await act(async () => root.render(<Screen />));
+  await press(t(action));
+  for (const step of permissionSteps) expect(step.request).not.toHaveBeenCalled();
+  await press(t('onboarding.startExploring'));
+  expect((await arrivalStorage.load()).onboardingCompleted).toBe(true);
+});
+
+test.each(permissionSteps.slice(1))('opening $name without its prerequisite never prompts for another permission', async ({ name, Screen, action }) => {
+  const prerequisite = name === 'background' ? location.getForegroundPermissionsAsync : location.getBackgroundPermissionsAsync;
+  prerequisite.mockResolvedValue({ granted: false });
+  await act(async () => root.render(<Screen />));
+  await press(t(action));
+  for (const step of permissionSteps) expect(step.request).not.toHaveBeenCalled();
+  expect(navigation.router.navigate).not.toHaveBeenCalled();
+  await press(t('onboarding.startExploring'));
+  expect((await arrivalStorage.load()).preferences.countryArrivalAlerts).toBe(false);
+});
+
+test.each(permissionSteps.slice(1))('leaving $name during its prerequisite check prevents a late prompt', async ({ name, Screen, action }) => {
+  const permission = Promise.withResolvers<{ granted: boolean }>();
+  const prerequisite = name === 'background' ? location.getForegroundPermissionsAsync : location.getBackgroundPermissionsAsync;
+  prerequisite.mockReturnValueOnce(permission.promise);
+  await act(async () => root.render(<Screen />));
+  await press(t(action));
+  navigation.focused = false;
+  await act(async () => root.render(<Screen />));
+  await act(async () => permission.resolve({ granted: true }));
+  for (const step of permissionSteps) expect(step.request).not.toHaveBeenCalled();
+  expect(navigation.router.navigate).not.toHaveBeenCalled();
+  expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
+});
+
+test.each(['expo-go', 'task-unavailable'])('unavailable background arrivals in %s do not request access', async (reason) => {
+  if (reason === 'expo-go') constants.executionEnvironment = 'storeClient';
+  else tasks.isAvailableAsync.mockResolvedValue(false);
+  await act(async () => root.render(<BackgroundPermissionRoute />));
+  await press(t('onboarding.allowBackground'));
+  for (const step of permissionSteps) expect(step.request).not.toHaveBeenCalled();
+  await press(t('onboarding.startExploring'));
+  expect((await arrivalStorage.load()).preferences.countryArrivalAlerts).toBe(false);
+});
+
+test('foreground location remains available for the map in Expo Go', async () => {
+  constants.executionEnvironment = 'storeClient';
+  await act(async () => root.render(<LocationPermissionRoute />));
+  await press(t('onboarding.allowLocation'));
+  expect(location.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+  expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
+  expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  expect(navigation.router.navigate).toHaveBeenCalledWith('/onboarding/background');
+});
+
+test.each(['location', 'notifications', 'services', 'read-error'])(
+  'a %s change during the final prompt cannot enable reminders', async (change) => {
+    const permission = Promise.withResolvers<NotificationPermissionsStatus>();
+    notifications.requestPermissionsAsync.mockReturnValueOnce(permission.promise);
+    await act(async () => root.render(<NotificationPermissionRoute />));
+    await press(t('onboarding.allowNotifications'));
+    expect(notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+    if (change === 'location') location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false });
+    if (change === 'notifications') notifications.getPermissionsAsync.mockResolvedValue({ granted: false } as NotificationPermissionsStatus);
+    if (change === 'services') location.hasServicesEnabledAsync.mockResolvedValue(false);
+    if (change === 'read-error') location.getBackgroundPermissionsAsync.mockRejectedValue(new Error('Native error'));
+    await act(async () => permission.resolve(granted));
+    expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
+    expect(button(t('onboarding.startExploring')).props.disabled).toBe(false);
+    await press(t('onboarding.startExploring'));
+    expect(await arrivalStorage.load()).toMatchObject({
+      onboardingCompleted: true, preferences: { countryArrivalAlerts: false },
+    });
+    expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
+  },
+);
+
+test.each(permissionSteps.slice(0, 2))('a failed skip on $name retries saving without requesting access', async ({ Screen }) => {
+  const save = spyOn(arrivalStorage, 'save').mockRejectedValueOnce(new Error('Disk full'));
+  try {
+    await act(async () => root.render(<Screen />));
+    await press(t('location.notNow'));
+    expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
+    await press(t('common.retry'));
+    expect(await arrivalStorage.load()).toMatchObject({
+      onboardingCompleted: true, preferences: { countryArrivalAlerts: false },
+    });
+    for (const step of permissionSteps) expect(step.request).not.toHaveBeenCalled();
+  } finally {
+    save.mockRestore();
+  }
 });
 
 test.each(['blur', 'unmount', 'reset', 'restore'])(
   'leaving a permission request through %s prevents further prompts and stale saves', async (change) => {
     const permission = Promise.withResolvers<NotificationPermissionsStatus>();
     notifications.requestPermissionsAsync.mockReturnValueOnce(permission.promise);
-    await act(async () => root.render(<RemindersScreen />));
-    await press(t('onboarding.enableReminders'));
+    await act(async () => root.render(<NotificationPermissionRoute />));
+    await press(t('onboarding.allowNotifications'));
     if (change === 'blur') {
       navigation.focused = false;
-      await act(async () => root.render(<RemindersScreen />));
+      await act(async () => root.render(<NotificationPermissionRoute />));
     } else if (change === 'unmount') await act(async () => root.render(<></>));
     else if (change === 'reset') await act(async () => appData.resetApp());
     else await act(async () => appData.restore({ ...defaultAppData(), places: { jp: 'visited' } }));
@@ -239,14 +355,15 @@ test.each(['blur', 'unmount', 'reset', 'restore'])(
   },
 );
 
-test('leaving during foreground authorization prevents the Always request', async () => {
+test('leaving during foreground authorization prevents navigation to the Always step', async () => {
   const permission = Promise.withResolvers<{ granted: boolean }>();
   location.requestForegroundPermissionsAsync.mockReturnValueOnce(permission.promise);
-  await act(async () => root.render(<RemindersScreen />));
-  await press(t('onboarding.enableReminders'));
+  await act(async () => root.render(<LocationPermissionRoute />));
+  await press(t('onboarding.allowLocation'));
   await act(async () => root.render(<></>));
   await act(async () => permission.resolve({ granted: true }));
   expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
+  expect(navigation.router.navigate).not.toHaveBeenCalled();
   expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
 });
 
@@ -254,13 +371,13 @@ test.each(['before', 'after'])(
   'a cancelled prompt releases the controls when the screen regains focus %s it settles', async (timing) => {
     const permission = Promise.withResolvers<NotificationPermissionsStatus>();
     notifications.requestPermissionsAsync.mockReturnValueOnce(permission.promise);
-    await act(async () => root.render(<RemindersScreen />));
-    await press(t('onboarding.enableReminders'));
+    await act(async () => root.render(<NotificationPermissionRoute />));
+    await press(t('onboarding.allowNotifications'));
     navigation.focused = false;
-    await act(async () => root.render(<RemindersScreen />));
+    await act(async () => root.render(<NotificationPermissionRoute />));
     if (timing === 'after') await act(async () => permission.resolve(granted));
     navigation.focused = true;
-    await act(async () => root.render(<RemindersScreen />));
+    await act(async () => root.render(<NotificationPermissionRoute />));
     if (timing === 'before') await act(async () => permission.resolve(granted));
     expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(button(t('location.notNow')).props.disabled).toBe(false);
@@ -272,7 +389,7 @@ test.each(['before', 'after'])(
 test('each failed save attempt is announced, including a failed retry', async () => {
   const save = spyOn(arrivalStorage, 'save').mockRejectedValue(new Error('Disk full'));
   try {
-    await act(async () => root.render(<RemindersScreen />));
+    await act(async () => root.render(<NotificationPermissionRoute />));
     await press(t('location.notNow'));
     await press(t('common.retry'));
     expect(native.AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenCalledTimes(2);
@@ -287,14 +404,14 @@ test('a save failure while away remains retryable and is announced only on retur
   const pending = Promise.withResolvers<void>();
   const save = spyOn(arrivalStorage, 'save').mockReturnValueOnce(pending.promise);
   try {
-    await act(async () => root.render(<RemindersScreen />));
+    await act(async () => root.render(<NotificationPermissionRoute />));
     await press(t('location.notNow'));
     navigation.focused = false;
-    await act(async () => root.render(<RemindersScreen />));
+    await act(async () => root.render(<NotificationPermissionRoute />));
     await act(async () => pending.reject(new Error('Disk full')));
     expect(native.AccessibilityInfo.announceForAccessibilityWithOptions).not.toHaveBeenCalled();
     navigation.focused = true;
-    await act(async () => root.render(<RemindersScreen />));
+    await act(async () => root.render(<NotificationPermissionRoute />));
     expect(button(t('common.retry')).props.disabled).toBe(false);
     expect(native.AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenCalledWith(
       t('onboarding.saveError'), { queue: true },
@@ -310,8 +427,8 @@ test('a save failure while away remains retryable and is announced only on retur
 test.each([false, true])('a failed save retries the %s reminder choice without repeating prompts', async (alerts) => {
   const save = spyOn(arrivalStorage, 'save').mockRejectedValueOnce(new Error('Disk full'));
   try {
-    await act(async () => root.render(<RemindersScreen />));
-    await press(alerts ? t('onboarding.enableReminders') : t('location.notNow'));
+    await act(async () => root.render(<NotificationPermissionRoute />));
+    await press(alerts ? t('onboarding.allowNotifications') : t('location.notNow'));
     expect(appData.getSnapshot().data.onboardingCompleted).toBe(false);
     expect(button(t('common.retry')).props.disabled).toBe(false);
     expect(native.AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenCalledWith(
@@ -319,7 +436,8 @@ test.each([false, true])('a failed save retries the %s reminder choice without r
     );
     await press(t('common.retry'));
     expect(notifications.requestPermissionsAsync).toHaveBeenCalledTimes(alerts ? 1 : 0);
-    expect(location.requestBackgroundPermissionsAsync).toHaveBeenCalledTimes(alerts ? 1 : 0);
+    expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
     expect(await arrivalStorage.load()).toMatchObject({
       onboardingCompleted: true, preferences: { countryArrivalAlerts: alerts },
     });
@@ -332,8 +450,8 @@ test('a failed save after denied permissions retries with reminders off', async 
   notifications.requestPermissionsAsync.mockResolvedValue({ granted: false } as NotificationPermissionsStatus);
   const save = spyOn(arrivalStorage, 'save').mockRejectedValueOnce(new Error('Disk full'));
   try {
-    await act(async () => root.render(<RemindersScreen />));
-    await press(t('onboarding.enableReminders'));
+    await act(async () => root.render(<NotificationPermissionRoute />));
+    await press(t('onboarding.allowNotifications'));
     await press(t('onboarding.startExploring'));
     expect(button(t('common.retry')).props.disabled).toBe(false);
     await press(t('common.retry'));

@@ -7,7 +7,6 @@ import { Screen } from '../components/Screen';
 import { ToggleRow } from '../components/ToggleRow';
 import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
-import { isVisited } from '../data/model';
 import { UserFacingError } from '../data/errors';
 import { useToast } from '../feedback/ToastProvider';
 import { formatNumber, t } from '../localization';
@@ -41,7 +40,34 @@ export function SettingsScreen({
   const [operation, setOperation] = useState<DataAction | null>(null);
   const working = operation !== null;
   const disabled = status !== 'ready' || busy || working;
+  const recoveryDisabled = status === 'loading' || busy || working;
   const prefs = data.preferences;
+  const resets = [
+    {
+      name: 'clear',
+      label: 'settings.clearTravel',
+      title: 'settings.clearTravelTitle',
+      message: 'settings.clearTravelMessage',
+      action: clearTravel,
+      success: 'settings.travelCleared',
+    },
+    {
+      name: 'reset',
+      label: 'settings.resetPreferences',
+      title: 'settings.resetTitle',
+      message: 'settings.resetMessage',
+      action: resetPreferences,
+      success: 'settings.preferencesReset',
+    },
+    {
+      name: 'resetApp',
+      label: 'settings.resetApp',
+      title: 'settings.resetAppTitle',
+      message: 'settings.resetAppMessage',
+      action: resetApp,
+      success: null,
+    },
+  ] as const;
 
   function confirm(title: string, message: string, action: string) {
     const isCurrent = guard();
@@ -86,11 +112,6 @@ export function SettingsScreen({
     const isCurrent = guard();
     const backup = await pickBackup();
     if (!backup || !isCurrent()) return;
-    const statuses = Object.values(backup.places);
-    const visited = statuses.filter(isVisited).length;
-    const lived = statuses.filter((value) => value === 'lived').length;
-    const wishlist = statuses.filter((value) => value === 'wishlist').length;
-    const regionStatuses = Object.values(backup.subdivisions);
     const home = backup.homeCountryId
       ? countryById.get(backup.homeCountryId)!.name
       : t('common.none');
@@ -98,16 +119,8 @@ export function SettingsScreen({
       await confirm(
         t('settings.replaceTitle'),
         t('settings.replaceSummary', {
-          visited: formatNumber(visited),
-          lived: formatNumber(lived),
-          wishlist: formatNumber(wishlist),
-          regionsVisited: formatNumber(regionStatuses.filter(isVisited).length),
-          regionsLived: formatNumber(
-            regionStatuses.filter((value) => value === 'lived').length,
-          ),
-          regionsWishlist: formatNumber(
-            regionStatuses.filter((value) => value === 'wishlist').length,
-          ),
+          countries: formatNumber(Object.keys(backup.places).length),
+          regions: formatNumber(Object.keys(backup.subdivisions).length),
           lists: formatNumber(backup.lists.length),
           home,
         }),
@@ -201,7 +214,6 @@ export function SettingsScreen({
         >
           <SettingsRow
             title={t('settings.exportBackup')}
-            value={t('settings.backupContents')}
             disabled={disabled}
             busy={operation === 'export'}
             onPress={() => void run('export', () => shareBackup(data))}
@@ -209,7 +221,7 @@ export function SettingsScreen({
           <SettingsRow
             title={t('settings.restoreBackup')}
             value={t('settings.restoreDescription')}
-            disabled={busy || working || status === 'loading'}
+            disabled={recoveryDisabled}
             busy={operation === 'restore'}
             onPress={() => void run('restore', importBackup)}
           />
@@ -227,67 +239,24 @@ export function SettingsScreen({
           />
         </SettingsSection>
         <SettingsSection title={t('settings.resetAppSection')}>
-          <SettingsRow
-            title={t('settings.clearTravel')}
-            destructive
-            disabled={disabled}
-            busy={operation === 'clear'}
-            onPress={() =>
-              void run('clear', async () => {
-                if (
-                  await confirm(
-                    t('settings.clearTravelTitle'),
-                    t('settings.clearTravelMessage'),
-                    t('settings.clearTravel'),
-                  )
-                ) {
-                  await clearTravel();
-                  showToast({ message: t('settings.travelCleared') });
-                }
-              })
-            }
-          />
-          <SettingsRow
-            title={t('settings.resetPreferences')}
-            disabled={disabled}
-            busy={operation === 'reset'}
-            onPress={() =>
-              void run('reset', async () => {
-                if (
-                  await confirm(
-                    t('settings.resetTitle'),
-                    t('settings.resetMessage'),
-                    t('settings.resetPreferences'),
-                  )
-                ) {
-                  resetPreferences();
-                  showToast({ message: t('settings.preferencesReset') });
-                }
-              })
-            }
-          />
-          <SettingsRow
-            title={t('settings.resetApp')}
-            value={t('settings.resetAppDescription')}
-            destructive
-            disabled={busy || working || status === 'loading'}
-            busy={operation === 'resetApp'}
-            onPress={() =>
-              void run('resetApp', async () => {
-                if (
-                  await confirm(
-                    t('settings.resetAppTitle'),
-                    t('settings.resetAppMessage'),
-                    t('settings.resetApp'),
-                  )
-                ) {
-                  await resetApp();
+          {resets.map(({ name, label, title, message, action, success }) => (
+            <SettingsRow
+              key={name}
+              title={t(label)}
+              destructive={name !== 'reset'}
+              disabled={name === 'resetApp' ? recoveryDisabled : disabled}
+              busy={operation === name}
+              onPress={() => void run(name, async () => {
+                if (!await confirm(t(title), t(message), t(label))) return;
+                await action();
+                if (success) showToast({ message: t(success) });
+                else {
                   const currentToast = toast.getSnapshot();
                   if (currentToast) toast.dismissToast(currentToast.id);
                 }
-              })
-            }
-          />
+              })}
+            />
+          ))}
         </SettingsSection>
       </ScrollView>
     </Screen>

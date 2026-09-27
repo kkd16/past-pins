@@ -21,23 +21,47 @@ export async function arrivalPermissionsGranted() {
     notificationsAllowed(await Notifications.getPermissionsAsync());
 }
 
-export async function requestArrivalPermissions(isCurrent: () => boolean = () => true) {
-  if (!isCurrent()) return;
-  if (!(await arrivalMonitoringAvailable())) throw new UserFacingError(t('location.arrivalBuildRequired'));
+export type ArrivalPermission = 'location' | 'background' | 'notifications';
+
+/** Request one permission without implicitly prompting for its prerequisites. */
+export async function requestArrivalPermission(
+  permission: ArrivalPermission,
+  isCurrent: () => boolean = () => true,
+) {
   if (!isCurrent()) return;
   if (!(await Location.hasServicesEnabledAsync()))
     throw new UserFacingError(t('location.servicesDisabled'));
   if (!isCurrent()) return;
-  const notifications = await Notifications.requestPermissionsAsync({
-    ios: { allowAlert: true, allowSound: true, allowBadge: false },
-  });
+
+  if (permission !== 'location') {
+    if (!(await arrivalMonitoringAvailable()))
+      throw new UserFacingError(t('location.arrivalBuildRequired'));
+    if (!isCurrent()) return;
+    // A deep link or revoked permission must not trigger an earlier step's prompt.
+    const prerequisite = permission === 'background'
+      ? await Location.getForegroundPermissionsAsync()
+      : await Location.getBackgroundPermissionsAsync();
+    if (!isCurrent()) return;
+    if (!prerequisite.granted) throw new UserFacingError(t('location.arrivalPermissions'));
+  }
+
+  let granted: boolean;
+  if (permission === 'notifications') {
+    granted = notificationsAllowed(await Notifications.requestPermissionsAsync({
+      ios: { allowAlert: true, allowSound: true, allowBadge: false },
+    }));
+  } else if (permission === 'location') {
+    granted = (await Location.requestForegroundPermissionsAsync()).granted;
+  } else {
+    granted = (await Location.requestBackgroundPermissionsAsync()).granted;
+  }
+  if (isCurrent() && !granted) throw new UserFacingError(t('location.arrivalPermissions'));
+}
+
+/** Settings can request all prerequisites after an explicit reminder opt-in. */
+export async function requestArrivalPermissions(isCurrent: () => boolean = () => true) {
   if (!isCurrent()) return;
-  if (!notificationsAllowed(notifications))
-    throw new UserFacingError(t('location.arrivalPermissions'));
-  const foreground = await Location.requestForegroundPermissionsAsync();
-  if (!isCurrent()) return;
-  if (!foreground.granted) throw new UserFacingError(t('location.arrivalPermissions'));
-  const background = await Location.requestBackgroundPermissionsAsync();
-  if (!isCurrent()) return;
-  if (!background.granted) throw new UserFacingError(t('location.arrivalPermissions'));
+  if (!(await arrivalMonitoringAvailable())) throw new UserFacingError(t('location.arrivalBuildRequired'));
+  for (const permission of ['location', 'background', 'notifications'] as const)
+    await requestArrivalPermission(permission, isCurrent);
 }

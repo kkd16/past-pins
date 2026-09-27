@@ -13,7 +13,7 @@ export function OnboardingPage({
   children,
   actions,
 }: {
-  step: 1 | 2;
+  step: 1 | 2 | 3 | 4;
   title: string;
   description: string;
   children: ReactNode;
@@ -27,11 +27,12 @@ export function OnboardingPage({
       >
         <View style={styles.progress}>
           <AppText variant="caption" tone="muted">
-            {t('onboarding.step', { current: formatNumber(step), total: formatNumber(2) })}
+            {t('onboarding.step', { current: formatNumber(step), total: formatNumber(4) })}
           </AppText>
           <View style={styles.track} accessibilityElementsHidden>
-            <View style={[styles.segment, styles.filled]} />
-            <View style={[styles.segment, step === 2 && styles.filled]} />
+            {[1, 2, 3, 4].map((value) => (
+              <View key={value} style={[styles.segment, value <= step && styles.filled]} />
+            ))}
           </View>
         </View>
         <View style={styles.body}>

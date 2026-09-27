@@ -8,6 +8,7 @@ import {
   MAX_LIST_NAME_LENGTH,
 } from '../src/data/model';
 import { validateAppData } from '../src/data/validation';
+import { t } from '../src/localization';
 import { subdivisionIds } from '../src/subdivisions/catalog';
 
 function countryOnlyData() {
@@ -64,7 +65,7 @@ describe('current backup format', () => {
   });
 
   test('rejects non-JSON input', () => {
-    expect(() => decodeBackup('this is not JSON')).toThrow('valid JSON');
+    expect(() => decodeBackup('this is not JSON')).toThrow(t('common.errors.invalidJson'));
   });
 
   test('requires a boolean onboarding flag in the current snapshot and backup', () => {

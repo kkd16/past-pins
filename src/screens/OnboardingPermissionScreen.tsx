@@ -1,33 +1,57 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
-import { countryById } from '../countries/catalog';
 import { appData } from '../data/app-data';
 import { useAppData } from '../data/AppDataProvider';
-import { language, t } from '../localization';
-import { requestArrivalPermissions } from '../location/arrival-permissions';
+import { t } from '../localization';
+import { arrivalPermissionsGranted, requestArrivalPermission, type ArrivalPermission } from '../location/arrival-permissions';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { OnboardingPage } from '../onboarding/OnboardingPage';
 import { theme } from '../theme';
 
-const previewCountry = countryById.get('jp')!.name;
+const steps = {
+  location: {
+    number: 2,
+    title: 'onboarding.locationTitle',
+    description: 'onboarding.locationDescription',
+    action: 'onboarding.allowLocation',
+    icon: 'location',
+    next: '/onboarding/background',
+  },
+  background: {
+    number: 3,
+    title: 'onboarding.backgroundTitle',
+    description: 'onboarding.backgroundDescription',
+    action: 'onboarding.allowBackground',
+    icon: 'pin',
+    next: '/onboarding/notifications',
+  },
+  notifications: {
+    number: 4,
+    title: 'onboarding.notificationsTitle',
+    description: 'onboarding.notificationsDescription',
+    action: 'onboarding.allowNotifications',
+    icon: 'bell',
+    next: null,
+  },
+} as const;
 
 type SetupState =
   | { status: 'offer' | 'working' | 'off' }
   | { status: 'retry'; reminders: boolean };
 
 const actionLabels = {
-  offer: 'onboarding.enableReminders',
   working: 'onboarding.working',
   off: 'onboarding.startExploring',
   retry: 'common.retry',
 } as const;
 
-export function RemindersScreen() {
+export function OnboardingPermissionScreen({ permission }: { permission: ArrivalPermission }) {
+  const step = steps[permission];
   const app = useAppData();
   const guard = useActionGuard(app.data);
   const running = useRef(false);
@@ -35,14 +59,14 @@ export function RemindersScreen() {
   const working = setup.status === 'working';
   const message = setup.status === 'retry'
     ? t('onboarding.saveError')
-    : setup.status === 'off' ? t('onboarding.remindersOff') : null;
+    : setup.status === 'off' ? t('onboarding.setupLater') : null;
 
   useFocusEffect(useCallback(() => {
     if (message)
       AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
   }, [message]));
 
-  async function finish(enableReminders: boolean) {
+  async function finish(requestPermission: boolean) {
     if (running.current || app.busy || app.status !== 'ready') return;
     const focused = guard();
     const isCurrent = () => focused() && appData.getSnapshot().data === app.data;
@@ -50,10 +74,20 @@ export function RemindersScreen() {
     running.current = true;
     setSetup({ status: 'working' });
     let next: SetupState = { status: 'offer' };
+    let enableReminders = setup.status === 'retry' && setup.reminders;
     try {
-      if (enableReminders && setup.status !== 'retry') {
+      if (requestPermission && setup.status !== 'retry') {
         try {
-          await requestArrivalPermissions(isCurrent);
+          await requestArrivalPermission(permission, isCurrent);
+          if (!isCurrent()) return;
+          if (step.next) {
+            router.navigate(step.next);
+            return;
+          }
+          // Recheck after the final prompt in case access changed while it was open.
+          enableReminders = await arrivalPermissionsGranted();
+          if (isCurrent() && !enableReminders) next = { status: 'off' };
+          if (!enableReminders) return;
         } catch {
           if (isCurrent()) next = { status: 'off' };
           return;
@@ -77,17 +111,17 @@ export function RemindersScreen() {
 
   return (
     <OnboardingPage
-      step={2}
-      title={t('onboarding.remindersTitle')}
-      description={t('onboarding.remindersDescription')}
+      step={step.number}
+      title={t(step.title)}
+      description={t(step.description)}
       actions={
         <>
           {message && <AppText>{message}</AppText>}
           <Button
-            label={t(actionLabels[setup.status])}
+            label={t(setup.status === 'offer' ? step.action : actionLabels[setup.status])}
             disabled={disabled}
             accessibilityState={{ busy: working }}
-            onPress={() => void finish(setup.status === 'retry' ? setup.reminders : setup.status !== 'off')}
+            onPress={() => void finish(setup.status !== 'off')}
           />
           {setup.status !== 'off' && setup.status !== 'retry' && (
             <Button
@@ -100,26 +134,21 @@ export function RemindersScreen() {
         </>
       }
     >
-      <View style={styles.preview} accessible accessibilityLanguage={language}>
-        <View style={styles.previewHeading}>
-          <Icon name="pin" color={theme.color.accent} />
-          <AppText variant="caption" tone="muted" style={styles.previewLabel}>
-            {t('onboarding.reminderPreview')}
-          </AppText>
-        </View>
-        <AppText variant="heading">
-          {t('location.arrivalTitle', { country: previewCountry })}
-        </AppText>
-        <AppText>{t('location.arrivalBody', { country: previewCountry })}</AppText>
+      <View style={styles.illustration} accessibilityElementsHidden>
+        <Icon name={step.icon} size={72} color={theme.color.accent} />
       </View>
-      <AppText tone="muted">{t('onboarding.permissions')}</AppText>
-      <AppText variant="caption" tone="muted">{t('onboarding.optional')}</AppText>
     </OnboardingPage>
   );
 }
 
 const styles = StyleSheet.create({
-  preview: { ...theme.surface.floating, padding: theme.space.lg, gap: theme.space.sm },
-  previewHeading: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
-  previewLabel: { flex: 1 },
+  illustration: {
+    alignSelf: 'center',
+    width: 144,
+    height: 144,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.color.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

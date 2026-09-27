@@ -1,6 +1,6 @@
 {
   "title": "Stamp collection",
-  "description": "Collect stamps as you visit countries.",
+  "description": "Each visited country earns a stamp.",
   "progress": "%{collected} of %{total} stamps collected",
   "collectionLabel": "Stamp collection, %{collected} of %{total} collected",
   "count": {
@@ -20,13 +20,13 @@
   "openStamp": "Opens country details and stamp",
   "openCollection": "Open stamp collection",
   "emptyTitle": "Start your collection",
-  "emptyHint": "Mark a country as Visited or Lived to collect its stamp.",
+  "emptyHint": "Mark a country Visited or Lived to collect a stamp.",
   "browseCountries": "Browse countries",
   "noResults": "No stamps found",
   "noResultsHint": "Try another country or filter.",
   "completeTitle": "Every stamp collected",
-  "completeHint": "You’ve collected stamps for every country and territory.",
-  "coverage": "Stamps represent countries and territories, not regions.",
+  "completeHint": "Every country and territory, stamped.",
+  "coverage": "Stamps cover countries and territories.",
   "enlargeStamp": "Enlarge stamp for %{country}",
   "artworkLabel": "Stamp for %{country}, %{status}"
 }

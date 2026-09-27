@@ -44,6 +44,7 @@ beforeEach(async () => {
   location.hasServicesEnabledAsync.mockReset().mockResolvedValue(true);
   location.requestForegroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   location.requestBackgroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
+  location.getForegroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   location.getBackgroundPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   location.hasStartedLocationUpdatesAsync.mockReset().mockResolvedValue(false);
   location.startLocationUpdatesAsync.mockReset().mockResolvedValue();
@@ -97,12 +98,17 @@ function ArrivalRuntime() {
   return <><ArrivalAlertsSetting disabled={false} /><CountryArrivalNotifications /></>;
 }
 
-test('permissions are requested only by opting in, in notification/foreground/background order', async () => {
+test('Settings opt-in requests location before notifications and never starts monitoring itself', async () => {
+  const order: string[] = [];
+  location.requestForegroundPermissionsAsync.mockImplementation(async () => { order.push('foreground'); return granted; });
+  location.requestBackgroundPermissionsAsync.mockImplementation(async () => { order.push('background'); return granted; });
+  notifications.requestPermissionsAsync.mockImplementation(async () => { order.push('notifications'); return granted; });
   await syncArrivalMonitoring();
   expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
   expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
   await requestArrivalPermissions();
+  expect(order).toEqual(['foreground', 'background', 'notifications']);
   expect(notifications.requestPermissionsAsync).toHaveBeenCalledWith({
     ios: { allowAlert: true, allowSound: true, allowBadge: false },
   });
@@ -121,8 +127,9 @@ test.each(['notifications', 'foreground', 'background', 'services', 'expo-go'])(
     await expect(requestArrivalPermissions()).rejects.toThrow();
     expect(location.startLocationUpdatesAsync).not.toHaveBeenCalled();
     expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(false);
-    if (reason === 'notifications' || reason === 'services' || reason === 'expo-go')
+    if (reason === 'services' || reason === 'expo-go')
       expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    if (reason !== 'notifications') expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
   },
 );
 
@@ -149,7 +156,7 @@ test('headless locations use the shared saved statuses and produce localized not
   expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
   expect(notifications.scheduleNotificationAsync.mock.calls[0][0]).toMatchObject({
     content: { title: t('location.arrivalTitle', { country: 'France' }),
-      body: t('location.arrivalBody', { country: 'France' }), data: { type: 'country-arrival', countryId: 'fr' } },
+      body: t('location.arrivalBody'), data: { type: 'country-arrival', countryId: 'fr' } },
     trigger: null,
   });
   expect(appData.getSnapshot().data.places.fr).toBeUndefined();

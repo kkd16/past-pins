@@ -8,6 +8,7 @@ export const location = {
   hasServicesEnabledAsync: mock(async () => true),
   requestForegroundPermissionsAsync: mock(async () => ({ granted: true })),
   requestBackgroundPermissionsAsync: mock(async () => ({ granted: true })),
+  getForegroundPermissionsAsync: mock(async () => ({ granted: true })),
   getBackgroundPermissionsAsync: mock(async () => ({ granted: true })),
   getCurrentPositionAsync: mock(async () => ({
     timestamp: Date.now(), coords: { longitude: -75.69, latitude: 45.42 },

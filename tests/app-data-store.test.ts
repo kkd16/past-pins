@@ -6,6 +6,7 @@ import {
   type AppData,
 } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
+import { t } from '../src/localization';
 import { subdivisionIds } from '../src/subdivisions/catalog';
 import {
   createSnapshotStorage,
@@ -341,14 +342,15 @@ describe('app data owner', () => {
     expect(store.renameList('missing', '')).toBe(false);
     expect(store.setListPlaces('missing', ['unknown'])).toBe(false);
     expect(store.deleteList('missing')).toBe(false);
+    const invalidName = t('common.errors.invalidListName', { count: MAX_LIST_NAME_LENGTH });
     for (const name of [
       '',
       '   ',
       'Two\nlines',
       'x'.repeat(MAX_LIST_NAME_LENGTH + 1),
     ]) {
-      expect(() => store.createList(name)).toThrow('list name');
-      expect(() => store.renameList(id, name)).toThrow('list name');
+      expect(() => store.createList(name)).toThrow(invalidName);
+      expect(() => store.renameList(id, name)).toThrow(invalidName);
     }
     expect(() => store.createList('Invalid', ['ca', 'unknown'])).toThrow(
       'unknown',

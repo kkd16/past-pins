@@ -87,7 +87,7 @@
     "continentProgress": "%{name}: %{visited} of %{total} countries visited",
     "progress": "%{visited} of %{total} countries",
     "progressValue": "%{visited} of %{total} countries, %{percent}",
-    "explanation": "Counts countries and territories, not land area. Lived counts as Visited."
+    "explanation": "Includes territories. Lived counts as Visited."
   },
   "loadingPlaces": "Loading your places",
   "loadError": "Couldn’t load your places.",

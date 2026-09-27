@@ -27,7 +27,7 @@ export const arrivalTracker = createArrivalTracker(appStorage, appData.getSnapsh
     return Notifications.scheduleNotificationAsync({
       content: {
         title: t('location.arrivalTitle', { country }),
-        body: t('location.arrivalBody', { country }),
+        body: t('location.arrivalBody'),
         data: { type: ARRIVAL_TYPE, ...arrival },
         sound: 'default',
       },

@@ -39,7 +39,14 @@ export function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
     >
       <View style={styles.playground}>
         <View style={styles.heading}>
-          <AppText variant="heading">{t('onboarding.tryStamp')}</AppText>
+          <AppText variant="heading">
+            {collected.length === 0
+              ? t('onboarding.tapToStamp')
+              : t('onboarding.stampsCollected', {
+                count: collected.length,
+                amount: formatNumber(collected.length),
+              })}
+          </AppText>
           <AppText variant="caption" tone="muted">{t('onboarding.previewOnly')}</AppText>
         </View>
         <View style={[styles.stamps, largeText && styles.stampsLarge]}>
@@ -74,14 +81,6 @@ export function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
             );
           })}
         </View>
-        <AppText variant="label" tone="accent" style={styles.feedback}>
-          {collected.length === 0
-            ? t('onboarding.tapToStamp')
-            : t('onboarding.stampsCollected', {
-              count: collected.length,
-              amount: formatNumber(collected.length),
-            })}
-        </AppText>
       </View>
     </OnboardingPage>
   );
@@ -98,5 +97,4 @@ const styles = StyleSheet.create({
   artworkLarge: { width: 64, flexShrink: 0 },
   country: { textAlign: 'center' },
   countryLarge: { flex: 1, textAlign: 'auto' },
-  feedback: { textAlign: 'center' },
 });

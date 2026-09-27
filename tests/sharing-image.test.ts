@@ -7,43 +7,21 @@ import { encodeBackup } from '../src/data/backup';
 import { defaultAppData } from '../src/data/model';
 import { t } from '../src/localization';
 import { subdivisionIds } from '../src/subdivisions/catalog';
+import { backupFile, sharing } from './native-sharing';
 
 const capture = mock(
   async (_view: View, _options: CaptureOptions) =>
     '/tmp/ReactNative/capture.png',
 );
 const release = mock((_uri: string) => {});
-const available = mock(async () => true);
-const present = mock(async (_uri: string, _options: unknown) => {});
+const available = sharing.isAvailableAsync;
+const present = sharing.shareAsync;
 const measureCard = mock<View['measure']>();
 const view = { measure: measureCard } as unknown as View;
-const backupFile = {
-  uri: 'file:///cache/backup.json',
-  exists: true,
-  size: 0,
-  text: mock<() => Promise<string>>(),
-  delete() {},
-};
 
 mock.module('react-native-view-shot', () => ({
   captureRef: capture,
   releaseCapture: release,
-}));
-mock.module('expo-sharing', () => ({
-  isAvailableAsync: available,
-  shareAsync: present,
-}));
-mock.module('expo-document-picker', () => ({
-  getDocumentAsync: async () => ({
-    canceled: false,
-    assets: [{ uri: backupFile.uri, name: 'backup.json', lastModified: 0 }],
-  }),
-}));
-mock.module('expo-file-system', () => ({
-  File: function () {
-    return backupFile;
-  },
-  Paths: { cache: { uri: 'file:///cache/' } },
 }));
 const { shareCardImage } = await import('../src/sharing/share-image');
 const { pickBackup } = await import('../src/settings/backup-files');

@@ -1,6 +1,5 @@
 import { Stack } from 'expo-router';
 
-import { t } from '../../localization';
 import { useStackScreenOptions } from '../../navigation/useStackScreenOptions';
 
 export const unstable_settings = { initialRouteName: 'index' };
@@ -8,9 +7,11 @@ export const unstable_settings = { initialRouteName: 'index' };
 export default function OnboardingLayout() {
   const screenOptions = useStackScreenOptions();
   return (
-    <Stack screenOptions={screenOptions}>
+    <Stack screenOptions={{ ...screenOptions, title: '' }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="reminders" options={{ title: t('location.arrivalSettingsTitle') }} />
+      <Stack.Screen name="location" />
+      <Stack.Screen name="background" />
+      <Stack.Screen name="notifications" />
     </Stack>
   );
 }
