@@ -5,7 +5,7 @@ import type { NotificationPermissionsStatus, NotificationResponse } from 'expo-n
 
 import { t } from '../src/localization';
 import { native, navigation } from './setup';
-import { arrivalDatabase, arrivalStorage, constants, location, notifications, notificationState, tasks } from './native-location';
+import { arrivalDatabase, arrivalStorage, constants, diagnosticLog, location, notifications, notificationState, tasks } from './native-location';
 
 const { appData } = await import('../src/data/app-data');
 const showToast = mock();
@@ -292,6 +292,26 @@ test('confirmation uses the existing save and Undo flow; cancel never edits', as
   expect(appData.getSnapshot().data.places.ca).toBeUndefined();
   await act(async () => root.render(<Confirmation />));
   expect(native.Alert.alert).toHaveBeenCalledTimes(1);
+});
+
+test('a failed arrival confirmation records safe diagnostics without logging the raw error', async () => {
+  await makeArrival();
+  await diagnosticLog.clear();
+  const read = spyOn(arrivalStorage, 'getItem').mockRejectedValue(new Error('private arrival details'));
+  const warning = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await act(async () => root.render(<Confirmation />));
+    expect(native.Alert.alert).not.toHaveBeenCalled();
+    expect(warning).not.toHaveBeenCalled();
+    const text = await diagnosticLog.export();
+    expect(JSON.parse(text).events).toContainEqual(
+      expect.objectContaining({ operation: 'reminders', code: 'unexpected' }),
+    );
+    expect(text).not.toContain('private arrival details');
+  } finally {
+    read.mockRestore();
+    warning.mockRestore();
+  }
 });
 
 test.each(['blur', 'reset', 'restore', 'lived'])(

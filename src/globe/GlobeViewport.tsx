@@ -21,6 +21,7 @@ import { useViewportLifecycle } from '../atlas/useViewportLifecycle';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { t } from '../localization';
+import { diagnostics } from '../recovery/diagnostics-file';
 import { theme } from '../theme';
 import type { GlobeCamera } from './camera';
 import { GlobeController } from './controller';
@@ -40,7 +41,7 @@ export function GlobeViewport({
   const [, update] = useState(0);
   const [sized, setSized] = useState(false);
   const fail = useCallback((error: unknown) => {
-    console.warn('Globe rendering failed', error);
+    diagnostics.record('render', error);
     setFailed(true);
   }, []);
   const [controller] = useState(() => new GlobeController(fail, camera));

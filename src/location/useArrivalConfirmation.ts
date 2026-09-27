@@ -6,6 +6,7 @@ import { countryById } from '../countries/catalog';
 import { useAppData } from '../data/AppDataProvider';
 import { isVisited } from '../data/model';
 import { t } from '../localization';
+import { diagnostics } from '../recovery/diagnostics-file';
 import { ARRIVAL_TYPE, arrivalDataReady, parseArrival } from './arrivals';
 import { arrivalTracker } from './arrival-notifications';
 
@@ -34,7 +35,7 @@ export function useArrivalConfirmation(countryId: string, token: string | undefi
           } },
         ],
       );
-    }).catch((error) => console.warn('Could not confirm country arrival:', error));
+    }).catch((error) => diagnostics.record('reminders', error));
     return () => { cancelled = true; };
   }, [ready, data, setStatus, countryId, token]));
 }
