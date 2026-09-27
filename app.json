@@ -27,6 +27,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cb45cd45-ff76-42b1-878a-a548b611d249"
+      }
+    },
+    "owner": "kyle.deliyannides"
   }
 }
