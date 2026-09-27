@@ -231,7 +231,7 @@ cannot guarantee App Review approval or legal compliance.
 
 ### Build and submit
 
-Choose a permanent iOS bundle identifier and configure the EAS project, Apple team, and App Store Connect app before distributing builds. These account choices are intentionally not committed yet. Never commit signing credentials.
+The iOS bundle identifier is `io.github.kkd16.pastpins`, configured in [app.json](app.json). Confirm its availability when registering the App ID, then use the same identifier for the Apple team, signing configuration, and App Store Connect app. EAS project setup and Apple registration remain pending. Never commit signing credentials.
 
 ```sh
 bunx eas-cli login

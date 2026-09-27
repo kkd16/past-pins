@@ -11,6 +11,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
+      "bundleIdentifier": "io.github.kkd16.pastpins",
       "supportsTablet": false
     },
     "plugins": [
