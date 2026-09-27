@@ -6,6 +6,7 @@ iPad is unsupported by design. Keep `ios.supportsTablet` set to `false`. Do not 
 
 - Prefer native iOS controls and documented Expo, React Native, and library defaults. Reuse existing helpers before adding dependencies, wrappers, or custom state.
 - Fix demonstrated problems at their source. Explain the reason for each behavior change, add regression coverage for data and async failures where practical, and report native checks that could not be run.
+- Keep code free of comments. Put architectural explanations and development guidance in documentation.
 
 ## Command-first project changes
 
@@ -27,12 +28,12 @@ Expo ships breaking changes every SDK release. APIs you remember are likely rena
 Use Bun commands in this repository (`bun.lock` is present).
 
 ```bash
-bunx expo install <package>  # ALWAYS use for app dependencies — resolves SDK-compatible versions
-bunx expo start --ios        # start the iOS dev server
-bunx expo lint               # lint
-bunx tsc --noEmit            # typecheck
-bunx expo-doctor             # diagnose dependency and config issues
-bunx expo install --fix      # fix incompatible package versions
+bunx expo install <package>
+bunx expo start --ios
+bunx expo lint
+bunx tsc --noEmit
+bunx expo-doctor
+bunx expo install --fix
 ```
 
 Run lint and typecheck before declaring any task done.
@@ -43,12 +44,12 @@ Run lint and typecheck before declaring any task done.
 - Do not push if verification fails or cannot complete. Fix the issue and rerun the full gate; individual checks or an earlier CI result do not replace it. Do not skip checks or suppress failures.
 - GitHub Actions must call the same `bun run verify` command. Keep the shared flow in `scripts/verify.sh` and the package scripts it invokes; do not duplicate its check list in workflow YAML or another runner.
 
-## Released data and upgrades
+## Data and release status
 
-- The current app is the v1 baseline. Follow [development.md](development.md) for migrations, recovery, and the TestFlight → App Store release process.
-- Never rewrite released schemas, defaults, ID contracts, fixtures, or migration steps. Add a consecutive version and a pure forward migration, retaining every supported historical path. Saved documents and imported backups must use the same decoder.
+- The app is unreleased and has no users. Update the current schema, defaults, IDs, routes, and fixtures directly when needed. Remove obsolete paths; do not retain or add backwards-compatibility shims, legacy parsers, aliases, or migrations for unreleased formats. Follow [development.md](development.md) for recovery and the TestFlight → App Store release process.
+- Saved documents and imported backups must use the same decoder. Once builds are distributed to testers or users, preserve their released contracts and add forward migrations for subsequent data changes.
 - Preserve unknown/future or corrupt user documents until an explicit recovery action. Never silently clear data or drop unknown geographic IDs. Audit stored IDs and list membership before catalog changes.
-- Preserve the atomic checkpoint-plus-document transaction and the serialized storage queue. Cover migration/import failures, interrupted transactions, repeated loads, skipped releases, and stale asynchronous actions when changing persistence.
+- Preserve the atomic checkpoint-plus-document transaction and the serialized storage queue. Cover import failures, interrupted transactions, repeated loads, and stale asynchronous actions when changing persistence. Add migration coverage when a released format actually needs upgrading.
 - New app-owned storage needs an explicit backup/reset policy, native cold-reset ownership when relevant, and regression coverage. Diagnostics must remain bounded, local, and free of raw errors or user data.
 - Native recovery changes require a new iPhone build and physical-device cold-launch/reset checks; Expo Go and JavaScript tests cannot validate the safeguard.
 

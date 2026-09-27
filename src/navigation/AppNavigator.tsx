@@ -2,8 +2,8 @@ import { Stack } from 'expo-router';
 
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
-import { useAppData } from '../data/AppDataProvider';
-import { appData } from '../data/app-data';
+import { appData as store } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { RecoveryScreen } from '../recovery/RecoveryScreen';
 import { t } from '../localization';
 import { useStackScreenOptions } from './useStackScreenOptions';
@@ -14,13 +14,14 @@ const sheetOptions = {
 } as const;
 
 export function AppNavigator() {
-  const { status, data } = useAppData();
+  const status = useAppData((snapshot) => snapshot.status);
+  const onboardingCompleted = useAppData((snapshot) => snapshot.data.onboardingCompleted);
   const screenOptions = useStackScreenOptions();
   if (status === 'loading') return <Screen><DataFeedback /></Screen>;
 
-  if (status === 'load-error') return <RecoveryScreen store={appData} />;
+  if (status === 'load-error') return <RecoveryScreen store={store} />;
 
-  const welcome = status === 'ready' && !data.onboardingCompleted;
+  const welcome = status === 'ready' && !onboardingCompleted;
   return (
     <Stack screenOptions={screenOptions}>
       <Stack.Protected guard={!welcome}>

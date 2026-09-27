@@ -1,10 +1,8 @@
-import { encodeBackup } from '../src/data/backup';
+import { encodeDocument } from '../src/data/document';
 import { Database } from 'bun:sqlite';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { defaultAppData, type AppData } from '../src/data/model';
-import { createDocumentCodec } from '../src/data/document';
-import { validateV1 } from '../src/data/schemas/v1';
 import { subdivisionIds } from '../src/subdivisions/catalog';
 import {
   createSnapshotStorage,
@@ -232,63 +230,28 @@ describe('atomic snapshot storage', () => {
     await keyValue.setItem('app-data', '{broken');
     await expect(storage.load()).rejects.toThrow();
     expect(await keyValue.getItem('app-data')).toBe('{broken');
-    await keyValue.setItem('app-data', encodeBackup(defaultAppData()));
+    await keyValue.setItem('app-data', encodeDocument(defaultAppData()));
     expect(await storage.load()).toEqual(defaultAppData());
   });
 });
 
-describe('upgrade checkpoints', () => {
-  test.each(['throw', 'invalid-output'] as const)('migration %s preserves the original document and every checkpoint', async (failure) => {
+describe('restore checkpoints', () => {
+  test('invalid replacement data preserves both records and permits a later restore', async () => {
     const { storage, keyValue } = fixture();
-    const data = defaultAppData();
-    data.places.ca = 'visited';
-    const original = `${encodeBackup(data)}\n`;
-    await keyValue.setItem('app-data', original);
-    await storage.save(data, { checkpoints: 'create' });
-    await keyValue.setItem('app-data', original);
+    const initial = defaultAppData();
+    initial.places.ca = 'visited';
+    await storage.save(initial);
+    await storage.save(initial, { checkpoints: 'create' });
+    const document = await storage.readRaw();
     const history = await keyValue.getItem('data-checkpoints');
-    let fail = true;
-    const codec = createDocumentCodec<AppData>([
-      { version: 1, validate: validateV1 },
-      { version: 2, validate: validateV1, upgrade(value) {
-        if (fail && failure === 'throw') throw new Error('Migration bug');
-        if (fail) return { unexpected: true };
-        const next = validateV1(value);
-        next.preferences.haptics = false;
-        return next;
-      } },
-    ]);
-    const upgrade = createSnapshotStorage(keyValue, codec);
-    await expect(upgrade.load()).rejects.toThrow('migration-failed');
-    expect(await upgrade.readRaw()).toBe(original);
+    await expect(storage.save({ ...initial, places: { unknown: 'visited' } }, {
+      checkpoints: 'create',
+    })).rejects.toThrow('invalid-document');
+    expect(await storage.readRaw()).toBe(document);
     expect(await keyValue.getItem('data-checkpoints')).toBe(history);
-    fail = false;
-    expect((await upgrade.load()).preferences.haptics).toBe(false);
-    expect((await upgrade.listCheckpoints())[0]).toMatchObject({ document: original, reason: 'migration' });
-    const committed = await keyValue.getItem('data-checkpoints');
-    await upgrade.load();
-    expect(await keyValue.getItem('data-checkpoints')).toBe(committed);
-  });
-
-  test('a failed migration transaction rolls back the primary and history before retry', async () => {
-    const { storage, keyValue, database } = fixture();
-    await storage.save(defaultAppData());
     await storage.save(defaultAppData(), { checkpoints: 'create' });
-    const original = await storage.readRaw();
-    const history = await keyValue.getItem('data-checkpoints');
-    const codec = createDocumentCodec<AppData>([
-      { version: 1, validate: validateV1 },
-      { version: 2, validate: validateV1, upgrade: validateV1 },
-    ]);
-    const upgrade = createSnapshotStorage(keyValue, codec);
-    database.exec("CREATE TRIGGER fail_migration BEFORE UPDATE ON kv WHEN NEW.key = 'data-checkpoints' BEGIN SELECT RAISE(ABORT, 'disk full'); END");
-    await expect(upgrade.load()).rejects.toThrow('storage-write');
-    expect(await upgrade.readRaw()).toBe(original);
-    expect(await keyValue.getItem('data-checkpoints')).toBe(history);
-    database.exec('DROP TRIGGER fail_migration');
-    await upgrade.load();
-    expect(JSON.parse((await upgrade.readRaw())!).schemaVersion).toBe(2);
-    expect(await upgrade.listCheckpoints()).toHaveLength(2);
+    expect(await storage.load()).toEqual(defaultAppData());
+    expect(await storage.listCheckpoints()).toHaveLength(2);
   });
 
   test('imports retain the original bytes, preserve the last three copies, and ordinary saves leave copies alone', async () => {
@@ -358,7 +321,7 @@ describe('upgrade checkpoints', () => {
     const { storage, keyValue } = fixture();
     await storage.save(defaultAppData());
     const original = await storage.readRaw();
-    for (const history of ['{bad', JSON.stringify([{ id: 'bad-date', createdAt: Number.MAX_SAFE_INTEGER, reason: 'restore', document: original }])]) {
+    for (const history of ['{bad', JSON.stringify([{ id: 'bad-date', createdAt: Number.MAX_SAFE_INTEGER, document: original }])]) {
       await keyValue.setItem('data-checkpoints', history);
       await expect(storage.listCheckpoints()).rejects.toThrow('invalid-document');
       await expect(storage.save(defaultAppData(), { checkpoints: 'create' })).rejects.toThrow('invalid-document');

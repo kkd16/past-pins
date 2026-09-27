@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { countryIds } from '../src/countries/catalog';
-import { decodeBackup, encodeBackup } from '../src/data/backup';
+import { decodeDocument, encodeDocument } from '../src/data/document';
 import {
   changeHome,
   defaultAppData,
@@ -9,8 +9,22 @@ import {
 } from '../src/data/model';
 import { validateAppData } from '../src/data/validation';
 import { subdivisionIds } from '../src/subdivisions/catalog';
+import empty from './fixtures/data/v1-empty.json';
+import populated from './fixtures/data/v1-populated.json';
 
 describe('current backup format', () => {
+  test('current fixtures round trip through the shared storage and import format', () => {
+    expect<unknown>(defaultAppData()).toEqual(empty.data);
+    for (const fixture of [empty, populated]) {
+      const original = JSON.stringify(fixture);
+      const data = decodeDocument(original);
+      expect<unknown>(data).toEqual(fixture.data);
+      expect(decodeDocument(encodeDocument(data))).toEqual(data);
+      expect(decodeDocument(encodeDocument(data, true))).toEqual(data);
+      expect(JSON.stringify(fixture)).toBe(original);
+    }
+  });
+
   test('round trips every catalog country and region, home, and all preferences', () => {
     const data = changeHome(defaultAppData(), 'ca');
     data.onboardingCompleted = true;
@@ -34,9 +48,9 @@ describe('current backup format', () => {
       countryArrivalAlerts: true,
       countryGrouping: 'alphabetical',
     };
-    const encoded = encodeBackup(data);
+    const encoded = encodeDocument(data);
     expect(JSON.parse(encoded)).toEqual({ app: 'past-pins', schemaVersion: 1, data });
-    expect(decodeBackup(encoded)).toEqual(data);
+    expect(decodeDocument(encoded)).toEqual(data);
   });
 
   test('returns independent data objects', () => {
@@ -56,34 +70,34 @@ describe('current backup format', () => {
   });
 
   test('rejects non-JSON input', () => {
-    expect(() => decodeBackup('this is not JSON')).toThrow('invalid-document');
+    expect(() => decodeDocument('this is not JSON')).toThrow('invalid-document');
   });
 
   test('requires a boolean onboarding flag in the current snapshot and backup', () => {
     const { onboardingCompleted: _completed, ...data } = defaultAppData();
     expect(() => validateAppData(data)).toThrow();
     for (const onboardingCompleted of [undefined, null, 0, 'true']) {
-      expect(() => decodeBackup(JSON.stringify({
+      expect(() => decodeDocument(JSON.stringify({
         app: 'past-pins', schemaVersion: 1, data: { ...data, onboardingCompleted },
       }))).toThrow();
     }
     for (const onboardingCompleted of [false, true]) {
       const snapshot = { ...data, onboardingCompleted };
-      expect(decodeBackup(encodeBackup(snapshot))).toEqual(snapshot);
+      expect(decodeDocument(encodeDocument(snapshot))).toEqual(snapshot);
     }
   });
 
   test('requires region data even when the backup version matches', () => {
     const { subdivisions: _subdivisions, ...data } = defaultAppData();
     expect(() =>
-      decodeBackup(JSON.stringify({ app: 'past-pins', schemaVersion: 1, data })),
+      decodeDocument(JSON.stringify({ app: 'past-pins', schemaVersion: 1, data })),
     ).toThrow();
   });
 
   test('requires lists in a v1 document', () => {
     const { lists: _lists, ...data } = defaultAppData();
     expect(() =>
-      decodeBackup(JSON.stringify({ app: 'past-pins', schemaVersion: 1, data })),
+      decodeDocument(JSON.stringify({ app: 'past-pins', schemaVersion: 1, data })),
     ).toThrow();
   });
 
@@ -122,7 +136,7 @@ describe('current backup format', () => {
       data,
       { visited: ['ca'] },
     ])
-      expect(() => decodeBackup(JSON.stringify(envelope))).toThrow();
+      expect(() => decodeDocument(JSON.stringify(envelope))).toThrow();
   });
 
   test('rejects unknown places, invalid statuses, and inconsistent home', () => {

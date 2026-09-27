@@ -15,7 +15,7 @@ import { SearchField } from '../components/SearchField';
 import { Screen } from '../components/Screen';
 import { getTravelStatistics } from '../countries/statistics';
 import type { Country } from '../countries/types';
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { isVisited } from '../data/model';
 import { formatNumber, t } from '../localization';
 import { CountryStamp } from '../stamps/CountryStamp';
@@ -31,19 +31,20 @@ export function StampsScreen({
   onSelect: (countryId: string) => void;
   onBrowseCountries: () => void;
 }) {
-  const app = useAppData();
+  const places = useAppData((snapshot) => snapshot.data.places);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<StampScope>('collected');
   const list = useRef<FlatList<Country>>(null);
   const stats = useMemo(
-    () => getTravelStatistics(app.data.places),
-    [app.data.places],
+    () => getTravelStatistics(places),
+    [places],
   );
   const matches = useMemo(
-    () => selectStampCountries(app.data.places, query, scope),
-    [app.data.places, query, scope],
+    () => selectStampCountries(places, query, scope),
+    [places, query, scope],
   );
   const columns = fontScale > theme.accessibility.largeTextScale ? 1 : 2;
   const itemWidth = (width - theme.space.lg * (columns - 1)) / columns;
@@ -72,8 +73,8 @@ export function StampsScreen({
             ref={list}
             key={columns}
             numColumns={columns}
-            data={app.status === 'ready' ? matches : []}
-            extraData={app.data.places}
+            data={dataStatus === 'ready' ? matches : []}
+            extraData={places}
             keyExtractor={(country) => country.id}
             contentInsetAdjustmentBehavior="never"
             contentContainerStyle={styles.content}
@@ -86,7 +87,7 @@ export function StampsScreen({
             ListHeaderComponent={
               <View style={styles.header}>
                 <DataFeedback />
-                {app.status === 'ready' && (
+                {dataStatus === 'ready' && (
                   <View style={styles.progress}>
                     <AppText variant="heading">
                       {t('stamps.progress', {
@@ -145,7 +146,7 @@ export function StampsScreen({
               </View>
             }
             ListEmptyComponent={
-              app.status === 'ready' ? (
+              dataStatus === 'ready' ? (
                 <View style={styles.empty}>
                   <AppText variant="heading">{emptyMessage.title}</AppText>
                   <AppText tone="muted">{emptyMessage.hint}</AppText>
@@ -168,7 +169,7 @@ export function StampsScreen({
               </AppText>
             }
             renderItem={({ item }) => {
-              const collected = isVisited(app.data.places[item.id]);
+              const collected = isVisited(places[item.id]);
               const status = t(
                 collected ? 'stamps.collected' : 'stamps.notCollected',
               );

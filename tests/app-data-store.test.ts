@@ -634,6 +634,47 @@ describe('app data owner', () => {
     expect(store.getSnapshot().data).toEqual(defaultAppData());
   });
 
+  test('an expired status action cannot prompt or change data, Undo, or persistence', async () => {
+    const f = fixture();
+    await f.store.load();
+    f.store.setHome('ca');
+    await settle(f.storage);
+    const before = f.store.getSnapshot();
+    const writes = f.writes();
+    for (const ids of [['ca'], ['fr']]) {
+      expect(await f.store.setStatus(ids, 'wishlist', { isCurrent: () => false })).toBe(false);
+      expect(f.store.getSnapshot()).toBe(before);
+    }
+    await settle(f.storage);
+    expect(f.confirmations()).toBe(0);
+    expect(f.writes()).toBe(writes);
+    expect(await f.storage.load()).toEqual(before.data);
+  });
+
+  test('a stale home confirmation releases its lock without writing and a new action can proceed', async () => {
+    const f = fixture();
+    const confirmation = Promise.withResolvers<boolean>();
+    const store = createAppDataStore(f.storage, { confirmHomeChange: () => confirmation.promise });
+    await store.load();
+    store.setHome('ca');
+    await settle(f.storage);
+    const before = store.getSnapshot();
+    const writes = f.writes();
+    let current = true;
+    const changing = store.setStatus(['ca', 'fr'], 'wishlist', { isCurrent: () => current });
+    expect(store.getSnapshot().busy).toBe(true);
+    current = false;
+    confirmation.resolve(true);
+    expect(await changing).toBe(false);
+    expect(store.getSnapshot()).toEqual(before);
+    await settle(f.storage);
+    expect(f.writes()).toBe(writes);
+    expect(await f.storage.load()).toEqual(before.data);
+    expect(await store.setStatus(['ca'], 'unvisited', { isCurrent: () => true })).toBe(true);
+    await settle(f.storage);
+    expect(await f.storage.load()).toEqual(defaultAppData());
+  });
+
   test('failed home confirmation releases the write lock without losing data or Undo', async () => {
     const confirmation = Promise.withResolvers<boolean>();
     const f = fixture();

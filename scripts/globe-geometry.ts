@@ -14,25 +14,27 @@ import type { GlobeGeometry } from '../src/globe/geometry';
 import { countryAnchor } from './country-anchors';
 import { subdivideSphere, type Point } from './subdivide-sphere';
 
-export function generateGlobe(): GlobeGeometry {
+export function generateGlobe() {
   const result: GlobeGeometry = {
     positions: [],
     indices: [],
     borders: [],
     countries: [],
-    markers: [],
   };
+  const metadata: {
+    countries: ({ id: string } & ReturnType<typeof countryAnchor>)[];
+    markers: { id: string; position: number[] }[];
+  } = { countries: [], markers: [] };
   for (const shape of countryFeatures) {
     const id = shape.properties.iso_a2.toLowerCase();
     const firstVertex = result.positions.length / 3;
     const firstIndex = result.indices.length;
     if (geoArea(shape) === 0) {
-      result.markers.push({ id, position: toCartesian(geoCentroid(shape)) });
+      metadata.markers.push({ id, position: toCartesian(geoCentroid(shape)) });
     } else {
       for (const polygon of countryPolygons(shape)) {
         const center = geoCentroid({ type: 'Polygon', coordinates: polygon });
         const normal = toCartesian(center);
-        // Gnomonic projection keeps great-circle edges straight.
         const project = geoGnomonic()
           .rotate([-center[0], -center[1]])
           .scale(1)
@@ -91,10 +93,10 @@ export function generateGlobe(): GlobeGeometry {
     }
     result.countries.push({
       id,
-      ...countryAnchor(shape),
       firstVertex,
       vertexCount: result.positions.length / 3 - firstVertex,
     });
+    metadata.countries.push({ id, ...countryAnchor(shape) });
   }
-  return result;
+  return { geometry: result, metadata };
 }

@@ -69,7 +69,6 @@ export function CountryMapSheet({
   const [previewHeight, setPreviewHeight] = useState(180);
   const reducedMotion = useReducedMotion();
   const availableHeight = containerHeight - topInset - bottomInset;
-  // Leave room to expand even when Dynamic Type makes the preview very tall.
   const collapsedHeight = Math.min(
     previewHeight + theme.size.touch,
     availableHeight / 2,
@@ -111,7 +110,6 @@ export function CountryMapSheet({
         onChange={(index) => {
           if (!sheet.current) return;
           setSheetIndex(index);
-          // onAnimate can be skipped when Reduce Motion finishes on the UI thread.
           if (index === 0) scroll.current?.scrollTo({ y: 0, animated: false });
         }}
         onClose={() => {

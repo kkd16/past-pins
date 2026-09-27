@@ -44,7 +44,6 @@ export function createToastStore() {
     },
     pressAction(id: number) {
       if (snapshot?.id !== id || !snapshot.visible || !snapshot.action) return;
-      // A temporarily unavailable action can keep its toast open.
       if (snapshot.action.onPress() !== false) dismissToast(id);
     },
   };

@@ -8,7 +8,7 @@
   "savedFileDescription": "Exports the file as stored, even if it cannot be opened. An unreadable file may need repair before it can be restored.",
   "noSavedFile": "There is no saved data file to export.",
   "checkpoints": "Recovery copies",
-  "checkpointDescription": "The three most recent copies saved before an upgrade or backup import. These copies are on this iPhone and are deleted when you clear travel data or reset the app.",
+  "checkpointDescription": "The three most recent copies saved before restoring a backup or recovery copy. These copies are on this iPhone and are deleted when you clear travel data or reset the app.",
   "noCheckpoints": "No recovery copies yet.",
   "checkpoint": "Saved %{date}",
   "restoreCheckpointTitle": "Restore this recovery copy?",
@@ -28,7 +28,6 @@
   "errors": {
     "invalid-document": "This data could not be read. Your saved file has not been replaced. You can retry, export it for recovery, restore a backup, or reset the app.",
     "unsupported-version": "This data was saved by a newer version of PastPins. Update the app to open it. Your saved file has not been changed.",
-    "migration-failed": "Your saved data could not be upgraded. The original file has not been replaced. Try again after updating the app, or choose a recovery option below.",
     "storage-read": "Your saved data could not be accessed. Try again. If it still cannot be opened, you can restore a backup or reset the app.",
     "storage-write": "Your changes could not be saved. Check the available storage on your iPhone and try again.",
     "reset-failed": "The reset could not finish. To reset before the app opens, use Reset on Next Launch in iPhone Settings, close PastPins from the app switcher, then reopen it. If you are testing the app, make sure your development build is up to date."

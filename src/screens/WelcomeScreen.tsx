@@ -7,7 +7,7 @@ import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Checkmark } from '../components/Checkmark';
 import { countryById } from '../countries/catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { formatNumber, t } from '../localization';
 import { OnboardingPage } from '../onboarding/OnboardingPage';
 import { CountryStamp } from '../stamps/CountryStamp';
@@ -16,17 +16,16 @@ import { theme } from '../theme';
 const sampleCountries = ['ca', 'fr', 'jp'].map((id) => countryById.get(id)!);
 
 export function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
-  const { data } = useAppData();
+  const haptics = useAppData((snapshot) => snapshot.data.preferences.haptics);
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
-  // A local preview only: trying a stamp must never change someone's travel history.
   const [collected, setCollected] = useState<string[]>([]);
 
   function toggle(id: string) {
     setCollected((current) => current.includes(id)
       ? current.filter((value) => value !== id)
       : [...current, id]);
-    if (data.preferences.haptics)
+    if (haptics)
       void Haptics.selectionAsync().catch(() => undefined);
   }
 

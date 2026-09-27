@@ -22,7 +22,6 @@ describe('stamp geography', () => {
       expect(outline.path).not.toContain('NaN');
       expect(outline.transform).not.toMatch(/NaN|Infinity/);
     }
-    // This country collapses to a vertical line in the current atlas source.
     expect(markerIds).toEqual(['va']);
   });
 

@@ -3,7 +3,7 @@ import { router, useRootNavigationState } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { appData } from '../data/app-data';
 import { useToast } from '../feedback/ToastProvider';
 import { diagnostics } from '../recovery/diagnostics-file';
@@ -12,7 +12,7 @@ import { arrivalDataReady, parseArrival } from './arrivals';
 import { arrivalTracker, checkCurrentArrival, syncArrivalMonitoring } from './arrival-notifications';
 
 export function CountryArrivalNotifications() {
-  const app = useAppData();
+  const app = useAppData((snapshot) => snapshot);
   const { showToast } = useToast();
   const navigation = useRootNavigationState();
   const response = Notifications.useLastNotificationResponse();
@@ -43,7 +43,6 @@ export function CountryArrivalNotifications() {
       try {
         if (active && enabled) await checkCurrentArrival();
       } catch (error) {
-        // A temporary position failure leaves monitoring available for later arrivals.
         diagnostics.record('reminders', error);
       }
     }
@@ -82,7 +81,6 @@ export function CountryArrivalNotifications() {
       }
     };
     void openArrival();
-    // A temporary storage read failure must not strand this tap until app restart.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') void openArrival();
     });

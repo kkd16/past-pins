@@ -3,14 +3,17 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FullWindowOverlay } from 'react-native-screens';
 
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { t } from '../localization';
 import { theme } from '../theme';
 import { Toast } from './Toast';
 import { useToast } from './ToastProvider';
 
 export function AppToastHost() {
-  const { pendingUndo, undo, discardUndo, busy } = useAppData();
+  const { undo, discardUndo } = appData;
+  const pendingUndo = useAppData((snapshot) => snapshot.pendingUndo);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const store = useToast();
   const toast = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const insets = useSafeAreaInsets();

@@ -1,13 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { useAppData } from '../../data/AppDataProvider';
+import { useAppData } from '../../data/AppData';
 import { ListDetailsScreen } from '../../screens/ListDetailsScreen';
 import { placeHref, regionsHref } from '../../places/navigation';
 
 export default function ListDetailsRoute() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
-  const { resetVersion } = useAppData();
+  const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
   return (
     <ListDetailsScreen
       key={`${id}:${resetVersion}`}

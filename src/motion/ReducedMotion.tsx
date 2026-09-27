@@ -10,7 +10,6 @@ import { AccessibilityInfo } from 'react-native';
 const ReducedMotionContext = createContext(true);
 
 export function ReducedMotionProvider({ children }: { children: ReactNode }) {
-  // Keep motion off until the device preference is known.
   const [reduced, setReduced] = useState(true);
   useEffect(() => {
     let pendingInitialRead = true;

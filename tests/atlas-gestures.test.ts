@@ -5,8 +5,6 @@ import { FlatController } from '../src/atlas/FlatController';
 import { GlobeCamera } from '../src/globe/camera';
 import { GlobeController } from '../src/globe/controller';
 
-// Exercise the production callbacks with native event sequences. Recognition
-// thresholds and delivery still need verification on iOS.
 type Event = Record<string, number>;
 type Callback = (event: Event, success?: boolean) => void;
 const handlers: Record<string, Record<string, Callback>> = {};
@@ -86,7 +84,6 @@ describe.each(['globe', 'map'] as const)('%s navigation gestures', (mode) => {
     handlers.pinch.onUpdate(pinchEvent(1.25));
     handlers.pinch.onFinalize({});
     expect(finish).toHaveBeenCalledTimes(1);
-    // A recognizer that never activated must not publish another settled frame.
     handlers.rotation.onFinalize({});
     expect(finish).toHaveBeenCalledTimes(1);
   });
@@ -146,7 +143,6 @@ describe.each(['globe', 'map'] as const)('%s navigation gestures', (mode) => {
     handlers.pinch.onUpdate(pinchEvent(1.1));
     handlers.pinch.onFinalize({});
     const center = camera.geographicPoint(195, 422)!;
-    // Ignore the handoff sample, whose centroid changed when a finger lifted.
     handlers.pan.onChange({ numberOfPointers: 1, changeX: 100, changeY: 100 });
     expect(camera.geographicPoint(195, 422)).toEqual(center);
     handlers.pan.onChange({ numberOfPointers: 1, changeX: 10, changeY: 0 });

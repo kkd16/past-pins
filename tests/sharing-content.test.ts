@@ -197,7 +197,6 @@ describe('shared card content', () => {
   });
 
   test('validates share routes, including repeated or missing parameters', () => {
-    expect(parseShareTarget(undefined, undefined)).toEqual({ kind: 'world' });
     expect(parseShareTarget('world', undefined)).toEqual({ kind: 'world' });
     expect(parseShareTarget('stamp', 'ca')).toEqual({
       kind: 'stamp',
@@ -208,6 +207,7 @@ describe('shared card content', () => {
       id: 'trip',
     });
     for (const [kind, id] of [
+      [undefined, undefined],
       ['list', undefined],
       ['stamp', ''],
       ['unknown', 'ca'],

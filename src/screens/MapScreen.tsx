@@ -19,7 +19,8 @@ import { WorldMapViewport } from '../atlas/WorldMapViewport';
 import { DataFeedback } from '../components/DataFeedback';
 import { countryById } from '../countries/catalog';
 import { CountryMapSheet } from '../countries/CountryMapSheet';
-import { useAppData } from '../data/AppDataProvider';
+import { appData as app } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 import {
@@ -46,12 +47,15 @@ export function MapScreen({
   focusRequest?: string;
   onFocusConsumed: () => void;
 }) {
-  const app = useAppData();
+  const places = useAppData((snapshot) => snapshot.data.places);
+  const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
+  const preferences = useAppData((snapshot) => snapshot.data.preferences);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
   const focused = useIsFocused();
-  const { data } = app;
-  const ready = app.status === 'ready';
-  const mode = data.preferences.mapView;
-  // Reuse each renderer after its first visit; inactive views do no frame work.
+  const ready = dataStatus === 'ready';
+  const mode = preferences.mapView;
   const [loaded, setLoaded] = useState({ globe: false, map: false });
   if (ready && !loaded[mode]) setLoaded({ ...loaded, [mode]: true });
   const [locating, setLocating] = useState(false);
@@ -63,7 +67,7 @@ export function MapScreen({
   } | null>(null);
   const [localCommand, setCommand] = useState<AtlasCommand | null>(null);
   const sequence = useRef(0);
-  const guard = useActionGuard(app.resetVersion);
+  const guard = useActionGuard(resetVersion);
   const [topHeight, setTopHeight] = useState(108);
   const [bottomHeight, setBottomHeight] = useState(120);
   const [height, setHeight] = useState(0);
@@ -134,11 +138,11 @@ export function MapScreen({
     [],
   );
   const viewport = {
-    places: data.places,
-    homeCountryId: data.homeCountryId,
+    places,
+    homeCountryId,
     selectedId,
     selectedAnchor: incomingFocus ? null : (selection?.anchor ?? null),
-    labels: data.preferences.countryLabels,
+    labels: preferences.countryLabels,
     command,
     topInset: insets.top + topHeight + theme.space.md,
     bottomInset: insets.bottom + bottomHeight + theme.space.md,
@@ -195,7 +199,7 @@ export function MapScreen({
           <MapToolbar
             mode={mode}
             largeText={largeText}
-            disabled={!ready || app.busy}
+            disabled={!ready || busy}
             onChangeMode={(mapView) => app.updatePreferences({ mapView })}
             onSearch={onSearch}
             onShare={onShare}
@@ -228,9 +232,9 @@ export function MapScreen({
             contentContainerStyle={styles.footer}
           >
             <DataFeedback />
-            {ready && data.preferences.mapSummary && (
+            {ready && preferences.mapSummary && (
               <MapSummary
-                places={data.places}
+                places={places}
                 onOpenCountries={onOpenCountries}
               />
             )}
@@ -239,7 +243,7 @@ export function MapScreen({
       )}
       {ready && selectedCountry && height > 0 && (
         <CountryMapSheet
-          key={`${selectedCountry.id}:${app.resetVersion}`}
+          key={`${selectedCountry.id}:${resetVersion}`}
           id={selectedCountry.id}
           containerHeight={height}
           topInset={insets.top + theme.space.sm}

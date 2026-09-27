@@ -2,16 +2,17 @@ import type { ExpoWebGLRenderingContext } from 'expo-gl';
 import { mat3 } from 'gl-matrix';
 
 import { countryColor } from '../atlas/colors';
+import metadata from '../atlas/metadata.json';
 import type { AppData } from '../data/model';
 import { theme } from '../theme';
 import type { GlobeCamera } from './camera';
+import type { GlobeGeometry } from './geometry';
 import {
   oceanFragment,
   oceanVertex,
   surfaceFragment,
   surfaceVertex,
 } from './shaders';
-import world from './world.json';
 
 function rgb(hex: string): [number, number, number] {
   return [1, 3, 5].map(
@@ -20,6 +21,7 @@ function rgb(hex: string): [number, number, number] {
 }
 
 export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
+  const world: GlobeGeometry = require('./world.json');
   const buffers: WebGLBuffer[] = [];
   const programs: WebGLProgram[] = [];
   const shaders: WebGLShader[] = [];
@@ -82,11 +84,11 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
     );
     const borders = buffer(new Float32Array(world.borders));
     const points = buffer(
-      new Float32Array(world.markers.flatMap(({ position }) => position)),
+      new Float32Array(metadata.markers.flatMap(({ position }) => position)),
     );
     const colors = new Float32Array(world.positions.length);
     const landColors = buffer(colors, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
-    const markerColors = new Float32Array(world.markers.length * 3);
+    const markerColors = new Float32Array(metadata.markers.length * 3);
     const pointColors = buffer(markerColors, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
     const surfaceUniform = {
       rotation: gl.getUniformLocation(surface, 'rotation'),
@@ -129,7 +131,7 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
           for (let i = firstVertex; i < firstVertex + vertexCount; i++)
             colors.set(tint, i * 3);
         }
-        world.markers.forEach(({ id }, i) =>
+        metadata.markers.forEach(({ id }, i) =>
           markerColors.set(color(id), i * 3),
         );
         gl.bindBuffer(gl.ARRAY_BUFFER, landColors);
@@ -171,7 +173,6 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
         gl.drawElements(gl.TRIANGLES, world.indices.length, gl.UNSIGNED_INT, 0);
 
-        // Lines are on the sphere, above the triangulated land chords.
         gl.disable(gl.DEPTH_TEST);
         gl.uniform1i(surfaceUniform.shaded, 0);
         attribute(surfacePosition, borders, 3);
@@ -181,7 +182,7 @@ export function createGlobeRenderer(gl: ExpoWebGLRenderingContext) {
         gl.uniform1i(surfaceUniform.marker, 1);
         attribute(surfacePosition, points, 3);
         attribute(surfaceColor, pointColors, 3);
-        gl.drawArrays(gl.POINTS, 0, world.markers.length);
+        gl.drawArrays(gl.POINTS, 0, metadata.markers.length);
         gl.disableVertexAttribArray(surfacePosition);
         gl.disableVertexAttribArray(surfaceColor);
         gl.endFrameEXP();

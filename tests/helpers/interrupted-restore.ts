@@ -1,6 +1,4 @@
 import { Database } from 'bun:sqlite';
-import { createDocumentCodec } from '../../src/data/document';
-import { validateV1, type AppDataV1 } from '../../src/data/schemas/v1';
 import { createSnapshotStorage } from '../../src/storage/snapshot-storage';
 
 const [databasePath, phase] = process.argv.slice(2);
@@ -11,14 +9,6 @@ const pause = async (message: string) => {
   setInterval(() => {}, 60_000);
   await new Promise(() => {});
 };
-const codec = createDocumentCodec<AppDataV1>([
-  { version: 1, validate: validateV1 },
-  { version: 2, validate: validateV1, upgrade(value) {
-    const data = validateV1(value);
-    data.preferences.haptics = false;
-    return data;
-  } },
-]);
 const storage = createSnapshotStorage({
   async getItem(key) { return database.query<{ value: string }, [string]>('SELECT value FROM kv WHERE key=?').get(key)?.value ?? null; },
   async setItem(key, value) { write.run(key, value); },
@@ -31,6 +21,8 @@ const storage = createSnapshotStorage({
     database.exec('COMMIT');
   },
   async clear() { database.exec('DELETE FROM kv'); },
-}, codec);
-await storage.load();
+});
+const data = await storage.load();
+data.preferences.haptics = false;
+await storage.save(data, { checkpoints: 'create' });
 await pause('after');

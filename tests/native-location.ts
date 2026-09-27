@@ -4,7 +4,6 @@ import type { NotificationPermissionsStatus, NotificationResponse } from 'expo-n
 import type { ArrivalLocation } from '../src/location/arrivals';
 import { createSnapshotStorage } from '../src/storage/snapshot-storage';
 
-// Shared native boundaries keep location, arrival and country-route tests compatible.
 export const location = {
   hasServicesEnabledAsync: mock(async () => true),
   requestForegroundPermissionsAsync: mock(async () => ({ granted: true })),

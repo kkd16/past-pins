@@ -22,9 +22,15 @@ On Linux, use `bun run dev` for a tunnel and open it in Expo Go on an iPhone.
 
 For a development client:
 
-1. Install `expo-dev-client` with `bunx expo install expo-dev-client`.
-2. Configure EAS under [Release](#release).
-3. Run `bunx eas-cli build --platform ios --profile development`.
+1. Log in with `bunx eas-cli login` and confirm access to the linked EAS project.
+2. Run `bunx eas-cli build --platform ios --profile development` and install the build on your registered iPhone.
+3. Start Metro with `bunx expo start --dev-client` (add `--tunnel` when needed).
+
+`expo-dev-client` is installed. The `development` profile uses internal distribution;
+`production` uses App Store distribution and increments the remote build number.
+Both inherit the pinned Bun version from `base` in [eas.json](eas.json).
+`bun run dev` explicitly opens Expo Go; use the development-client command above
+to test native recovery and background reminders.
 
 ### Everyday commands
 
@@ -32,7 +38,7 @@ For a development client:
 | --- | --- |
 | `bun run check` | Lint, typecheck, tests with coverage, generated-asset checks |
 | `bun run verify` | Full pre-push/CI gate, including Expo Doctor and both iOS exports |
-| `bun test --watch` or `bun test backup` | Focused test iteration |
+| `bun test --watch` or `bun test document` | Focused test iteration |
 | `bunx expo install <package>` | Install an Expo-compatible app dependency |
 | `bun run generate` | Regenerate geography and third-party notices |
 | `bun run website:build` | Build the three static GitHub Pages pages in `_site/` |
@@ -60,7 +66,7 @@ Run `bun run verify` before every push, after the final edit or rebase. GitHub A
 | `src/countries/`, `src/places/`, `src/lists/`, `src/stamps/`, `src/sharing/` | Catalogs, search, lists, derived collections, image sharing |
 | `src/components/`, `src/theme.ts`, `src/feedback/`, `src/motion/` | Reusable controls, styling, confirmations, toasts, Reduce Motion |
 | `src/onboarding/`, `src/location/`, `src/localization/` | Welcome flow, optional location/reminders, typed localized messages |
-| `scripts/`, `tests/` | Asset generators, regression tests, released-data fixtures |
+| `scripts/`, `tests/` | Asset generators, regression tests, data fixtures |
 
 ### Data and rendering
 
@@ -71,6 +77,19 @@ Run `bun run verify` before every push, after the final edit or rebase. GitHub A
 - Cameras, filters, selections, and Undo are session-only.
 
 UI and background tasks share `appData`. `index.js` registers the lightweight arrival task before Router; normal app imports stay deferred behind the root recovery boundary. Background checks may update reminder metadata, never travel statuses. Inactive maps stop rendering; geography is generated before bundling.
+
+Read reactive values with `useAppData(snapshot => snapshot.data.places)` and
+call actions directly on `appData`. Select primitives or existing immutable
+references, then derive arrays and objects with ordinary functions or `useMemo`.
+`AppDataEffects` loads the store and announces errors without rerendering screens.
+Undo, save feedback, and unrelated preferences do not rerender travel views.
+Pass the screen's `useActionGuard` callback as `setStatus`'s `isCurrent` option:
+home-change confirmations recheck it before applying the update.
+
+The map generator separates small anchors and markers in `src/atlas/metadata.json`
+from the vertex buffers in `src/globe/world.json`. Flat maps, stamps, and picking
+read the metadata; the globe renderer loads the vertex buffers when a GL context
+is created.
 
 ### Localization and accessibility
 
@@ -83,7 +102,9 @@ Agent-specific rules live in [AGENTS.md](AGENTS.md).
 
 ## Data upgrades
 
-The current app is the v1 baseline. Both saved data and backups use `{ app: "past-pins", schemaVersion: 1, data }`. Prototype formats are rejected. Once v1 reaches **TestFlight**, its contract is released: keep historical schemas, defaults, IDs, fixtures, and migrations unchanged.
+The app is unreleased and has no users. Both saved data and backups currently use `{ app: "past-pins", schemaVersion: 1, data }`. Current development schemas, defaults, IDs, and fixtures may be updated directly; backwards compatibility and migrations for these unreleased formats are not required. Saved documents and imports still use the same strict decoder.
+
+Once a build is distributed through **TestFlight** or the App Store, preserve that released contract and migrate subsequent data changes.
 
 | Version | When to change it |
 | --- | --- |
@@ -91,35 +112,24 @@ The current app is the v1 baseline. Both saved data and backups use `{ app: "pas
 | iOS build number | Each uploaded binary; use EAS remote auto-increment |
 | Document `schemaVersion` | A stored field, default, validation rule, or ID needs conversion |
 
-### Adding a schema version
+The current model and defaults live in [model.ts](src/data/model.ts), validation
+uses the current catalogs in [validation.ts](src/data/validation.ts), and
+[document.ts](src/data/document.ts) owns the shared saved-file and backup format.
+There is no migration registry or duplicate historical catalog.
 
-A UI fix does not need a migration. To add schema 2:
-
-1. Add `src/data/schemas/v2.ts` with its type, validator, and defaults. Historical validators must use their frozen ID sets, not today’s catalogs or localization.
-2. Write a pure `upgradeV1ToV2(previous: unknown)` that preserves existing information and uses fixed defaults for added fields. No IO, clock, randomness, or prompts.
-3. Append `{ version: 2, validate: validateV2, upgrade: upgradeV1ToV2 }` in [document.ts](src/data/document.ts). Update its output type and the current aliases in `model.ts` and `validation.ts`. Versions must be consecutive; storage and imports use this same decoder.
-4. Add fixtures under `tests/fixtures/data/`. Keep every released input unchanged and test its explicit expected current result, including skipped releases. Cover invalid input/output, thrown migrations, future versions, transaction interruption, and repeated loads.
-5. Run `bun run verify` and test an actual installed upgrade using the [release checks](#on-an-iphone).
-
-### Historical fixtures
-
-| Fixture | Contract |
-| --- | --- |
-| `v1-empty.json` | Original defaults |
-| `v1-populated.json` | All persisted fields, mixed lists, Unicode, nondefault preferences |
-| `v1-ids.json` | Accepted geographic identities |
-
-Before catalog changes, audit saved countries, regions, and list membership.
-Migrate renamed/merged IDs, preserve unrepresentable information, or block the
-upgrade. Never silently drop it.
+The empty and populated fixtures in `tests/fixtures/data/` cover the current
+format. Update them with the model during development. Once a build is
+distributed, freeze its fixtures and add a pure forward migration when a real
+schema change needs one. Keep the same decoder for saved data and imports;
+cover historical paths and interrupted writes when adding that migration.
 
 ### Persistence and recovery
 
-[snapshot-storage.ts](src/storage/snapshot-storage.ts) serializes all database access. Migration and confirmed restore save the original raw document plus its replacement in one `SQLiteStorage.multiSet` transaction, retaining the latest three recovery copies. Ordinary edits preserve those copies. Keep the adapter atomic; independent writes are not equivalent.
+[snapshot-storage.ts](src/storage/snapshot-storage.ts) serializes all database access. Confirmed restores save the original raw document plus its replacement in one `SQLiteStorage.multiSet` transaction, retaining the latest three recovery copies. Ordinary edits preserve those copies. Keep the adapter atomic; independent writes are not equivalent.
 
 | Operation | Failure behavior |
 | --- | --- |
-| Load or migration | Preserve the saved document and open recovery, including for future versions. A missing primary document with existing copies is an error. |
+| Load | Preserve the saved document and open recovery, including for future versions. A missing primary document with existing copies is an error. |
 | Ordinary edit | Publish immediately; offer Retry save on failure. Unsaved edits can be lost on exit. |
 | Restore or reset | Publish only after persistence succeeds. |
 
@@ -231,14 +241,14 @@ cannot guarantee App Review approval or legal compliance.
 
 ### Build and submit
 
-The iOS bundle identifier is `io.github.kkd16.pastpins`, configured in [app.json](app.json). Confirm its availability when registering the App ID, then use the same identifier for the Apple team, signing configuration, and App Store Connect app. EAS project setup and Apple registration remain pending. Never commit signing credentials.
+The iOS bundle identifier is `io.github.kkd16.pastpins`, configured in [app.json](app.json). Confirm its availability when registering the App ID, then use the same identifier for the Apple team, signing configuration, and App Store Connect app. The EAS project and build profiles are configured; Apple registration and signing must be completed with the appropriate account. Never commit signing credentials.
 
 ```sh
 bunx eas-cli login
 bunx eas-cli build:configure --platform ios
 ```
 
-In the generated `eas.json`, set `cli.appVersionSource` to `"remote"` and `build.production.autoIncrement` to `true`. Keep `expo.version` in `app.json` current. For an existing uploaded app, initialize the remote build number with `bunx eas-cli build:version:set --platform ios`. See [Expo app versions](https://docs.expo.dev/build-reference/app-versions/).
+The checked-in `eas.json` uses remote app versions and production auto-increment. Keep `expo.version` in `app.json` current. For an existing uploaded app, initialize the remote build number with `bunx eas-cli build:version:set --platform ios`. See [Expo app versions](https://docs.expo.dev/build-reference/app-versions/).
 
 For each candidate:
 
@@ -254,7 +264,7 @@ Select the exact candidate build when submitting. [EAS Submit](https://docs.expo
 
 - **Fresh install:** Welcome, skipping/accepting/denying permissions, offline editing, relaunch, export/import, and cancellation. Browsing must work without location access.
 - **Upgrade:** Populate a prior build with countries, regions, home, mixed lists, and nondefault preferences. Export a backup, then install the candidate over it with the same bundle identifier. Verify every value and relaunch twice. Test skipped versions and old backups as schemas accumulate.
-- **Failures:** In a development build, inject failed/interrupted writes, migration failure, invalid/future documents, corrupt recovery history, and render failure before providers mount. Confirm preserved data, safe errors, export, and retry. Test unavailable and near-full storage.
+- **Failures:** In a development build, inject failed/interrupted writes, invalid imports, invalid/future documents, corrupt recovery history, and render failure before providers mount. Confirm preserved data, safe errors, export, and retry. Test unavailable and near-full storage.
 - **Native reset:** Enable the Settings switch, force-quit, reopen, and verify Welcome, cleared data/reminders/diagnostics, and the switch off. Test cancelling the request, deletion failure/retry, and a crash before JavaScript starts.
 - **Interactions:** Maps and gestures, status/home/Undo, mixed lists, sharing, restore/reset, and arrival reminders. Leave and return during pending pickers, confirmations, or location requests; stale actions must not apply. Test notification taps from a cold launch, permission revocation, disabling reminders, and background battery behavior.
 - **Accessibility:** Small iPhone, largest Dynamic Type, VoiceOver order/actions and announcements, long translations, and Reduce Motion. Check native sheets/pickers and exported image fidelity. JavaScript tests and bundle exports do not establish native correctness or frame rate.

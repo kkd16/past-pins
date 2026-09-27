@@ -4,11 +4,7 @@ export type GlobeGeometry = {
   borders: number[];
   countries: {
     id: string;
-    anchor: [number, number];
-    area: number;
-    angularRadius: number;
     firstVertex: number;
     vertexCount: number;
   }[];
-  markers: { id: string; position: number[] }[];
 };

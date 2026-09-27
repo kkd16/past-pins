@@ -11,7 +11,6 @@ export function annotationTranslation(
   width: number,
   rtl: boolean,
 ) {
-  // `start: 0` anchors on the right in RTL, but geographic x stays physical.
   return rect ? [rtl ? rect.x + rect.width - width : rect.x, rect.y] : [0, 0];
 }
 

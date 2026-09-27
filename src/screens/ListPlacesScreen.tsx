@@ -20,7 +20,8 @@ import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { SearchField } from '../components/SearchField';
 import { countryById } from '../countries/catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import type { TravelList } from '../data/model';
 import { formatNumber, language, t } from '../localization';
 import { searchPlaces, type Place } from '../places/catalog';
@@ -35,9 +36,9 @@ type Props = {
 };
 
 export function ListPlacesScreen(props: Props) {
-  const app = useAppData();
-  const list = app.data.lists.find(({ id }) => id === props.id);
-  if (list && app.status === 'ready')
+  const list = useAppData((snapshot) => snapshot.data.lists.find(({ id }) => id === props.id));
+  const status = useAppData((snapshot) => snapshot.status);
+  if (list && status === 'ready')
     return <ListPlacesEditor {...props} list={list} />;
 
   return (
@@ -56,7 +57,7 @@ export function ListPlacesScreen(props: Props) {
         }}
       />
       <DataFeedback />
-      {app.status === 'ready' && (
+      {status === 'ready' && (
         <AppText tone="muted" style={styles.empty}>
           {t('lists.unavailable')}
         </AppText>
@@ -71,7 +72,9 @@ function ListPlacesEditor({
   onDone,
   onCancel,
 }: Props & { list: TravelList }) {
-  const app = useAppData();
+  const { setListPlaces } = appData;
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const status = useAppData((snapshot) => snapshot.status);
   const { fontScale } = useWindowDimensions();
   const [originalPlaces] = useState(list.placeIds);
   const [selected, setSelected] = useState(() => new Set(originalPlaces));
@@ -81,7 +84,7 @@ function ListPlacesEditor({
   const results = useRef<FlatList<Place>>(null);
   const exited = useRef(false);
   const stale = list.placeIds !== originalPlaces;
-  const disabled = stale || app.busy || app.status !== 'ready';
+  const disabled = stale || busy || status !== 'ready';
   const changed =
     selected.size !== originalPlaces.length ||
     originalPlaces.some((placeId) => !selected.has(placeId));
@@ -128,7 +131,7 @@ function ListPlacesEditor({
 
   function save() {
     if (disabled || !changed || exited.current) return;
-    if (app.setListPlaces(id, [...selected])) {
+    if (setListPlaces(id, [...selected])) {
       exited.current = true;
       Keyboard.dismiss();
       onDone();

@@ -11,7 +11,8 @@ import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { getStatusPresentation } from '../countries/status';
 import { showStatusPicker } from '../countries/StatusPicker';
-import { useAppData } from '../data/AppDataProvider';
+import { appData as app } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { ListMap } from '../lists/ListMap';
 import { getListStatistics } from '../lists/places';
 import {
@@ -41,10 +42,12 @@ export function ListDetailsScreen({
   onOpenRegions: (countryId: string) => void;
   onShare: () => void;
 }) {
-  const app = useAppData();
-  const list = app.data.lists.find((item) => item.id === id);
-  const disabled = app.status !== 'ready' || app.busy;
-  const guard = useActionGuard(app.data.lists);
+  const data = useAppData((snapshot) => snapshot.data);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const list = data.lists.find((item) => item.id === id);
+  const disabled = dataStatus !== 'ready' || busy;
+  const guard = useActionGuard(list);
 
   function options() {
     if (!list || disabled) return;
@@ -78,7 +81,7 @@ export function ListDetailsScreen({
     showStatusPicker(formatPlaceName(place), (status) => {
       if (!isCurrent()) return;
       if (place.kind === 'country')
-        void app.setStatus([place.id], status, { preserveLived: false });
+        void app.setStatus([place.id], status, { preserveLived: false, isCurrent });
       else
         void app.setSubdivisionStatus([place.id], status, {
           preserveLived: false,
@@ -91,7 +94,7 @@ export function ListDetailsScreen({
     [list?.placeIds],
   );
   const stats = list
-    ? getListStatistics(list, app.data)
+    ? getListStatistics(list, data)
     : { visited: 0, total: 0 };
   return (
     <Screen>
@@ -111,7 +114,7 @@ export function ListDetailsScreen({
       />
       <FlatList
         data={places}
-        extraData={{ data: app.data, disabled }}
+        extraData={{ data, disabled }}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={styles.content}
@@ -145,7 +148,7 @@ export function ListDetailsScreen({
           </View>
         }
         ListEmptyComponent={
-          app.status === 'ready' ? (
+          dataStatus === 'ready' ? (
             <View style={styles.empty}>
               <AppText variant="heading">
                 {t(list ? 'lists.emptyListTitle' : 'lists.unavailable')}
@@ -163,7 +166,7 @@ export function ListDetailsScreen({
         }
         renderItem={({ item }) => {
           const presentation = getStatusPresentation(
-            getPlaceStatus(app.data, item),
+            getPlaceStatus(data, item),
           );
           const name = formatPlaceName(item);
           const regions =

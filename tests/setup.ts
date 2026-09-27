@@ -9,7 +9,6 @@ import {
 } from 'react';
 import type { AccessibilityInfo, Alert } from 'react-native';
 
-// One native module boundary keeps independently run and combined tests alike.
 export const native = {
   AppState: {
     currentState: 'active',

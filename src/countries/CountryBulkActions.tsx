@@ -3,7 +3,8 @@ import { Keyboard, StyleSheet, View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Surface } from '../components/Surface';
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { formatNumber, t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { theme } from '../theme';
@@ -21,7 +22,9 @@ export function CountryBulkActions({
   onSelectionChange: (ids: ReadonlySet<CountryId>) => void;
   onEndSelection: () => void;
 }) {
-  const { status, busy, setStatus } = useAppData();
+  const { setStatus } = appData;
+  const status = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const guard = useActionGuard(selectedIds);
   const disabled = status !== 'ready' || busy;
   const allSelected = selectedIds.size === resultIds.length;
@@ -64,7 +67,7 @@ export function CountryBulkActions({
             const isCurrent = guard();
             showStatusPicker(t('countries.placeCount', count), (nextStatus) => {
               if (!isCurrent()) return;
-              void setStatus([...selectedIds], nextStatus).then((applied) => {
+              void setStatus([...selectedIds], nextStatus, { isCurrent }).then((applied) => {
                 if (applied && isCurrent()) onEndSelection();
               });
             });

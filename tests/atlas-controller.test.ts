@@ -21,7 +21,6 @@ describe('atlas camera transitions', () => {
     }
     flat.move(() => flat.camera.focusLocation(point));
     globe.move(() => globe.camera.focus(point, 0.1));
-    // Permission and suggestion alerts can arrive before the first frame.
     flat.setActive(false);
     globe.setActive(false);
     expect(frames.pendingCount).toBe(0);

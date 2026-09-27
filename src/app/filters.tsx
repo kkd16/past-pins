@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { readCountryFilters } from '../countries/filters';
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
 import { CountryFiltersScreen } from '../screens/CountryFiltersScreen';
 
 export default function CountryFiltersRoute() {
-  const { updatePreferences } = useAppData();
+  const { updatePreferences } = appData;
   const params = useLocalSearchParams<{
     continent?: string;
     grouping?: string;

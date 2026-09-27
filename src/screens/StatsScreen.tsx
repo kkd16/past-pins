@@ -19,7 +19,7 @@ import { countryById } from '../countries/catalog';
 import type { CountryScope } from '../countries/filters';
 import { ProgressSummary } from '../countries/ProgressSummary';
 import { getTravelStatistics } from '../countries/statistics';
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { theme } from '../theme';
 import { t, formatNumber, formatPercent } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
@@ -133,21 +133,25 @@ export function StatsScreen({
 }) {
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
-  const app = useAppData();
+  const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
+  const places = useAppData((snapshot) => snapshot.data.places);
+  const subdivisions = useAppData((snapshot) => snapshot.data.subdivisions);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const stats = useMemo(
-    () => getTravelStatistics(app.data.places),
-    [app.data.places],
+    () => getTravelStatistics(places),
+    [places],
   );
   const regionStats = useMemo(
-    () => getSubdivisionStatistics(app.data.subdivisions),
-    [app.data.subdivisions],
+    () => getSubdivisionStatistics(subdivisions),
+    [subdivisions],
   );
-  const home = app.data.homeCountryId
-    ? countryById.get(app.data.homeCountryId)
+  const home = homeCountryId
+    ? countryById.get(homeCountryId)
     : undefined;
-  const loading = app.status !== 'ready';
+  const loading = dataStatus !== 'ready';
   const loadingMessage =
-    app.status === 'load-error'
+    dataStatus === 'load-error'
       ? t('countries.loadError')
       : t('countries.loadingPlaces');
   return (
@@ -198,7 +202,7 @@ export function StatsScreen({
         <Button
           label={t('sharing.worldAction')}
           variant="quiet"
-          disabled={loading || app.busy}
+          disabled={loading || busy}
           onPress={onShare}
         />
         <AppPressable
@@ -266,7 +270,7 @@ export function StatsScreen({
               <Button
                 label={t('settings.changeHome')}
                 variant="quiet"
-                disabled={loading || app.busy}
+                disabled={loading || busy}
                 onPress={onChooseHome}
               />
             </View>
@@ -274,7 +278,7 @@ export function StatsScreen({
             <Button
               label={t('countries.stats.chooseHome')}
               variant="quiet"
-              disabled={loading || app.busy}
+              disabled={loading || busy}
               onPress={onChooseHome}
             />
           )}

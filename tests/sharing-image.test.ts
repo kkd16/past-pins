@@ -3,7 +3,7 @@ import type { View } from 'react-native';
 import type { CaptureOptions } from 'react-native-view-shot';
 
 import { countryIds } from '../src/countries/catalog';
-import { encodeBackup } from '../src/data/backup';
+import { encodeDocument } from '../src/data/document';
 import { defaultAppData } from '../src/data/model';
 import { t } from '../src/localization';
 import { subdivisionIds } from '../src/subdivisions/catalog';
@@ -193,7 +193,7 @@ test('backup imports restore every field when an exported file exceeds 1 MB', as
     name: `Trip ${index}`,
     placeIds,
   }));
-  const encoded = encodeBackup(data);
+  const encoded = encodeDocument(data, true);
   backupFile.size = new TextEncoder().encode(encoded).length;
   backupFile.text.mockResolvedValue(encoded);
   expect(backupFile.size).toBeGreaterThan(1_000_000);

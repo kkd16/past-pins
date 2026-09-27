@@ -7,6 +7,7 @@ import { countryFeatures } from '../src/countries/geography';
 import { GlobeCamera } from '../src/globe/camera';
 import { toCartesian, toGeographic } from '../src/globe/coordinates';
 import { pickCountry } from '../src/globe/picking';
+import metadata from '../src/atlas/metadata.json';
 import world from '../src/globe/world.json';
 
 const sourceById = new Map(
@@ -47,11 +48,14 @@ describe('bundled globe geometry', () => {
     expect(world.countries.map(({ id }) => id).sort()).toEqual(
       [...countryIds].sort(),
     );
+    expect(metadata.countries.map(({ id }) => id)).toEqual(
+      world.countries.map(({ id }) => id),
+    );
     expect(
       [
         ...world.positions,
         ...world.borders,
-        ...world.markers.flatMap(({ position }) => position),
+        ...metadata.markers.flatMap(({ position }) => position),
       ].every(Number.isFinite),
     ).toBe(true);
     expect(world.positions.length % 3).toBe(0);
@@ -75,7 +79,7 @@ describe('bundled globe geometry', () => {
       nextVertex += country.vertexCount;
       const shape = sourceById.get(country.id)!;
       if (geoArea(shape) > 0) expect(country.vertexCount).toBeGreaterThan(0);
-      else expect(world.markers.some(({ id }) => id === country.id)).toBe(true);
+      else expect(metadata.markers.some(({ id }) => id === country.id)).toBe(true);
     }
     expect(nextVertex).toBe(world.positions.length / 3);
   });
@@ -318,7 +322,7 @@ describe('globe camera and country picking', () => {
       quat.rotateY(camera.rotation, camera.rotation, (-lon * Math.PI) / 180);
       expect(pickCountry(camera, 195, 422)).toBe(id);
     }
-    for (const marker of world.markers) {
+    for (const marker of metadata.markers) {
       const [lon, lat] = toGeographic(
         marker.position as [number, number, number],
       );

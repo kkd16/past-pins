@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 
 import { defaultAppData } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
-import { encodeBackup } from '../src/data/backup';
+import { encodeDocument } from '../src/data/document';
 import { createSnapshotStorage } from '../src/storage/snapshot-storage';
 import { createArrivalTracker, parseArrival, type Arrival, type ArrivalLocation } from '../src/location/arrivals';
 
@@ -46,7 +46,7 @@ describe('country arrivals', () => {
     now += 8 * day;
     await f.tracker.process([fix('ca')]);
     expect(f.send).toHaveBeenCalledTimes(1);
-    expect(encodeBackup(f.app.getSnapshot().data)).not.toContain('notifiedAt');
+    expect(encodeDocument(f.app.getSnapshot().data)).not.toContain('notifiedAt');
     expect(f.values.get('country-arrivals')).not.toContain('longitude');
   });
 

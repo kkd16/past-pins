@@ -30,7 +30,6 @@ type SubdivisionMapProps = {
   focusRequest?: number;
 };
 
-/** The screen's region list supplies the accessible equivalent to map gestures. */
 export function SubdivisionMap({
   countryId,
   statuses,
@@ -61,8 +60,6 @@ export function SubdivisionMap({
     [map, fitScale],
   );
 
-  // Transform the vectors inside a fixed SVG viewport, keeping close zooms crisp.
-  // Native props avoid reconciling every country path on each gesture frame.
   const draw = useCallback(() => {
     if (!camera.scale) return;
     land.current?.setNativeProps({ matrix: camera.matrix });
@@ -83,8 +80,6 @@ export function SubdivisionMap({
     camera.start();
   }, [camera, controller, viewport]);
   useLayoutEffect(() => {
-    // View toggles preserve pan and zoom; explicit selections and layout changes
-    // reframe the region in the usable area, even while the map is hidden.
     if (selected && camera.scale)
       controller.move(() => camera.focus(selected.bounds));
   }, [camera, controller, focusRequest, selected, viewport]);
@@ -192,7 +187,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.globe.ocean,
     overflow: 'hidden',
   },
-  // Geographic content keeps its coordinates when surrounding UI uses RTL.
   viewport: { flex: 1, direction: 'ltr' },
   reset: {
     ...theme.surface.floating,

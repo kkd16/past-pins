@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { AppDataProvider } from '../data/AppDataProvider';
+import { AppDataEffects } from '../data/AppData';
 import { AppToastHost } from '../feedback/AppToastHost';
 import { ToastProvider } from '../feedback/ToastProvider';
 import { ReducedMotionProvider } from '../motion/ReducedMotion';
@@ -20,12 +20,11 @@ export default function AppShell() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ReducedMotionProvider>
         <ToastProvider>
-          <AppDataProvider>
-            <StatusBar style={theme.appearance.statusBarStyle} />
-            <AppNavigator />
-            <AppToastHost />
-            <CountryArrivalNotifications />
-          </AppDataProvider>
+          <AppDataEffects />
+          <StatusBar style={theme.appearance.statusBarStyle} />
+          <AppNavigator />
+          <AppToastHost />
+          <CountryArrivalNotifications />
         </ToastProvider>
       </ReducedMotionProvider>
     </GestureHandlerRootView>

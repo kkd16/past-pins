@@ -10,7 +10,8 @@ import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
 import { normalizeSearch } from '../countries/search';
-import { useAppData } from '../data/AppDataProvider';
+import { appData as app } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { getListStatistics } from '../lists/places';
 import { formatPlaceName, getPlace } from '../places/catalog';
 import { promptListName } from '../lists/prompt';
@@ -25,12 +26,14 @@ export function ListsScreen({
   onOpen: (id: string) => void;
   onCreate: (id: string) => void;
 }) {
-  const app = useAppData();
-  const guard = useActionGuard(app.data.lists);
+  const data = useAppData((snapshot) => snapshot.data);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const guard = useActionGuard(data.lists);
   const [query, setQuery] = useState('');
-  const disabled = app.status !== 'ready' || app.busy;
+  const disabled = dataStatus !== 'ready' || busy;
   const term = normalizeSearch(query);
-  const matches = app.data.lists
+  const matches = data.lists
     .filter((list) => normalizeSearch(list.name).includes(term))
     .sort((a, b) => compareNames(a.name, b.name));
 
@@ -45,8 +48,8 @@ export function ListsScreen({
   return (
     <Screen>
       <FlatList
-        data={app.status === 'ready' ? matches : []}
-        extraData={app.data}
+        data={dataStatus === 'ready' ? matches : []}
+        extraData={data}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={styles.content}
@@ -66,7 +69,7 @@ export function ListsScreen({
               />
             </ScreenHeader>
             <DataFeedback />
-            {app.data.lists.length > 0 && (
+            {data.lists.length > 0 && (
               <SearchField
                 value={query}
                 onChangeText={setQuery}
@@ -77,18 +80,18 @@ export function ListsScreen({
           </View>
         }
         ListEmptyComponent={
-          app.status === 'ready' ? (
+          dataStatus === 'ready' ? (
             <View style={styles.empty}>
               <AppText variant="heading">
                 {t(
-                  app.data.lists.length
+                  data.lists.length
                     ? 'lists.noListsFound'
                     : 'lists.emptyTitle',
                 )}
               </AppText>
               <AppText tone="muted">
                 {t(
-                  app.data.lists.length
+                  data.lists.length
                     ? 'lists.noListsFoundHint'
                     : 'lists.emptyHint',
                 )}
@@ -98,7 +101,7 @@ export function ListsScreen({
         }
         ItemSeparatorComponent={Separator}
         renderItem={({ item }) => {
-          const stats = getListStatistics(item, app.data);
+          const stats = getListStatistics(item, data);
           const counts = {
             visited: formatNumber(stats.visited),
             total: formatNumber(stats.total),

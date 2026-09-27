@@ -7,7 +7,6 @@ import { appStorage } from '../storage/app-storage';
 import { diagnostics } from '../recovery/diagnostics-file';
 import { createAppDataStore } from './store';
 
-// The UI and background tasks must see the same current travel data.
 export const appData = createAppDataStore(appStorage, {
   report: (operation, error) => diagnostics.record(operation, error),
   confirmHomeChange: (id) =>

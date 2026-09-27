@@ -1,8 +1,9 @@
+import type { DataSnapshot } from '../src/data/store';
 import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
 import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 
-import { encodeBackup } from '../src/data/backup';
+import { encodeDocument } from '../src/data/document';
 import { defaultAppData, defaultPreferences } from '../src/data/model';
 import { createToastStore } from '../src/feedback/store';
 import { formatNumber, t } from '../src/localization';
@@ -14,8 +15,8 @@ import { native, navigation } from './setup';
 const { appData } = await import('../src/data/app-data');
 let toast = createToastStore();
 mock.module('../src/feedback/ToastProvider', () => ({ useToast: () => toast }));
-mock.module('../src/data/AppDataProvider', () => ({
-  useAppData: () => ({ ...appData, ...useSyncExternalStore(appData.subscribe, appData.getSnapshot) }),
+mock.module('../src/data/AppData', () => ({
+  useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => useSyncExternalStore(appData.subscribe, () => select(appData.getSnapshot())),
 }));
 mock.module('../src/components/ChoiceRow', () => ({ ChoiceRow: 'ChoiceRow' }));
 mock.module('../src/components/ToggleRow', () => ({ ToggleRow: 'ToggleRow' }));
@@ -79,7 +80,7 @@ test('backup preview shows simple totals and keeps data intact until confirmed',
     lists: [{ id: 'trip', name: 'Trip', placeIds: ['ca', 'jp'] }],
     homeCountryId: 'ca',
   };
-  backupFile.text.mockResolvedValue(encodeBackup(backup));
+  backupFile.text.mockResolvedValue(encodeDocument(backup));
   const before = appData.getSnapshot().data;
   await press(t('settings.restoreBackup'));
   expect(native.Alert.alert.mock.calls.at(-1)!.slice(0, 2)).toEqual([

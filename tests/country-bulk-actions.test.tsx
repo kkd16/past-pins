@@ -1,20 +1,27 @@
-import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
+import { defaultAppData } from '../src/data/model';
+import type { DataSnapshot } from '../src/data/store';
+import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
 import { act, type ComponentProps } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 
 import type { PlaceStatus } from '../src/data/model';
 import { t } from '../src/localization';
 import { navigation } from './setup';
+import './native-location';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let chooseStatus: (status: PlaceStatus) => void;
-const setStatus = mock<(ids: string[], status: PlaceStatus) => Promise<boolean>>();
+const { appData } = await import('../src/data/app-data');
+let setStatus: ReturnType<typeof spyOn<typeof appData, 'setStatus'>>;
 
 mock.module('../src/components/AppText', () => ({ AppText: 'Text' }));
 mock.module('../src/components/Button', () => ({ Button: 'Button' }));
 mock.module('../src/components/Surface', () => ({ Surface: 'Surface' }));
-mock.module('../src/data/AppDataProvider', () => ({
-  useAppData: () => ({ status: 'ready', busy: false, setStatus }),
+mock.module('../src/data/AppData', () => ({
+  useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => select({
+    data: defaultAppData(), status: 'ready', busy: false,
+    saveError: false, resetVersion: 0, pendingUndo: null,
+  }),
 }));
 mock.module('../src/countries/StatusPicker', () => ({
   showStatusPicker: (_title: string, onSelect: typeof chooseStatus) => {
@@ -29,8 +36,7 @@ let props: Props;
 
 beforeEach(() => {
   navigation.focused = true;
-  setStatus.mockReset();
-  setStatus.mockResolvedValue(true);
+  setStatus = spyOn(appData, 'setStatus').mockResolvedValue(true);
   root = createRoot({ isStrictMode: true });
   props = {
     resultIds: ['ca', 'fr'],
@@ -42,6 +48,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   await act(async () => root.unmount());
+  setStatus.mockRestore();
   navigation.focused = true;
 });
 
@@ -68,7 +75,7 @@ test('bulk status closes selection only after the update is applied', async () =
   await render();
   await openStatusPicker();
   await act(async () => chooseStatus('visited'));
-  expect(setStatus).toHaveBeenCalledWith(['ca'], 'visited');
+  expect(setStatus).toHaveBeenCalledWith(['ca'], 'visited', { isCurrent: expect.any(Function) });
   expect(props.onEndSelection).not.toHaveBeenCalled();
 
   await act(async () => saving.resolve(true));

@@ -185,9 +185,10 @@ export function createAppDataStore(
     async setStatus(
       ids: readonly string[],
       status: PlaceStatus,
-      options?: { preserveLived?: boolean },
+      options?: { preserveLived?: boolean; isCurrent?: () => boolean },
     ): Promise<boolean> {
-      if (!editable()) return false;
+      const isCurrent = options?.isCurrent ?? (() => true);
+      if (!editable() || !isCurrent()) return false;
       if (ids.some((id) => !countryIds.has(id)))
         throw new UserFacingError(t('common.errors.unknownCountry'));
       const next = changePlaceStatus(
@@ -204,7 +205,7 @@ export function createAppDataStore(
         } finally {
           publish({ busy: false });
         }
-        if (!editable()) return false;
+        if (!editable() || !isCurrent()) return false;
       }
       const count = [...new Set(ids)].filter(
         (id) => next.places[id] !== snapshot.data.places[id],
@@ -334,7 +335,6 @@ export function createAppDataStore(
     },
     async restore(data: AppData) {
       const next = validateAppData(data);
-      // Restoring travel data must not restart a completed welcome flow.
       next.onboardingCompleted ||= snapshot.data.onboardingCompleted;
       await replace(next, { checkpoints: 'create' });
     },

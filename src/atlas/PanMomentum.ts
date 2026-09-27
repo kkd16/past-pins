@@ -1,4 +1,3 @@
-// Integrate exponential friction so momentum travels the same distance at 60/120 Hz.
 export class PanMomentum {
   x = 0;
   y = 0;

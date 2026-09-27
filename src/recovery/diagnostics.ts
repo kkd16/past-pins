@@ -1,4 +1,4 @@
-import { CURRENT_SCHEMA_VERSION } from '../data/document';
+import { CURRENT_SCHEMA_VERSION } from '../data/model';
 import { DATA_ERROR_CODES, DataError } from '../data/data-error';
 
 const operations = ['load', 'save', 'restore', 'reset', 'render', 'reminders', 'export'] as const;

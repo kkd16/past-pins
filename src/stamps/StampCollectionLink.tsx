@@ -4,19 +4,20 @@ import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Icon } from '../components/Icon';
 import { countries } from '../countries/catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { formatNumber, t } from '../localization';
 import { theme } from '../theme';
 import { CountryStamp } from './CountryStamp';
 import { selectStampCountries } from './collection';
 
 export function StampCollectionLink({ onPress }: { onPress: () => void }) {
-  const app = useAppData();
+  const places = useAppData((snapshot) => snapshot.data.places);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
   const { fontScale } = useWindowDimensions();
-  const collected = selectStampCountries(app.data.places, '', 'collected');
-  const ready = app.status === 'ready';
+  const collected = selectStampCountries(places, '', 'collected');
+  const ready = dataStatus === 'ready';
   const unavailableMessage = t(
-    app.status === 'load-error'
+    dataStatus === 'load-error'
       ? 'countries.loadError'
       : 'countries.loadingPlaces',
   );

@@ -1,4 +1,4 @@
-import { documentCodec } from '../data/document';
+import { decodeDocument, encodeDocument } from '../data/document';
 import { DataError, dataError } from '../data/data-error';
 import { defaultAppData, type AppData } from '../data/model';
 
@@ -19,7 +19,6 @@ export interface KeyValueStorage {
 export type Checkpoint = {
   id: string;
   createdAt: number;
-  reason: 'migration' | 'restore';
   document: string;
 };
 export const DATA_KEY = 'app-data';
@@ -31,21 +30,17 @@ function checkpoints(text: string | null): Checkpoint[] {
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw new DataError('invalid-document'); }
   if (!Array.isArray(value) || value.length > MAX_CHECKPOINTS || value.some((item) =>
-    !item || typeof item !== 'object' || Object.keys(item).length !== 4 ||
+    !item || typeof item !== 'object' || Object.keys(item).length !== 3 ||
     typeof item.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(item.id) ||
     !Number.isSafeInteger(item.createdAt) || item.createdAt < 0 ||
     !Number.isFinite(new Date(item.createdAt).getTime()) ||
-    (item.reason !== 'migration' && item.reason !== 'restore') ||
     typeof item.document !== 'string',
   ) || new Set(value.map((item) => item.id)).size !== value.length
   ) throw new DataError('invalid-document');
   return value;
 }
 
-export function createSnapshotStorage(
-  storage: KeyValueStorage,
-  codec: typeof documentCodec = documentCodec,
-) {
+export function createSnapshotStorage(storage: KeyValueStorage) {
   let queue = Promise.resolve();
   let sequence = 0;
   function enqueue<T>(operation: () => Promise<T>): Promise<T> {
@@ -65,7 +60,7 @@ export function createSnapshotStorage(
     try { await storage.multiSet(entries); }
     catch (error) { throw dataError(error, 'storage-write'); }
   }
-  async function replace(text: string, reason: Checkpoint['reason']) {
+  async function replace(text: string) {
     const original = await read(DATA_KEY);
     const history = checkpoints(await read(CHECKPOINTS_KEY));
     if (original !== null) {
@@ -73,7 +68,7 @@ export function createSnapshotStorage(
       let id: string;
       do { id = `${createdAt.toString(36)}-${++sequence}`; }
       while (history.some((item) => item.id === id));
-      history.unshift({ id, createdAt, reason, document: original });
+      history.unshift({ id, createdAt, document: original });
     }
     await write([
       [DATA_KEY, text],
@@ -100,18 +95,16 @@ export function createSnapshotStorage(
           if (checkpoints(await read(CHECKPOINTS_KEY)).length) throw new DataError('invalid-document');
           return defaultAppData();
         }
-        const result = codec.decode(text);
-        if (result.migrated) await replace(JSON.stringify(codec.encode(result.data)), 'migration');
-        return result.data;
+        return decodeDocument(text);
       });
     },
     async save(data: AppData, options: SaveOptions = {}) {
-      const text = JSON.stringify(codec.encode(data));
+      const text = encodeDocument(data);
       await enqueue(async () => {
         if (options.checkpoints === 'discard') {
           await write([[DATA_KEY, text], [CHECKPOINTS_KEY, '[]']]);
         } else if (options.checkpoints === 'create') {
-          await replace(text, 'restore');
+          await replace(text);
         } else {
           await writeItem(DATA_KEY, text);
         }
@@ -124,7 +117,7 @@ export function createSnapshotStorage(
       return enqueue(async () => {
         const checkpoint = checkpoints(await read(CHECKPOINTS_KEY)).find((item) => item.id === id);
         if (!checkpoint) throw new DataError('invalid-document');
-        return codec.decode(checkpoint.document).data;
+        return decodeDocument(checkpoint.document);
       });
     },
     readRaw() {

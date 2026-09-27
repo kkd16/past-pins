@@ -31,7 +31,6 @@ export class FlatController<Camera extends ProjectedCamera = ProjectedCamera> {
     if (active) this.invalidate();
     else {
       this.interacting = false;
-      // An iOS alert can interrupt an acknowledged camera command.
       this.finishMove();
     }
   }
@@ -150,7 +149,6 @@ export class FlatController<Camera extends ProjectedCamera = ProjectedCamera> {
       const before = this.camera.center;
       const delta = this.momentum.step(dt);
       this.camera.drag(delta.x, delta.y);
-      // Stop each axis at the map edge instead of spending frames pushing against it.
       if (this.camera.center[0] === before[0]) this.momentum.x = 0;
       if (this.camera.center[1] === before[1]) this.momentum.y = 0;
     }

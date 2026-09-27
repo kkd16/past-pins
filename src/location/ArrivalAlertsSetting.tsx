@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 
 import { ToggleRow } from '../components/ToggleRow';
-import { appData } from '../data/app-data';
-import { useAppData } from '../data/AppDataProvider';
+import { appData as app } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
@@ -11,15 +11,15 @@ import { SettingsSection } from '../settings/SettingsSection';
 import { requestArrivalPermissions } from './arrival-permissions';
 
 export function ArrivalAlertsSetting({ disabled }: { disabled: boolean }) {
-  const app = useAppData();
-  const guard = useActionGuard(app.data);
+  const data = useAppData((snapshot) => snapshot.data);
+  const guard = useActionGuard(data);
   const running = useRef(false);
   const [working, setWorking] = useState(false);
 
   async function change(enabled: boolean) {
     if (running.current || disabled) return;
     const focused = guard();
-    const isCurrent = () => focused() && appData.getSnapshot().data === app.data;
+    const isCurrent = () => focused() && app.getSnapshot().data === data;
     if (!isCurrent()) return;
     if (!enabled) {
       app.updatePreferences({ countryArrivalAlerts: false });
@@ -31,7 +31,6 @@ export function ArrivalAlertsSetting({ disabled }: { disabled: boolean }) {
       await requestArrivalPermissions(isCurrent);
       if (isCurrent()) app.updatePreferences({ countryArrivalAlerts: true });
     } catch (error) {
-      // Permission prompts can outlive the screen that requested them.
       if (!isCurrent()) return;
       Alert.alert(
         t('location.arrivalUnavailable'),
@@ -56,7 +55,7 @@ export function ArrivalAlertsSetting({ disabled }: { disabled: boolean }) {
       <ToggleRow
         title={t('location.arrivalSetting')}
         description={t('location.arrivalDescription')}
-        value={app.data.preferences.countryArrivalAlerts}
+        value={data.preferences.countryArrivalAlerts}
         disabled={disabled || working}
         onValueChange={(enabled) => void change(enabled)}
       />

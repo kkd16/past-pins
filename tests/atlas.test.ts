@@ -19,7 +19,7 @@ import { pickFlatCountry } from '../src/atlas/picking';
 import { countryFeatures, countryPolygons } from '../src/countries/geography';
 import { GlobeCamera } from '../src/globe/camera';
 import { toCartesian } from '../src/globe/coordinates';
-import world from '../src/globe/world.json';
+import metadata from '../src/atlas/metadata.json';
 
 describe('source-derived atlas', () => {
   test('every anchor is inside its largest source polygon, except source-degenerate markers', () => {
@@ -38,7 +38,6 @@ describe('source-derived atlas', () => {
       const [[left, top], [right, bottom]] = flatCountryById.get(id)!.bounds;
       const [x, y] = projection(anchor.anchor as [number, number])!;
       expect([left, top, right, bottom].every(Number.isFinite)).toBe(true);
-      // Focus bounds must contain the anchor, allowing asset rounding.
       expect(x).toBeGreaterThanOrEqual(left - 0.001);
       expect(x).toBeLessThanOrEqual(right + 0.001);
       expect(y).toBeGreaterThanOrEqual(top - 0.001);
@@ -59,7 +58,7 @@ describe('source-derived atlas', () => {
       'nz',
       'aq',
       'ls',
-      ...world.markers.map(({ id }) => id),
+      ...metadata.markers.map(({ id }) => id),
     ]) {
       camera.focus(id);
       const point = camera.project(countryAnchors.get(id)!.anchor)!;
@@ -336,7 +335,6 @@ describe('map markers and sparse labels', () => {
     }));
     const labels = placeLabels(candidates, bounds, [blocked]);
     expect(labels.length).toBe(12);
-    // Measure the largest separating axis, independently of the collision helper.
     const separation = (a: Rect, b: Rect) =>
       Math.max(
         b.x - (a.x + a.width),

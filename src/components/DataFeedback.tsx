@@ -1,6 +1,7 @@
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { theme } from '../theme';
 import { t, language } from '../localization';
 import { AppText } from './AppText';
@@ -8,7 +9,10 @@ import { Button } from './Button';
 import { Surface } from './Surface';
 
 export function DataFeedback() {
-  const { status, saveError, retry, busy } = useAppData();
+  const { retry } = appData;
+  const status = useAppData((snapshot) => snapshot.status);
+  const saveError = useAppData((snapshot) => snapshot.saveError);
+  const busy = useAppData((snapshot) => snapshot.busy);
   if (status === 'loading')
     return (
       <ActivityIndicator

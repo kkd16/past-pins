@@ -14,8 +14,6 @@ export const appStorage = createSnapshotStorage({
   multiSet: async (entries) => { assertStartupResetComplete(); await database.multiSet(entries); },
   async clear() {
     assertStartupResetComplete();
-    // Remove backup leftovers, including imports interrupted by an app exit.
-    // Leave Expo's runtime caches alone (especially when running in Expo Go).
     if (Paths.cache.exists) {
       for (const item of Paths.cache.list()) {
         if (

@@ -23,7 +23,6 @@ export async function arrivalPermissionsGranted() {
 
 export type ArrivalPermission = 'location' | 'background' | 'notifications';
 
-/** Request one permission without implicitly prompting for its prerequisites. */
 export async function requestArrivalPermission(
   permission: ArrivalPermission,
   isCurrent: () => boolean = () => true,
@@ -37,7 +36,6 @@ export async function requestArrivalPermission(
     if (!(await arrivalMonitoringAvailable()))
       throw new UserFacingError(t('location.arrivalBuildRequired'));
     if (!isCurrent()) return;
-    // A deep link or revoked permission must not trigger an earlier step's prompt.
     const prerequisite = permission === 'background'
       ? await Location.getForegroundPermissionsAsync()
       : await Location.getBackgroundPermissionsAsync();
@@ -58,7 +56,6 @@ export async function requestArrivalPermission(
   if (isCurrent() && !granted) throw new UserFacingError(t('location.arrivalPermissions'));
 }
 
-/** Settings can request all prerequisites after an explicit reminder opt-in. */
 export async function requestArrivalPermissions(isCurrent: () => boolean = () => true) {
   if (!isCurrent()) return;
   if (!(await arrivalMonitoringAvailable())) throw new UserFacingError(t('location.arrivalBuildRequired'));

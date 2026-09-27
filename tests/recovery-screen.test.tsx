@@ -3,7 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 
 import { DataError } from '../src/data/data-error';
-import { encodeBackup } from '../src/data/backup';
+import { encodeDocument } from '../src/data/document';
 import { defaultAppData } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
 import { formatDate, t } from '../src/localization';
@@ -27,7 +27,7 @@ beforeEach(async () => {
   await arrivalStorage.load();
   native.Alert.alert.mockReset();
   native.AccessibilityInfo.announceForAccessibilityWithOptions.mockClear();
-  backupFile.text.mockReset().mockResolvedValue(encodeBackup(defaultAppData()));
+  backupFile.text.mockReset().mockResolvedValue(encodeDocument(defaultAppData()));
   backupFile.write.mockClear();
   sharing.shareAsync.mockClear();
   sharing.isAvailableAsync.mockReset().mockResolvedValue(true);
@@ -170,7 +170,7 @@ test('full reset is confirmed, recovers from failure, and retries the app only a
   } finally { clearing.mockRestore(); }
 });
 
-test('the Router boundary gates the shared owner and retries without requiring its provider', async () => {
+test('the Router boundary gates the shared store and retries independently of the app shell', async () => {
   const { appData } = await import('../src/data/app-data');
   const { RecoveryBoundary } = await import('../src/recovery/RecoveryBoundary');
   await appData.load();
@@ -183,7 +183,7 @@ test('the Router boundary gates the shared owner and retries without requiring i
   expect(appData.getSnapshot().recovery).toBe(false);
 });
 
-test('a crash before the data provider mounts still loads the cold store and enables recovery actions', async () => {
+test('a crash before app initialization still loads the cold store and enables recovery actions', async () => {
   const { appData } = await import('../src/data/app-data');
   const { RecoveryBoundary } = await import('../src/recovery/RecoveryBoundary');
   const cold = createAppDataStore(arrivalStorage, { confirmHomeChange: async () => true });
@@ -193,7 +193,7 @@ test('a crash before the data provider mounts still loads the cold store and ena
   const enter = spyOn(appData, 'enterRecovery').mockImplementation(cold.enterRecovery);
   const leave = spyOn(appData, 'leaveRecovery').mockImplementation(cold.leaveRecovery);
   try {
-    await act(async () => root.render(<RecoveryBoundary error={new Error('failed before provider commit')} retry={async () => {}} />));
+    await act(async () => root.render(<RecoveryBoundary error={new Error('failed before app initialization')} retry={async () => {}} />));
     expect(load).toHaveBeenCalled();
     expect(cold.getSnapshot()).toMatchObject({ status: 'ready', recovery: true });
     expect(button(t('settings.resetApp')).props.disabled).toBe(false);

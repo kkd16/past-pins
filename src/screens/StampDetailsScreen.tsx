@@ -6,7 +6,7 @@ import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { countryById } from '../countries/catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { getPlaceStatus, isVisited } from '../data/model';
 import { language, t } from '../localization';
 import { CountryStamp } from '../stamps/CountryStamp';
@@ -21,10 +21,11 @@ export function StampDetailsScreen({
   onClose: () => void;
   onShare: () => void;
 }) {
-  const app = useAppData();
+  const collected = useAppData((snapshot) => isVisited(getPlaceStatus(snapshot.data, id)));
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const country = countryById.get(id);
-  const ready = app.status === 'ready';
-  const collected = isVisited(getPlaceStatus(app.data, id));
+  const ready = dataStatus === 'ready';
 
   return (
     <Screen>
@@ -67,7 +68,7 @@ export function StampDetailsScreen({
             <Button
               label={t('sharing.stampAction')}
               variant="quiet"
-              disabled={!ready || app.busy}
+              disabled={!ready || busy}
               onPress={onShare}
             />
           </>

@@ -2,19 +2,18 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
-import { decodeBackup, encodeBackup } from '../data/backup';
+import { decodeDocument, encodeDocument } from '../data/document';
 import type { AppData } from '../data/model';
 
 function discardCachedFile(file: File) {
   try {
     if (file.uri.startsWith(Paths.cache.uri) && file.exists) file.delete();
   } catch {
-    // Cache cleanup must not turn a successful backup into an error.
   }
 }
 
 export async function shareBackup(data: AppData) {
-  await shareDataFile(encodeBackup(data), 'Backup');
+  await shareDataFile(encodeDocument(data, true), 'Backup');
 }
 
 export async function shareDataFile(text: string, kind: 'Backup' | 'Recovery' | 'Diagnostics') {
@@ -37,7 +36,7 @@ export async function pickBackup(): Promise<AppData | null> {
   if (result.canceled) return null;
   const file = new File(result.assets[0].uri);
   try {
-    return decodeBackup(await file.text());
+    return decodeDocument(await file.text());
   } finally {
     discardCachedFile(file);
   }

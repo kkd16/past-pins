@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 
-import { useAppData } from '../../data/AppDataProvider';
+import { useAppData } from '../../data/AppData';
 import { ListsScreen } from '../../screens/ListsScreen';
 
 export default function ListsRoute() {
-  const { resetVersion } = useAppData();
+  const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
   return (
     <ListsScreen
       key={resetVersion}

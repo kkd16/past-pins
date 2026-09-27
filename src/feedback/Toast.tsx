@@ -64,7 +64,6 @@ export function Toast({
   }, [id, visible]);
 
   useEffect(() => {
-    // Leave enough time to navigate to Undo without moving VoiceOver focus.
     if (!visible || actionDisabled || (screenReaderEnabled && action)) return;
     const timeout = setTimeout(
       () => dismiss(),

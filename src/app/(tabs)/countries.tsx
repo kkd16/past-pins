@@ -7,7 +7,7 @@ import {
   readCountryScope,
   type CountryScope,
 } from '../../countries/filters';
-import { useAppData } from '../../data/AppDataProvider';
+import { useAppData } from '../../data/AppData';
 import { CountriesScreen } from '../../screens/CountriesScreen';
 import { RegionsScreen } from '../../screens/RegionsScreen';
 import { getPlace } from '../../places/catalog';
@@ -22,7 +22,7 @@ export default function CountriesRoute() {
     intent?: string;
     mode?: string;
   }>();
-  const { data } = useAppData();
+  const grouping = useAppData((snapshot) => snapshot.data.preferences.countryGrouping);
   const requestedQuery =
     typeof params.query === 'string' ? params.query : undefined;
   const intent = typeof params.intent === 'string' ? params.intent : undefined;
@@ -35,7 +35,6 @@ export default function CountriesRoute() {
       request: requestedQuery,
       value: requestedQuery ?? search.value,
     });
-  // Consume navigation requests so the same search link works again later.
   useEffect(() => {
     if (requestedQuery !== undefined) router.setParams({ query: undefined });
   }, [requestedQuery]);
@@ -45,7 +44,7 @@ export default function CountriesRoute() {
   );
   const filters = readCountryFilters({
     continent: params.continent,
-    grouping: data.preferences.countryGrouping,
+    grouping,
   });
   const mode = params.mode === 'regions' ? 'regions' : 'countries';
   const scope = readCountryScope(params.scope);

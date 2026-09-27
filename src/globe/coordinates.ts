@@ -2,7 +2,6 @@ import type { ReadonlyVec3 } from 'gl-matrix';
 
 const radians = Math.PI / 180;
 
-// +Y is north; longitude 0 faces +Z.
 export function toCartesian([longitude, latitude]: readonly number[]): [
   number,
   number,

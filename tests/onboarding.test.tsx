@@ -1,3 +1,4 @@
+import type { DataSnapshot } from '../src/data/store';
 import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
 import type { NotificationPermissionsStatus } from 'expo-notifications';
 import { act, useSyncExternalStore } from 'react';
@@ -12,11 +13,8 @@ import './native-sharing';
 
 const { appData } = await import('../src/data/app-data');
 const motion = { reduced: false };
-mock.module('../src/data/AppDataProvider', () => ({
-  useAppData: () => ({
-    ...appData,
-    ...useSyncExternalStore(appData.subscribe, appData.getSnapshot),
-  }),
+mock.module('../src/data/AppData', () => ({
+  useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => useSyncExternalStore(appData.subscribe, () => select(appData.getSnapshot())),
 }));
 mock.module('../src/components/AppText', () => ({ AppText: 'Text' }));
 mock.module('../src/components/AppPressable', () => ({ AppPressable: 'AppPressable' }));
@@ -191,13 +189,11 @@ test('each slide requests only its own permission and only the last slide finish
   expect(await arrivalStorage.load()).toMatchObject({
     onboardingCompleted: true, preferences: { countryArrivalAlerts: true },
   });
-  // The root arrival observer owns startup after completion, not this screen.
   expect(location.startLocationUpdatesAsync).not.toHaveBeenCalled();
 });
 
 test.each(permissionSteps)(
   'denying $name leaves a way to finish without requesting other permissions', async ({ Screen, action, request }) => {
-    // Background denial also covers iOS silently denying Always after Allow Once.
     request.mockResolvedValue({ granted: false } as NotificationPermissionsStatus);
     await act(async () => root.render(<Screen />));
     await press(t(action));

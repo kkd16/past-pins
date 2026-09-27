@@ -5,8 +5,6 @@ import { theme } from '../theme';
 
 type MapAppearance = Pick<PathProps, 'fill' | 'stroke' | 'strokeWidth'>;
 
-// Memoize individual vectors so a status or selection change only reconciles
-// affected native paths. Every flat map uses the same stroke and fill semantics.
 export const MapPath = memo(function MapPath(props: PathProps) {
   return <Path {...props} vectorEffect="non-scaling-stroke" />;
 });

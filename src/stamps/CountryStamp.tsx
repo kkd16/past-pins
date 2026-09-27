@@ -6,7 +6,6 @@ import { getStampOutline } from './outline';
 
 const inks = ['#315745', '#365870', '#725068'] as const;
 
-/** Decorative artwork; the containing card supplies its native text and label. */
 export const CountryStamp = memo(function CountryStamp({
   country,
   collected,

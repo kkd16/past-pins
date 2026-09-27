@@ -20,11 +20,10 @@ export class SubdivisionCamera extends ProjectedCamera {
   focus(bounds: Bounds) {
     if (!this.fitScale) return;
     const [[left, top], [right, bottom]] = bounds;
-    // Frame the region with padding, then keep the camera inside the map.
     this.zoom = Math.max(
       1,
       Math.min(
-        60, // Keep automatic framing wider than the manual zoom limit.
+        60,
         (this.width * 0.72) / Math.max((right - left) * this.fitScale, 0.01),
         (this.height * 0.72) / Math.max((bottom - top) * this.fitScale, 0.01),
       ),
@@ -42,7 +41,6 @@ export function needsSubdivisionMarker(
   return Math.max(right - left, bottom - top) * scale < 8;
 }
 
-/** Generated paths contain only absolute M/L/Z commands. Decode one country. */
 export function subdivisionPickShapes(
   regions: readonly SubdivisionMapRegion[],
 ) {
@@ -90,7 +88,6 @@ export function pickSubdivision(
     )
       continue;
     let inside = false;
-    // Even-odd winding matches the SVG fill rule, including holes and islands.
     for (const ring of region.rings) {
       for (
         let index = 0, previous = ring.length - 1;

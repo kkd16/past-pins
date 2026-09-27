@@ -2,7 +2,6 @@ import { vec3 } from 'gl-matrix';
 
 export type Point = [number, number, number];
 
-// Share edge midpoints to prevent cracks.
 export function subdivideSphere(
   points: Point[],
   triangles: number[],
@@ -46,7 +45,6 @@ export function subdivideSphere(
         const [ab, bc, ca] = mids as number[];
         next.push(a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca);
       } else {
-        // Rotate so the first edge splits and the preceding edge does not.
         const start = mids.findIndex(
           (mid, edge) => mid !== null && mids[(edge + 2) % 3] === null,
         );

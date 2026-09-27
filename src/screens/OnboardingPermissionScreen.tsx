@@ -5,8 +5,8 @@ import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
-import { appData } from '../data/app-data';
-import { useAppData } from '../data/AppDataProvider';
+import { appData as app } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { t } from '../localization';
 import { arrivalPermissionsGranted, requestArrivalPermission, type ArrivalPermission } from '../location/arrival-permissions';
 import { useActionGuard } from '../navigation/useActionGuard';
@@ -52,8 +52,10 @@ const actionLabels = {
 
 export function OnboardingPermissionScreen({ permission }: { permission: ArrivalPermission }) {
   const step = steps[permission];
-  const app = useAppData();
-  const guard = useActionGuard(app.data);
+  const data = useAppData((snapshot) => snapshot.data);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const guard = useActionGuard(data);
   const running = useRef(false);
   const [setup, setSetup] = useState<SetupState>({ status: 'offer' });
   const working = setup.status === 'working';
@@ -67,9 +69,9 @@ export function OnboardingPermissionScreen({ permission }: { permission: Arrival
   }, [message]));
 
   async function finish(requestPermission: boolean) {
-    if (running.current || app.busy || app.status !== 'ready') return;
+    if (running.current || busy || dataStatus !== 'ready') return;
     const focused = guard();
-    const isCurrent = () => focused() && appData.getSnapshot().data === app.data;
+    const isCurrent = () => focused() && app.getSnapshot().data === data;
     if (!isCurrent()) return;
     running.current = true;
     setSetup({ status: 'working' });
@@ -84,7 +86,6 @@ export function OnboardingPermissionScreen({ permission }: { permission: Arrival
             router.navigate(step.next);
             return;
           }
-          // Recheck after the final prompt in case access changed while it was open.
           enableReminders = await arrivalPermissionsGranted();
           if (isCurrent() && !enableReminders) next = { status: 'off' };
           if (!enableReminders) return;
@@ -97,8 +98,7 @@ export function OnboardingPermissionScreen({ permission }: { permission: Arrival
       try {
         await app.completeOnboarding(enableReminders);
       } catch {
-        // Retry the same choice, including after returning, without repeating prompts.
-        if (appData.getSnapshot().data === app.data)
+        if (app.getSnapshot().data === data)
           next = { status: 'retry', reminders: enableReminders };
       }
     } finally {
@@ -107,7 +107,7 @@ export function OnboardingPermissionScreen({ permission }: { permission: Arrival
     }
   }
 
-  const disabled = app.status !== 'ready' || app.busy || working;
+  const disabled = dataStatus !== 'ready' || busy || working;
 
   return (
     <OnboardingPage

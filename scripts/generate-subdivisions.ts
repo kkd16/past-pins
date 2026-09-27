@@ -47,9 +47,6 @@ const inputs = {
 const manifestFile = Bun.file(new URL('manifest.json', output));
 
 if (values.check) {
-  // CI stays offline: recorded output digests and exact generator/input digests
-  // detect source, code, country-catalog, and generated-file drift. --refresh
-  // fetches and verifies the upstream snapshot before reproducing the outputs.
   const manifest = await manifestFile.json();
   if (JSON.stringify(manifest.inputs) !== JSON.stringify(inputs)) {
     throw new Error(

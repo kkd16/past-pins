@@ -17,7 +17,7 @@ import {
   searchPlaces,
   type Place,
 } from '../places/catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { theme } from '../theme';
 import { t } from '../localization';
 
@@ -36,7 +36,9 @@ export function PlaceSearchScreen({
 }) {
   const [query, setQuery] = useState('');
   const list = useRef<FlatList<Place>>(null);
-  const { data, status, busy } = useAppData();
+  const data = useAppData((snapshot) => snapshot.data);
+  const status = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const ready = status === 'ready';
   const disabled = busy || !ready;
   const matches = useMemo(

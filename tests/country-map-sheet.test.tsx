@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
+import type { DataSnapshot } from '../src/data/store';
+import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
 import {
   act,
   createElement,
@@ -15,14 +16,13 @@ import { t } from '../src/localization';
 import { navigation } from './setup';
 import './native-location';
 
-// Keep React's real effects/unmount lifecycle. Native animation and scrolling
-// are boundaries here; recognition and finger tracking still need an iPhone.
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const collapse = mock();
 const expand = mock();
 const scrollTo = mock();
-const setStatus = mock();
-const setHome = mock();
+const { appData } = await import('../src/data/app-data');
+let setStatus: ReturnType<typeof spyOn<typeof appData, 'setStatus'>>;
+let setHome: ReturnType<typeof spyOn<typeof appData, 'setHome'>>;
 const { router } = navigation;
 let reducedMotion = false;
 let appStatus: 'ready' | 'loading' | 'load-error' = 'ready';
@@ -61,13 +61,12 @@ mock.module('../src/stamps/CountryStamp', () => ({ CountryStamp: 'CountryStamp' 
 mock.module('../src/components/DataFeedback', () => ({
   DataFeedback: 'DataFeedback',
 }));
-mock.module('../src/data/AppDataProvider', () => ({
-  useAppData: () => ({
+mock.module('../src/data/AppData', () => ({
+  useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => select({
     data: defaultAppData(),
     status: appStatus,
     busy: false,
-    setStatus,
-    setHome,
+    saveError: false, resetVersion: 0, pendingUndo: null,
   }),
 }));
 mock.module('../src/motion/ReducedMotion', () => ({
@@ -86,8 +85,8 @@ beforeEach(() => {
   collapse.mockClear();
   expand.mockClear();
   scrollTo.mockClear();
-  setStatus.mockClear();
-  setHome.mockClear();
+  setStatus = spyOn(appData, 'setStatus').mockResolvedValue(true);
+  setHome = spyOn(appData, 'setHome').mockImplementation(() => {});
   for (const action of Object.values(router)) action.mockClear();
   reducedMotion = false;
   appStatus = 'ready';
@@ -105,6 +104,8 @@ beforeEach(() => {
 
 afterEach(async () => {
   await act(async () => root.unmount());
+  setStatus.mockRestore();
+  setHome.mockRestore();
 });
 
 async function render(changes: Partial<Props> = {}) {
@@ -157,7 +158,6 @@ test.each([false, true])(
     expect(detailsHidden()).toBe(false);
     scrollTo.mockClear();
 
-    // A fast native transition can settle before onAnimate reaches JS.
     await act(async () => element('PlaceSelection').props.onDetails());
     expect(collapse).toHaveBeenCalledTimes(1);
     await settle(0);
@@ -252,6 +252,7 @@ test.each(['map', 'list'])('country actions work from the %s card', async (entry
 
   expect(setStatus).toHaveBeenCalledWith([props.id], 'visited', {
     preserveLived: false,
+    isCurrent: expect.any(Function),
   });
   expect(setHome).toHaveBeenCalledWith(props.id);
   expect(router.push.mock.calls).toEqual([

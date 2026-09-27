@@ -4,12 +4,13 @@ import { generateGlobe } from './globe-geometry';
 import { generateFlatMap } from './flat-map';
 
 const { values } = parseArgs({ options: { check: { type: 'boolean' } } });
+const { geometry, metadata } = generateGlobe();
 for (const [name, data] of [
-  ['globe', generateGlobe()],
-  ['atlas', generateFlatMap()],
+  ['globe/world', geometry],
+  ['atlas/metadata', metadata],
+  ['atlas/world', generateFlatMap()],
 ] as const) {
-  const path = new URL(`../src/${name}/world.json`, import.meta.url);
-  // Nine significant digits retain GPU float precision.
+  const path = new URL(`../src/${name}.json`, import.meta.url);
   const generated =
     JSON.stringify(data, (_key, value) =>
       typeof value === 'number' ? Number(value.toPrecision(9)) : value,

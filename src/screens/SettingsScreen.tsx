@@ -6,7 +6,8 @@ import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { ToggleRow } from '../components/ToggleRow';
 import { countryById } from '../countries/catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { recoveryMessage } from '../recovery/error-message';
 import { confirmDestructiveAction } from '../feedback/confirmDestructiveAction';
 import { useToast } from '../feedback/ToastProvider';
@@ -27,15 +28,15 @@ export function SettingsScreen({
   const toast = useToast();
   const { showToast } = toast;
   const {
-    data,
-    status,
-    busy,
     updatePreferences,
     restore,
     clearTravel,
     resetPreferences,
     resetApp,
-  } = useAppData();
+  } = appData;
+  const data = useAppData((snapshot) => snapshot.data);
+  const status = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const running = useRef(false);
   const guard = useActionGuard(data);
   const [operation, setOperation] = useState<DataAction | null>(null);

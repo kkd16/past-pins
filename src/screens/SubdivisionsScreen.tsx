@@ -18,8 +18,8 @@ import { countryById } from '../countries/catalog';
 import { CountryScopeControl } from '../countries/CountryScopeControl';
 import type { CountryScope } from '../countries/filters';
 import { showStatusPicker } from '../countries/StatusPicker';
-import { useAppData } from '../data/AppDataProvider';
-import { getSubdivisionStatus } from '../data/model';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { formatNumber, t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { PlaceSelectionCard } from '../places/PlaceSelectionCard';
@@ -57,9 +57,12 @@ export function SubdivisionsScreen({
   initialScope?: CountryScope;
   onSaveToLists: (id: string) => void;
 }) {
-  const app = useAppData();
+  const { setSubdivisionStatus } = appData;
+  const subdivisions = useAppData((snapshot) => snapshot.data.subdivisions);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
   const screenReader = useScreenReaderEnabled();
-  const { setSubdivisionStatus } = app;
   const country = countryById.get(countryId);
   const terminology = getCountrySubdivisionTerminology(countryId);
   const [view, setView] = useState<SubdivisionView>(
@@ -80,8 +83,8 @@ export function SubdivisionsScreen({
     ? subdivisionById.get(selectedId)
     : undefined;
   const results = useMemo(
-    () => selectSubdivisions(countryId, query, scope, app.data.subdivisions),
-    [countryId, query, scope, app.data.subdivisions],
+    () => selectSubdivisions(countryId, query, scope, subdivisions),
+    [countryId, query, scope, subdivisions],
   );
   const resultIds = useMemo(
     () => results.map((region) => region.id),
@@ -92,7 +95,7 @@ export function SubdivisionsScreen({
     query,
     scope,
     resultIds,
-    app.resetVersion,
+    resetVersion,
   ]);
   const [selection, setSelection] = useState<{
     key: string;
@@ -112,10 +115,10 @@ export function SubdivisionsScreen({
   );
   const guard = useActionGuard(editScope);
   const stats = useMemo(
-    () => getSubdivisionStatistics(app.data.subdivisions, countryId),
-    [app.data.subdivisions, countryId],
+    () => getSubdivisionStatistics(subdivisions, countryId),
+    [subdivisions, countryId],
   );
-  const disabled = app.status !== 'ready' || app.busy;
+  const disabled = dataStatus !== 'ready' || busy;
 
   const changeStatus = useCallback(
     (id: string) => {
@@ -207,7 +210,7 @@ export function SubdivisionsScreen({
           >
             <SubdivisionMap
               countryId={countryId}
-              statuses={app.data.subdivisions}
+              statuses={subdivisions}
               selectedId={selectedId}
               focusRequest={focusRequest}
               onSelect={setSelectedId}
@@ -223,11 +226,11 @@ export function SubdivisionsScreen({
               scrollsToTop={false}
             >
               <DataFeedback />
-              {selectedRegion && app.status === 'ready' && (
+              {selectedRegion && dataStatus === 'ready' && (
                 <PlaceSelectionCard
                   title={selectedRegion.name}
                   subtitle={getSubdivisionKindLabel(selectedRegion.kind)}
-                  status={getSubdivisionStatus(app.data, selectedRegion.id)}
+                  status={subdivisions[selectedRegion.id] ?? 'unvisited'}
                   disabled={disabled}
                   onChangeStatus={(status) => {
                     void setSubdivisionStatus([selectedRegion.id], status, {
@@ -247,7 +250,7 @@ export function SubdivisionsScreen({
                   />
                 </PlaceSelectionCard>
               )}
-              {!selectedRegion && app.status === 'ready' && (
+              {!selectedRegion && dataStatus === 'ready' && (
                 <AppText variant="label" tone="visited">
                   {t('subdivisions.visitedSummary', {
                     ...terminology,
@@ -262,10 +265,10 @@ export function SubdivisionsScreen({
         {view === 'list' && (
           <>
             <FlatList
-              data={app.status === 'ready' ? results : []}
+              data={dataStatus === 'ready' ? results : []}
               keyExtractor={(region) => region.id}
               extraData={{
-                statuses: app.data.subdivisions,
+                statuses: subdivisions,
                 selecting,
                 selectedIds,
                 disabled,
@@ -286,7 +289,7 @@ export function SubdivisionsScreen({
                   />
                   <CountryScopeControl value={scope} onChange={setScope} />
                   <DataFeedback />
-                  {app.status === 'ready' && (
+                  {dataStatus === 'ready' && (
                     <View style={styles.actions}>
                       <View style={styles.grow}>
                         <AppText variant="caption" tone="muted">
@@ -332,7 +335,7 @@ export function SubdivisionsScreen({
               renderItem={({ item }) => (
                 <SubdivisionRow
                   region={item}
-                  status={getSubdivisionStatus(app.data, item.id)}
+                  status={subdivisions[item.id] ?? 'unvisited'}
                   disabled={disabled}
                   selecting={selecting}
                   selected={selectedIds.has(item.id)}
@@ -341,7 +344,7 @@ export function SubdivisionsScreen({
                 />
               )}
               ListEmptyComponent={
-                app.status === 'ready' ? (
+                dataStatus === 'ready' ? (
                   <View style={styles.empty}>
                     <AppText variant="heading">
                       {t('subdivisions.noResults', terminology)}

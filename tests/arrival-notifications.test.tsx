@@ -1,3 +1,4 @@
+import type { DataSnapshot } from '../src/data/store';
 import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
 import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'test-renderer';
@@ -14,8 +15,8 @@ const { requestArrivalPermissions } = await import('../src/location/arrival-perm
 const { arrivalTracker, syncArrivalMonitoring, checkCurrentArrival } =
   await import('../src/location/arrival-notifications');
 const backgroundTask = tasks.defineTask.mock.calls[0][1];
-mock.module('../src/data/AppDataProvider', () => ({
-  useAppData: () => ({ ...appData, ...appData.getSnapshot() }),
+mock.module('../src/data/AppData', () => ({
+  useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => select(appData.getSnapshot()),
 }));
 mock.module('../src/components/ToggleRow', () => ({ ToggleRow: 'ToggleRow' }));
 mock.module('../src/settings/SettingsSection', () => ({ SettingsSection: 'SettingsSection' }));

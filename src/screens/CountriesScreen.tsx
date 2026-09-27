@@ -23,7 +23,8 @@ import {
 } from '../countries/filters';
 import { showStatusPicker } from '../countries/StatusPicker';
 import type { CountryId } from '../countries/types';
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { useReducedMotion } from '../motion/ReducedMotion';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { getCountryRegionProgress } from '../places/filter';
@@ -58,14 +59,19 @@ export function CountriesScreen({
   onOpenRegions: (countryId: string) => void;
   onModeChange: (mode: PlacesMode) => void;
 }) {
-  const app = useAppData();
+  const { setStatus } = appData;
+  const places = useAppData((snapshot) => snapshot.data.places);
+  const subdivisions = useAppData((snapshot) => snapshot.data.subdivisions);
+  const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
   const reducedMotion = useReducedMotion();
-  const { setStatus, resetVersion } = app;
   const guard = useActionGuard(resetVersion);
   const { continent, grouping } = filters;
   const regionProgress = useMemo(
-    () => getCountryRegionProgress(app.data.subdivisions),
-    [app.data.subdivisions],
+    () => getCountryRegionProgress(subdivisions),
+    [subdivisions],
   );
   const sections = useMemo(
     () =>
@@ -73,9 +79,9 @@ export function CountriesScreen({
         query,
         scope,
         { continent, grouping },
-        app.data.places,
+        places,
       ),
-    [query, scope, continent, grouping, app.data.places],
+    [query, scope, continent, grouping, places],
   );
   const resultIds = useMemo(
     () => sections.flatMap(({ data }) => data.map(({ id }) => id)),
@@ -97,7 +103,7 @@ export function CountriesScreen({
   if (selection && selection.filterKey !== filterKey) setSelection(null);
   const selecting = selection?.filterKey === filterKey;
   const selectedIds = selecting ? selection.ids : emptySelection;
-  const disabled = app.status !== 'ready' || app.busy;
+  const disabled = dataStatus !== 'ready' || busy;
   const hasFilters = continent !== 'all' || grouping !== 'continent';
   const continentName = continents.find(({ id }) => id === continent)?.name;
   const select = useCallback(
@@ -122,7 +128,7 @@ export function CountriesScreen({
       const isCurrent = guard();
       showStatusPicker(countryById.get(id)!.name, (status) => {
         if (isCurrent())
-          void setStatus([id], status, { preserveLived: false });
+          void setStatus([id], status, { preserveLived: false, isCurrent });
       });
     },
     [guard, setStatus],
@@ -172,9 +178,9 @@ export function CountriesScreen({
         }
         scrollResetKey={JSON.stringify([scope, continent, grouping, intent])}
         sections={sections}
-        places={app.data.places}
-        homeCountryId={app.data.homeCountryId}
-        ready={app.status === 'ready'}
+        places={places}
+        homeCountryId={homeCountryId}
+        ready={dataStatus === 'ready'}
         disabled={disabled}
         onChangeStatus={changeStatus}
         onSelect={select}

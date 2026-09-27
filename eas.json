@@ -4,8 +4,16 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "base": {
+      "bun": "1.4.2"
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal"
+    },
     "production": {
-      "bun": "1.4.2",
+      "extends": "base",
       "autoIncrement": true
     }
   },

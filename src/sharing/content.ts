@@ -44,7 +44,7 @@ export function parseShareTarget(
   kind: unknown,
   id: unknown,
 ): ShareTarget | null {
-  if (kind === 'world' || (kind === undefined && id === undefined))
+  if (kind === 'world')
     return { kind: 'world' };
   if ((kind === 'list' || kind === 'stamp') && typeof id === 'string' && id)
     return { kind, id };

@@ -12,7 +12,8 @@ import { continents } from '../countries/catalog';
 import { CountryScopeControl } from '../countries/CountryScopeControl';
 import type { CountryScope } from '../countries/filters';
 import { showStatusPicker } from '../countries/StatusPicker';
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { formatNumber, t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { formatPlaceName, getPlace, type Place } from '../places/catalog';
@@ -46,19 +47,22 @@ export function RegionsScreen({
   onResetFilters: () => void;
   onSelect: (id: string) => void;
 }) {
-  const app = useAppData();
+  const { setSubdivisionStatus } = appData;
+  const subdivisions = useAppData((snapshot) => snapshot.data.subdivisions);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
   const terminology = getCountrySubdivisionTerminology();
-  const { setSubdivisionStatus, resetVersion } = app;
   const list = useRef<FlatList<Place>>(null);
   const guard = useActionGuard(resetVersion);
   useLayoutEffect(() => {
     list.current?.scrollToOffset({ offset: 0, animated: false });
   }, [query, scope, continent, intent]);
   const regions = useMemo(
-    () => selectRegions(query, scope, continent, app.data.subdivisions),
-    [query, scope, continent, app.data.subdivisions],
+    () => selectRegions(query, scope, continent, subdivisions),
+    [query, scope, continent, subdivisions],
   );
-  const disabled = app.status !== 'ready' || app.busy;
+  const disabled = dataStatus !== 'ready' || busy;
   const hasFilters = continent !== 'all';
   const select = useCallback(
     (id: string) => {
@@ -85,8 +89,8 @@ export function RegionsScreen({
     <Screen>
       <FlatList
         ref={list}
-        data={app.status === 'ready' ? regions : []}
-        extraData={{ statuses: app.data.subdivisions, disabled }}
+        data={dataStatus === 'ready' ? regions : []}
+        extraData={{ statuses: subdivisions, disabled }}
         keyExtractor={(region) => region.id}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="never"
@@ -126,7 +130,7 @@ export function RegionsScreen({
               />
               <CountryScopeControl value={scope} onChange={onScopeChange} />
               <DataFeedback />
-              {app.status === 'ready' && (
+              {dataStatus === 'ready' && (
                 <AppText variant="caption" tone="muted" style={styles.count}>
                   {t('subdivisions.count', {
                     ...terminology,
@@ -144,14 +148,14 @@ export function RegionsScreen({
             countryName={item.countryName}
             selecting={false}
             selected={false}
-            status={app.data.subdivisions[item.id] ?? 'unvisited'}
+            status={subdivisions[item.id] ?? 'unvisited'}
             disabled={disabled}
             onPress={select}
             onChangeStatus={changeStatus}
           />
         )}
         ListEmptyComponent={
-          app.status === 'ready' ? (
+          dataStatus === 'ready' ? (
             <View style={styles.empty}>
               <AppText variant="heading">
                 {t('subdivisions.noResults', terminology)}

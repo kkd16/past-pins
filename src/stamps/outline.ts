@@ -8,7 +8,6 @@ type StampOutline = {
 
 const outlines = new Map<string, StampOutline | undefined>();
 
-/** A recognizable landmass group from the same generated geometry as the atlas. */
 export function getStampOutline(countryId: string): StampOutline | undefined {
   if (outlines.has(countryId)) return outlines.get(countryId);
   const country = flatCountryById.get(countryId);
@@ -20,8 +19,6 @@ export function getStampOutline(countryId: string): StampOutline | undefined {
 }
 
 function outlineFromPath(path: string): StampOutline | undefined {
-  // Generated atlas paths contain only M/L/Z. Choosing a contiguous ring keeps
-  // date-line splits and distant territories from shrinking the stamp to a dot.
   const rings = (path.match(/M[^M]+/g) ?? []).map((path) => {
     const values = (path.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
     let area = 0;
@@ -49,8 +46,6 @@ function outlineFromPath(path: string): StampOutline | undefined {
   if (!main || main.right <= main.left || main.bottom <= main.top)
     return undefined;
 
-  // Retain nearby islands and interior holes, while distant territories stay
-  // outside this decorative silhouette. This keeps archipelagos recognizable.
   const nearbyDistance =
     Math.max(main.right - main.left, main.bottom - main.top) / 2;
   const nearby = rings.filter((ring) => {
@@ -80,8 +75,6 @@ function outlineFromPath(path: string): StampOutline | undefined {
   const width = right - left;
   const height = bottom - top;
   const scale = Math.min(82 / width, 58 / height);
-  // A line is not a useful silhouette. The artwork uses a neutral location
-  // marker when the source collapses or its fitted minor dimension is <2 px.
   if (Math.min(width, height) * scale < 2) return undefined;
   return {
     path: nearby.map((ring) => ring.path).join(''),

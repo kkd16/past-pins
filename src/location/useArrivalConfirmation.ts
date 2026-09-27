@@ -3,7 +3,8 @@ import { useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 
 import { countryById } from '../countries/catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { appData } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { isVisited } from '../data/model';
 import { t } from '../localization';
 import { diagnostics } from '../recovery/diagnostics-file';
@@ -11,9 +12,9 @@ import { ARRIVAL_TYPE, arrivalDataReady, parseArrival } from './arrivals';
 import { arrivalTracker } from './arrival-notifications';
 
 export function useArrivalConfirmation(countryId: string, token: string | undefined) {
-  const app = useAppData();
-  const { data, setStatus } = app;
-  const ready = arrivalDataReady(app);
+  const { setStatus } = appData;
+  const data = useAppData((snapshot) => snapshot.data);
+  const ready = useAppData(arrivalDataReady);
   const handled = useRef<string | null>(null);
   useFocusEffect(useCallback(() => {
     const key = `${countryId}:${token}`;
@@ -31,7 +32,7 @@ export function useArrivalConfirmation(countryId: string, token: string | undefi
         [
           { text: t('location.notNow'), style: 'cancel' },
           { text: t('location.markVisited'), onPress: () => {
-            if (!cancelled) void setStatus([countryId], 'visited');
+            void setStatus([countryId], 'visited', { isCurrent: () => !cancelled });
           } },
         ],
       );

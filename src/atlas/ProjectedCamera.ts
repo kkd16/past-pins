@@ -1,6 +1,5 @@
 type Size = { width: number; height: number };
 
-/** Camera math shared by every interactive SVG map, in unmirrored map coordinates. */
 export class ProjectedCamera {
   width = 0;
   height = 0;
@@ -85,7 +84,6 @@ export class ProjectedCamera {
     if (!this.scale) return;
     this.center = this.center.map((value, index) => {
       const size = index ? this.map.height : this.map.width;
-      // World maps can bring either pole to mid-screen, clear of the controls.
       if (index === 1 && this.verticalBounds === 'center')
         return Math.max(0, Math.min(size, value));
       const extent = (index ? this.height : this.width) / this.scale;

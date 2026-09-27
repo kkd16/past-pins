@@ -7,7 +7,8 @@ import { Button } from '../components/Button';
 import { Checkmark } from '../components/Checkmark';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
-import { useAppData } from '../data/AppDataProvider';
+import { appData as app } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { formatPlaceName, getPlace } from '../places/catalog';
 import { promptListName } from '../lists/prompt';
 import { useActionGuard } from '../navigation/useActionGuard';
@@ -21,11 +22,13 @@ export function PlaceListsScreen({
   placeId: string;
   onDone: () => void;
 }) {
-  const app = useAppData();
-  const guard = useActionGuard(app.data.lists);
+  const savedLists = useAppData((snapshot) => snapshot.data.lists);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
+  const guard = useActionGuard(savedLists);
   const place = getPlace(placeId);
-  const disabled = app.status !== 'ready' || app.busy || !place;
-  const lists = [...app.data.lists].sort((a, b) =>
+  const disabled = dataStatus !== 'ready' || busy || !place;
+  const lists = [...savedLists].sort((a, b) =>
     compareNames(a.name, b.name),
   );
   return (
@@ -64,7 +67,7 @@ export function PlaceListsScreen({
           </View>
         }
         ListEmptyComponent={
-          app.status === 'ready' && place ? (
+          dataStatus === 'ready' && place ? (
             <AppText tone="muted">{t('lists.membershipEmpty')}</AppText>
           ) : null
         }

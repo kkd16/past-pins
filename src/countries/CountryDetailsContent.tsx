@@ -9,8 +9,10 @@ import { Icon } from '../components/Icon';
 import { Surface } from '../components/Surface';
 import { ToggleRow } from '../components/ToggleRow';
 import { countryById } from './catalog';
-import { useAppData } from '../data/AppDataProvider';
+import { appData as app } from '../data/app-data';
+import { useAppData } from '../data/AppData';
 import { getPlaceStatus, isVisited } from '../data/model';
+import { useActionGuard } from '../navigation/useActionGuard';
 import { PlaceSelectionContent } from '../places/PlaceSelectionCard';
 import { regionsHref, worldMapHref } from '../places/navigation';
 import { CountryStamp } from '../stamps/CountryStamp';
@@ -36,8 +38,11 @@ export function CountryDetailsContent({
   expanded?: boolean;
   autofocus?: boolean;
 }) {
-  const app = useAppData();
+  const data = useAppData((snapshot) => snapshot.data);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const country = countryById.get(id);
+  const guard = useActionGuard(id);
   if (!country)
     return (
       <View style={styles.details}>
@@ -46,14 +51,14 @@ export function CountryDetailsContent({
       </View>
     );
 
-  const ready = app.status === 'ready';
+  const ready = dataStatus === 'ready';
   const onEscape = expanded && onToggleDetails ? onToggleDetails : onDismiss;
   const terminology = getCountrySubdivisionTerminology(id);
-  const disabled = !ready || app.busy;
-  const status = getPlaceStatus(app.data, id);
+  const disabled = !ready || busy;
+  const status = getPlaceStatus(data, id);
   const collected = isVisited(status);
-  const home = app.data.homeCountryId === id;
-  const regionStats = getSubdivisionStatistics(app.data.subdivisions, id);
+  const home = data.homeCountryId === id;
+  const regionStats = getSubdivisionStatistics(data.subdivisions, id);
   const regionProgress =
     ready
       ? t('subdivisions.visitedSummary', {
@@ -62,7 +67,7 @@ export function CountryDetailsContent({
           total: formatNumber(regionStats.total),
         })
       : t(
-          app.status === 'load-error'
+          dataStatus === 'load-error'
             ? 'countries.loadError'
             : 'countries.loadingPlaces',
         );
@@ -89,7 +94,7 @@ export function CountryDetailsContent({
           home={home}
           disabled={disabled}
           onChangeStatus={(next) => {
-            void app.setStatus([id], next, { preserveLived: false });
+            void app.setStatus([id], next, { preserveLived: false, isCurrent: guard() });
           }}
           onSaveToLists={() =>
             router.push({ pathname: '/lists/add', params: { placeId: id } })

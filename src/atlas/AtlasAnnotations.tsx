@@ -95,8 +95,6 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
       point && inBounds(point, bounds)
         ? { x: point[0] - 4, y: point[1] - 4, width: 8, height: 8 }
         : null;
-    // Keep label contents mounted, so newly visible countries appear during a
-    // drag without React work. Only visible labels receive native frame updates.
     const position = (
       view: View | null | undefined,
       rect: Rect | null,

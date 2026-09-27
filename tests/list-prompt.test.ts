@@ -19,7 +19,6 @@ function submitName(value: string) {
   const save = promptButtons().find(({ style }) => style !== 'cancel');
   if (!save?.onPress) throw new Error('Expected a save action');
   expect(prompt.mock.calls.at(-1)?.[3]).toBe('plain-text');
-  // Native plain-text prompts pass a string, unlike login-password prompts.
   const onPress = save.onPress as (value?: string) => void;
   onPress(value);
 }

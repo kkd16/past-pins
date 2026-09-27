@@ -1,7 +1,6 @@
 export const DATA_ERROR_CODES = [
   'invalid-document',
   'unsupported-version',
-  'migration-failed',
   'storage-read',
   'storage-write',
   'reset-failed',

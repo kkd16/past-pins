@@ -76,7 +76,6 @@ export function createArrivalTracker(
         latest.data.places === snapshot.data.places;
     };
     if (!current()) return;
-    // A deferred batch may contain places already passed through.
     const location = locations.reduce<ArrivalLocation | null>((latest, item) =>
       Number.isFinite(item.timestamp) &&
       Number.isFinite(item.coords.longitude) && Math.abs(item.coords.longitude) <= 180 &&
@@ -88,7 +87,6 @@ export function createArrivalTracker(
     if (!current() || location.timestamp <= state.observedAt) return;
     const detected = countryAtPoint([location.coords.longitude, location.coords.latitude]);
     if (rebuilding && !detected) return;
-    // Remember observation order, but ocean is not evidence of a new country.
     const countryId = detected && countryIds.has(detected) ? detected : state.countryId;
     const now = Date.now();
     const previous = countryId ? state.notifiedAt[countryId] : undefined;
@@ -125,7 +123,6 @@ export function createArrivalTracker(
       return result;
     },
     async isCurrent(arrival: Arrival) {
-      // A tap can arrive before the notification's bookkeeping finishes saving.
       await pending;
       const snapshot = getSnapshot();
       if (!arrivalsEnabled(snapshot)) return false;

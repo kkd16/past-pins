@@ -60,8 +60,6 @@ export function selectSubdivisions(
       excluded.countryNotInCatalog++;
       return false;
     }
-    // Natural Earth's +00? and +99? records fill undivided territories and
-    // unassigned offshore geometry. Do not turn these into invented regions.
     if (!clean(p.name) || p.adm1_code.includes('+')) {
       excluded.synthetic++;
       return false;
@@ -101,8 +99,6 @@ export function selectSubdivisions(
             .filter((alias) => alias && alias !== name && alias !== nativeName),
         ),
       ];
-      // Keep the source's valid-looking code for search/display, never as the ID.
-      // Natural Earth's provisional X…~ codes are not official ISO identifiers.
       const code = /^[A-Z]{2}-[A-Z0-9]{1,3}$/.test(p.iso_3166_2 ?? '')
         ? p.iso_3166_2!
         : '';
@@ -142,8 +138,6 @@ function distanceSquared(point: Point, start: Point, end: Point) {
   );
 }
 
-// Douglas–Peucker in final map units. Tiny polygons are preserved rather than
-// disappearing from the map; the mobile list is also available for every unit.
 export function simplifyRing(points: Point[], tolerance = 0.35): Point[] {
   if (points.length < 5) return points;
   const closed = [...points, points[0]];
@@ -195,9 +189,6 @@ function containsPoint(rings: Point[][], point: Point) {
 
 function interiorPoint(rings: Point[][], preferred: Point) {
   if (containsPoint(rings, preferred)) return preferred;
-  // Scan inside the largest rings, taking the widest filled interval. The
-  // even-odd rule includes holes; unlike a spherical centroid or old label,
-  // this anchor belongs to the actual simplified SVG that users can select.
   const largest = [...rings]
     .sort((a, b) => Math.abs(area(b)) - Math.abs(area(a)))
     .slice(0, 4);
@@ -271,8 +262,6 @@ export function generateSubdivisionMaps(
       features: group,
     };
     const [[west], [east]] = geoBounds(collection);
-    // Rotate the cut away from the country, keeping Fiji/Russia/New Zealand
-    // continuous across the international date line without mirroring geography.
     const eastward = east < west ? east + 360 : east;
     const center = (west + eastward) / 2;
     const projection = geoEquirectangular()

@@ -10,7 +10,6 @@ import type { Place } from '../places/catalog';
 import { theme } from '../theme';
 import { getListRegionPreview } from './map-preview';
 
-/** The rows below the map provide the precise, accessible list of places. */
 export const ListMap = memo(function ListMap({
   places,
 }: {
@@ -109,7 +108,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: theme.stroke.subtle,
     borderColor: theme.color.border,
-    // Geographic coordinates never mirror with the surrounding layout.
     direction: 'ltr',
   },
   legend: { gap: theme.space.xs, paddingHorizontal: theme.space.xs },

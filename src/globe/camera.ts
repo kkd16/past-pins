@@ -35,7 +35,6 @@ export class GlobeCamera {
   focus(anchor: readonly number[], angularRadius: number) {
     this.orient(anchor);
     const zoom = 0.68 / Math.sin(Math.min(Math.PI / 2, angularRadius));
-    // Automatic framing leaves room to explore closer with a pinch.
     this.setZoom(Math.max(1.2, Math.min(8, zoom)));
   }
 
@@ -83,7 +82,6 @@ export class GlobeCamera {
 
   twist(radians: number, x = this.width / 2, y = this.height / 2) {
     if (!this.radius) return;
-    // Rotate around the touched surface point, keeping the pinch pivot fixed.
     const px = (x - this.width / 2) / this.radius;
     const py = (this.height / 2 - y) / this.radius;
     const squared = px * px + py * py;
@@ -105,7 +103,6 @@ export class GlobeCamera {
   }
 
   project(position: readonly number[]) {
-    // Labels share this scratch vector; returned screen points remain independent.
     const point = this.projectedPoint;
     vec3.set(point, position[0], position[1], position[2]);
     vec3.transformQuat(point, point, this.rotation);

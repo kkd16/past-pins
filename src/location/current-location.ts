@@ -9,7 +9,6 @@ type Coordinates = [longitude: number, latitude: number];
 
 let pending: Promise<Coordinates> | null = null;
 
-// Share a lookup when launch and the map button request it together.
 export function getCurrentLocation(): Promise<Coordinates> {
   pending ??= locate().finally(() => {
     pending = null;
@@ -24,7 +23,6 @@ export async function getCurrentCountry([longitude, latitude]: Coordinates) {
     const country = code ? countryById.get(code) : undefined;
     if (country) return country;
   } catch {
-    // Country selection still works offline using the map's own boundaries.
   }
   const code = countryAtPoint([longitude, latitude]);
   return code ? countryById.get(code) : undefined;

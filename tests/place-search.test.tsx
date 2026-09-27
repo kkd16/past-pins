@@ -1,3 +1,4 @@
+import type { DataSnapshot } from '../src/data/store';
 import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
@@ -11,8 +12,10 @@ let data = defaultAppData();
 let status: 'ready' | 'loading' | 'load-error' = 'ready';
 let busy = false;
 
-mock.module('../src/data/AppDataProvider', () => ({
-  useAppData: () => ({ data, status, busy }),
+mock.module('../src/data/AppData', () => ({
+  useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => select({
+    data, status, busy, saveError: false, resetVersion: 0, pendingUndo: null,
+  }),
 }));
 mock.module('../src/components/AppPressable', () => ({ AppPressable: 'Pressable' }));
 mock.module('../src/components/AppText', () => ({ AppText: 'Text' }));

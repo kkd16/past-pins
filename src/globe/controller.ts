@@ -59,7 +59,6 @@ export class GlobeController {
     if (active) this.invalidate();
     else {
       this.interacting = false;
-      // An iOS alert can interrupt an acknowledged camera command.
       this.finishMove();
     }
   }

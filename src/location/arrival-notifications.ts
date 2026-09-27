@@ -59,7 +59,6 @@ Notifications.setNotificationHandler({
 });
 
 async function clearArrivalNotifications() {
-  // Arrival alerts are the app's only notifications.
   await Notifications.cancelAllScheduledNotificationsAsync();
   await Notifications.dismissAllNotificationsAsync();
   Notifications.clearLastNotificationResponse();
@@ -71,7 +70,6 @@ export function syncArrivalMonitoring(): Promise<boolean> {
     const snapshot = appData.getSnapshot();
     if (snapshot.status === 'loading' || snapshot.busy) return false;
     if (!(await arrivalMonitoringAvailable())) return false;
-    // Opting out must stop an existing task even if permission reads fail.
     const shouldMonitor = arrivalsEnabled(snapshot);
     const permitted = shouldMonitor && await arrivalPermissionsGranted();
     let started = await Location.hasStartedLocationUpdatesAsync(TASK_NAME);
@@ -88,12 +86,10 @@ export function syncArrivalMonitoring(): Promise<boolean> {
       if (arrivalsEnabled(appData.getSnapshot())) return true;
     }
     if (started) await Location.stopLocationUpdatesAsync(TASK_NAME);
-    // Preserve taps through data recovery unless the user has explicitly opted out.
     const current = appData.getSnapshot();
     if (current.status === 'ready' && !current.busy &&
       (!current.saveError || !current.data.preferences.countryArrivalAlerts)) {
       await clearArrivalNotifications();
-      // An older permission check must not undo a newly saved opt-in or restore.
       if (shouldMonitor && !permitted &&
         appData.getSnapshot().data.preferences === snapshot.data.preferences)
         appData.updatePreferences({ countryArrivalAlerts: false });
@@ -107,7 +103,6 @@ export function syncArrivalMonitoring(): Promise<boolean> {
 export async function checkCurrentArrival() {
   const snapshot = appData.getSnapshot();
   if (!arrivalsEnabled(snapshot) || AppState.currentState !== 'active') return;
-  // Permissions were checked by syncArrivalMonitoring; never prompt on launch.
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
   if (appData.getSnapshot().data === snapshot.data && AppState.currentState === 'active')
     await arrivalTracker.process([location]);

@@ -15,7 +15,7 @@ import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Surface } from '../components/Surface';
 import { ToggleRow } from '../components/ToggleRow';
-import { useAppData } from '../data/AppDataProvider';
+import { useAppData } from '../data/AppData';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
@@ -36,20 +36,22 @@ export function ShareScreen({
   target: ShareTarget | null;
   onClose: () => void;
 }) {
-  const app = useAppData();
+  const data = useAppData((snapshot) => snapshot.data);
+  const dataStatus = useAppData((snapshot) => snapshot.status);
+  const busy = useAppData((snapshot) => snapshot.busy);
   const [options, setOptions] = useState<ShareOptions>(defaultShareOptions);
   const [sharing, setSharing] = useState(false);
   const inFlight = useRef(false);
   const card = useRef<View>(null);
   const layoutVersion = useRef(0);
-  const ready = app.status === 'ready';
+  const ready = dataStatus === 'ready';
   const content = useMemo(
-    () => (ready ? getShareContent(app.data, target, options) : null),
-    [ready, app.data, target, options],
+    () => (ready ? getShareContent(data, target, options) : null),
+    [ready, data, target, options],
   );
   const guard = useActionGuard(content);
   const empty = content?.kind === 'list' && !content.places.length;
-  const disabled = app.busy || sharing;
+  const disabled = busy || sharing;
   const canShare = !!content && !empty && !disabled;
 
   function close() {
