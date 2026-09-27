@@ -20,14 +20,6 @@ if (values.refresh) {
   xml = await source.text();
 }
 const funds = parseCurrencyFunds(xml);
-if (values.refresh && await source.exists()) {
-  const previous = parseCurrencyFunds(await source.text());
-  if (funds.published < previous.published)
-    throw new Error(`Currency source ${funds.published} is older than the saved ${previous.published} snapshot.`);
-  const added = funds.codes.filter((code) => !previous.codes.includes(code));
-  const removed = previous.codes.filter((code) => !funds.codes.includes(code));
-  console.log(`Fund codes added: ${added.join(', ') || 'none'}; removed: ${removed.join(', ') || 'none'}.`);
-}
 const content = `${JSON.stringify(funds, null, 2)}\n`;
 if (values.check) {
   if (!(await output.exists()) || await output.text() !== content)

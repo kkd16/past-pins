@@ -150,7 +150,7 @@ Country currencies come from `countries-list`. The shared catalog excludes codes
 
 `bun run currencies:refresh` downloads the current XML, validates it, and updates both [the source snapshot](scripts/data/currencies.xml) and [the generated fund codes](src/countries/fund-codes.json). Review and commit both files. `bun run currencies:generate` regenerates from the snapshot; `bun run currencies:check` verifies it offline as part of the shared check command. The app bundles only the generated JSON and makes no currency network requests. Currency filtering changes display metadata only, not geographic IDs, saved visits, or backups.
 
-Refresh rejects invalid downloads and older publication dates before writing, and reports added/removed fund codes for review. Dependency updates regenerate the saved snapshot; they do not fetch new currency data. After a refresh, review the source date and code changes and run `bun run verify`. If generation is interrupted after updating the XML, rerun `bun run currencies:generate` to rebuild its JSON before verification.
+Refresh parses and validates fund codes before writing. Dependency updates regenerate the saved snapshot; they do not fetch new currency data. After a refresh, review the source date and code changes in `git diff` and run `bun run verify`. If generation is interrupted after updating the XML, rerun `bun run currencies:generate` to rebuild its JSON before verification.
 
 ## Geography
 
