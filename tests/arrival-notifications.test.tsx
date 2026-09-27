@@ -162,7 +162,70 @@ test('headless locations use the shared saved statuses and produce localized not
   expect(appData.getSnapshot().data.places.fr).toBeUndefined();
 });
 
-test.each(['ready', 'load-error'] as const)('a headless launch waits for data and respects a %s result', async (status) => {
+test.each(['background', 'notifications', 'services'] as const)(
+  'a headless location error stops monitoring after %s access is revoked', async (permission) => {
+    await makeArrival();
+    native.AppState.currentState = 'background';
+    location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+    if (permission === 'background') location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false });
+    if (permission === 'notifications') notifications.getPermissionsAsync.mockResolvedValue(denied);
+    if (permission === 'services') location.hasServicesEnabledAsync.mockResolvedValue(false);
+    location.getCurrentPositionAsync.mockClear();
+    notifications.scheduleNotificationAsync.mockClear();
+
+    await expect(backgroundTask({ error: { code: 1, message: 'Location denied' } })).resolves.toBeUndefined();
+
+    expect(location.stopLocationUpdatesAsync).toHaveBeenCalledWith('past-pins-country-arrivals');
+    expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(false);
+    expect(notifications.cancelAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(notifications.dismissAllNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(notificationState.response).toBeNull();
+    expect(location.startLocationUpdatesAsync).not.toHaveBeenCalled();
+    expect(location.getCurrentPositionAsync).not.toHaveBeenCalled();
+    expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  },
+);
+
+test('a temporary headless location error preserves monitoring and ignores any accompanying coordinates', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  native.AppState.currentState = 'background';
+  location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+  await expect(backgroundTask({
+    error: { code: 0, message: 'Location unknown' },
+    data: { locations: [
+      { timestamp: Date.now(), coords: { longitude: -75.69, latitude: 45.42 } },
+    ] },
+  })).resolves.toBeUndefined();
+  expect(location.getBackgroundPermissionsAsync).toHaveBeenCalled();
+  expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(true);
+  expect(location.startLocationUpdatesAsync).not.toHaveBeenCalled();
+  expect(location.stopLocationUpdatesAsync).not.toHaveBeenCalled();
+  expect(notifications.cancelAllScheduledNotificationsAsync).not.toHaveBeenCalled();
+  expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  expect(arrivalDatabase.has('country-arrivals')).toBe(false);
+});
+
+test('a headless location error contains a failed stop and retries on the next callback', async () => {
+  appData.updatePreferences({ countryArrivalAlerts: true });
+  native.AppState.currentState = 'background';
+  location.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
+  location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false });
+  location.stopLocationUpdatesAsync.mockRejectedValueOnce(new Error('Unregister failed'));
+  const event = { error: { code: 1, message: 'Location denied' } };
+  await expect(backgroundTask(event)).resolves.toBeUndefined();
+  expect(location.stopLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+  await expect(backgroundTask(event)).resolves.toBeUndefined();
+  expect(location.stopLocationUpdatesAsync).toHaveBeenCalledTimes(2);
+  expect(appData.getSnapshot().data.preferences.countryArrivalAlerts).toBe(false);
+});
+
+test.each([
+  ['ready', 'locations'], ['load-error', 'locations'],
+  ['ready', 'error'], ['load-error', 'error'],
+] as const)('a headless launch respects a %s load result for a callback containing %s', async (status, callback) => {
   appData.updatePreferences({ countryArrivalAlerts: true });
   const current = appData.getSnapshot();
   const snapshot = spyOn(appData, 'getSnapshot').mockReturnValue({ ...current, status: 'loading' });
@@ -174,16 +237,20 @@ test.each(['ready', 'load-error'] as const)('a headless launch waits for data an
     snapshot.mockReturnValue({ ...current, status });
   });
   try {
-    const task = backgroundTask({ data: { locations: [
-      { timestamp: Date.now(), coords: { longitude: -75.69, latitude: 45.42 } },
-    ] } });
+    const task = backgroundTask(callback === 'error'
+      ? { error: { code: 0, message: 'Location unknown' } }
+      : { data: { locations: [
+        { timestamp: Date.now(), coords: { longitude: -75.69, latitude: 45.42 } },
+      ] } });
     await started.promise;
     expect(load).toHaveBeenCalledTimes(1);
     expect(notifications.getPermissionsAsync).not.toHaveBeenCalled();
     expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
     gate.resolve();
     await task;
-    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(status === 'ready' ? 1 : 0);
+    expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(
+      status === 'ready' && callback === 'locations' ? 1 : 0,
+    );
   } finally {
     gate.resolve();
     load.mockRestore();
