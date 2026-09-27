@@ -2,14 +2,20 @@
 
 An offline travel atlas for iPhone. Keep track of where you’ve been, where you’ve lived, and where you want to go.
 
-**Status:** v1 is in development and has not been released.
-
 [Website](https://kkd16.github.io/past-pins/) · [Privacy policy](https://kkd16.github.io/past-pins/privacy/) · [Support](https://kkd16.github.io/past-pins/support/)
+
+## The app
+
+- Explore a globe, a world map, and regional maps.
+- Mark places as Visited, Lived, or Wishlist; organize them into lists.
+- Share maps and stamps, and export backups of your travel record.
+- Browse and edit offline without an account. Location and arrival reminders are optional.
 
 ## Documentation
 
-- [Development](development.md) — setup, architecture, testing, and releases.
-- [Contributing](CONTRIBUTING.md) — how to submit changes.
+- [Development](development.md) — run the app, maintain data compatibility, and release updates.
+- [Contributing](CONTRIBUTING.md) — submit a change and understand contribution terms.
+- [Project rules](AGENTS.md) — scope, implementation, and verification requirements.
 
 ## Licensing
 

@@ -2,139 +2,126 @@
 
 [← PastPins](README.md)
 
-[Run locally](#run-locally) · [Code](#code) · [Data upgrades](#data-upgrades) · [Geography](#geography) · [Website](#website) · [Release](#release)
+[Run locally](#run-locally) · [Code](#code) · [Data upgrades](#data-upgrades) · [Geography](#geography) · [Website](#website) · [Release an update](#release-an-update)
 
 ## Run locally
 
-Use the Bun version in [package.json](package.json), Node.js 22.13+, and an iPhone. The app uses Expo SDK 57 and intentionally sets `ios.supportsTablet` to `false`.
+Use the Bun version in [package.json](package.json), Node.js 22.13+, and an iPhone. The app uses [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/).
 
 ```sh
 bun install --frozen-lockfile
-bun run ios
 ```
 
-On Linux, use `bun run dev` for a tunnel and open it in Expo Go on an iPhone.
+Build a development client when setting up or changing native code:
 
-| Build | What you can check |
+```sh
+bunx eas-cli login
+bunx eas-cli build --platform ios --profile development
+```
+
+Use the linked EAS project and install the build on your registered iPhone. Then start Metro:
+
+```sh
+bunx expo start --dev-client
+```
+
+Add `--tunnel` when needed, including on Linux.
+
+| Build | Use |
 | --- | --- |
-| Expo Go | Main UI and JavaScript behavior |
-| Installed development or TestFlight build | Background arrival monitoring and native Settings reset |
+| Development build | UI, background arrival reminders, and native Settings reset |
+| TestFlight | The production candidate, including upgrades and native behavior |
+| Expo Go: `bun run dev` | Quick UI checks through a tunnel |
 
-For a development client:
-
-1. Log in with `bunx eas-cli login` and confirm access to the linked EAS project.
-2. Run `bunx eas-cli build --platform ios --profile development` and install the build on your registered iPhone.
-3. Start Metro with `bunx expo start --dev-client` (add `--tunnel` when needed).
-
-`expo-dev-client` is installed. The `development` profile uses internal distribution;
-`production` uses App Store distribution and increments the remote build number.
-Both inherit the pinned Bun version from `base` in [eas.json](eas.json).
-`bun run dev` explicitly opens Expo Go; use the development-client command above
-to test native recovery and background reminders.
+Background reminders and native reset require a development or TestFlight build. The [EAS profiles](eas.json) share a pinned Bun version: `development` uses internal distribution; `production` uses App Store distribution.
 
 ### Everyday commands
 
 | Command | Use |
 | --- | --- |
-| `bun run check` | Lint, typecheck, tests with coverage, generated-asset checks |
-| `bun run verify` | Full pre-push/CI gate, including Expo Doctor and both iOS exports |
-| `bun test --watch` or `bun test document` | Focused test iteration |
-| `bunx expo install <package>` | Install an Expo-compatible app dependency |
-| `bun run generate` | Regenerate geography and third-party notices |
-| `bun run website:build` | Build the three static GitHub Pages pages in `_site/` |
-| `bun run deps:update` | Update dependencies, align Expo versions, regenerate, verify |
+| `bun run lint` / `bun run typecheck` | Lint and TypeScript checks |
+| `bun test --watch` / `bun test document` | Focused tests |
+| `bun run check` | Lint, types, test coverage, generated assets, and website build |
+| `bun run verify` | Full pre-push and CI gate, including Expo Doctor and iOS exports |
+| `bunx expo install <package>` | Add an Expo-compatible app dependency |
+| `bun run generate` | Regenerate geography and license notices |
+| `bun run deps:update` | Update dependencies, align Expo versions, regenerate, and verify |
+| `bun run website:build` | Build the public pages in `_site/` |
 
-Run `bun run verify` before every push, after the final edit or rebase. GitHub Actions invokes the same [scripts/verify.sh](scripts/verify.sh); keep the check list there. Typecheck refreshes Router’s generated types, so it works on a fresh checkout. Coverage measures loaded JavaScript, not native behavior.
+Run lint and typecheck before finishing a task. Before every push, run `bun run verify` after the final edit, merge, or rebase and require exit code 0. GitHub Actions uses the same [verification script](scripts/verify.sh).
+
+Typecheck generates Router types on a fresh checkout. `bun run` lists all scripts; the [Makefile](Makefile) supplies aliases.
 
 ### Native changes
 
-- Read Expo’s matching versioned docs before changing native APIs.
+- Read the matching SDK docs and [Expo’s index](https://docs.expo.dev/llms.txt) before changing Expo, EAS, or React Native APIs.
+- Configure CNG through `app.json`, `app.config.ts`, and plugins. Never edit generated `ios/` files.
 - Rebuild after native dependency, module, or configuration changes.
-- Configure CNG through `app.config.ts` and plugins; do not edit generated `ios/` files.
-- After Worklets/Reanimated/Babel updates, restart Metro with `bun run dev --clear`.
-
-`bun run` lists the remaining scripts; the Makefile only supplies aliases.
+- After Worklets, Reanimated, or Babel changes, restart Metro with `bunx expo start --dev-client --clear`.
 
 ## Code
 
 | Location | Responsibility |
 | --- | --- |
-| `src/app/`, `src/screens/`, `src/navigation/` | Thin Router routes, screens, navigation and stale-action guards |
-| `src/data/`, `src/storage/` | Shared data store, pure mutations, versioned documents, serialized SQLite persistence |
-| `src/recovery/`, `modules/past-pins-recovery/`, `plugins/with-recovery.js` | Recovery UI, local diagnostics, native cold-launch reset |
-| `src/atlas/`, `src/globe/`, `src/subdivisions/` | Shared map interaction, globe rendering, regional maps |
-| `src/countries/`, `src/places/`, `src/lists/`, `src/stamps/`, `src/sharing/` | Catalogs, search, lists, derived collections, image sharing |
-| `src/components/`, `src/theme.ts`, `src/feedback/`, `src/motion/` | Reusable controls, styling, confirmations, toasts, Reduce Motion |
-| `src/onboarding/`, `src/location/`, `src/localization/` | Welcome flow, optional location/reminders, typed localized messages |
-| `scripts/`, `tests/` | Asset generators, regression tests, data fixtures |
+| `src/app/`, `src/screens/`, `src/navigation/` | Router routes, screens, navigation, stale-action guards |
+| `src/data/`, `src/storage/` | Shared store, mutations, versioned documents, serialized SQLite persistence |
+| `src/recovery/`, `modules/past-pins-recovery/`, `plugins/with-recovery.js` | Recovery UI, diagnostics, native cold-launch reset |
+| `src/atlas/`, `src/globe/`, `src/subdivisions/` | Map interaction, globe rendering, regional maps |
+| `src/countries/`, `src/places/`, `src/lists/`, `src/stamps/`, `src/sharing/` | Catalogs, search, lists, stamps, sharing |
+| `src/components/`, `src/theme.ts`, `src/feedback/`, `src/motion/` | Controls, styling, confirmations, toasts, Reduce Motion |
+| `src/onboarding/`, `src/location/`, `src/localization/` | Welcome flow, optional location/reminders, localized text |
+| `scripts/`, `tests/` | Generators, regression tests, data fixtures |
 
-### Data and rendering
+### App behavior
 
-- Reuse existing controls and helpers; keep derived data in ordinary functions.
 - Lived counts as Visited. Setting home marks that country Lived.
 - Country and region statuses are independent. Lists store catalog IDs.
 - Stamps and statistics derive from travel data.
-- Cameras, filters, selections, and Undo are session-only.
+- Cameras, filters, selections, and Undo last only for the session.
+- Background checks update reminder metadata; travel changes require confirmation.
 
-UI and background tasks share `appData`. `index.js` registers the lightweight arrival task before Router; normal app imports stay deferred behind the root recovery boundary. Background checks may update reminder metadata, never travel statuses. Inactive maps stop rendering; geography is generated before bundling.
+### State and rendering
 
-Read reactive values with `useAppData(snapshot => snapshot.data.places)` and
-call actions directly on `appData`. Select primitives or existing immutable
-references, then derive arrays and objects with ordinary functions or `useMemo`.
-`AppDataEffects` loads the store and announces errors without rerendering screens.
-Undo, save feedback, and unrelated preferences do not rerender travel views.
-Pass the screen's `useActionGuard` callback as `setStatus`'s `isCurrent` option:
-home-change confirmations recheck it before applying the update.
-
-The map generator separates small anchors and markers in `src/atlas/metadata.json`
-from the vertex buffers in `src/globe/world.json`. Flat maps, stamps, and picking
-read the metadata; the globe renderer loads the vertex buffers when a GL context
-is created.
+- UI and background tasks share `appData`. Read with `useAppData(snapshot => snapshot.data.places)`; call actions on `appData`.
+- Select primitives or existing immutable references. Derive arrays and objects with ordinary functions or `useMemo`.
+- `AppDataEffects` loads the store and announces errors without rerendering travel views for save feedback.
+- `useActionGuard` returns `guard`. Capture `const isCurrent = guard()` before asynchronous work, recheck it before applying results, and pass it to `setStatus` for pending home-change confirmations.
+- `index.js` registers the arrival task before Router. App imports stay deferred behind the root recovery boundary.
+- Inactive maps stop rendering. Flat maps, stamps, and picking use `src/atlas/metadata.json`; the globe loads vertex buffers from `src/globe/world.json` when its GL context is created.
 
 ### Localization and accessibility
 
-- Put UI text in `src/localization/locales/<language>/`; use typed `t` and shared formatters.
-- A new language needs complete messages, plural/formatting data, geographic names, native supported locales, and verified Hermes support. English is the fallback.
-- Preserve 44-point targets, Dynamic Type, VoiceOver, Reduce Motion, and logical spacing.
-- Never mirror geographic coordinates.
-
-Agent-specific rules live in [AGENTS.md](AGENTS.md).
+Use typed `t` and shared formatters for UI text in `src/localization/locales/<language>/`. Follow the [localization and accessibility rules](AGENTS.md#localization-and-accessibility) when changing UI or adding a language, then run the [iPhone checks](#on-an-iphone).
 
 ## Data upgrades
 
-The app is unreleased and has no users. Both saved data and backups currently use `{ app: "past-pins", schemaVersion: 1, data }`. Current development schemas, defaults, IDs, and fixtures may be updated directly; backwards compatibility and migrations for these unreleased formats are not required. Saved documents and imports still use the same strict decoder.
+The released v1 saved-file and backup format is `{ app: "past-pins", schemaVersion: 1, data }`. Preserve every format distributed through TestFlight or the App Store. Saved documents and imported backups use the same strict decoder.
 
-Once a build is distributed through **TestFlight** or the App Store, preserve that released contract and migrate subsequent data changes.
+The [model](src/data/model.ts) defines defaults, [validation](src/data/validation.ts) checks catalogs, and [document.ts](src/data/document.ts) encodes and decodes documents.
 
-| Version | When to change it |
-| --- | --- |
-| App version in `app.json` | Each public release |
-| iOS build number | Each uploaded binary; use EAS remote auto-increment |
-| Document `schemaVersion` | A stored field, default, validation rule, or ID needs conversion |
+App and schema versions are independent. When stored fields, defaults, validation rules, or IDs need conversion:
 
-The current model and defaults live in [model.ts](src/data/model.ts), validation
-uses the current catalogs in [validation.ts](src/data/validation.ts), and
-[document.ts](src/data/document.ts) owns the shared saved-file and backup format.
-There is no migration registry or duplicate historical catalog.
+1. Keep released fixtures in `tests/fixtures/data/` unchanged, including `v1-empty.json` and `v1-populated.json`.
+2. Increment the schema version, add new fixtures, and add a pure forward migration through the shared decoder.
+3. Preserve travel statuses, home, list membership, and preferences. Audit geographic ID changes before updating catalogs.
+4. Test every released schema’s path to the new format, including old backup imports, repeated loads, failed saves, interrupted writes, and stale asynchronous actions.
+5. Run the [upgrade checks on an iPhone](#on-an-iphone).
 
-The empty and populated fixtures in `tests/fixtures/data/` cover the current
-format. Update them with the model during development. Once a build is
-distributed, freeze its fixtures and add a pure forward migration when a real
-schema change needs one. Keep the same decoder for saved data and imports;
-cover historical paths and interrupted writes when adding that migration.
+Preserve unknown, future, and corrupt documents for explicit recovery. Never silently reset data or discard unknown IDs to make a load succeed.
 
 ### Persistence and recovery
 
-[snapshot-storage.ts](src/storage/snapshot-storage.ts) serializes all database access. Confirmed restores save the original raw document plus its replacement in one `SQLiteStorage.multiSet` transaction, retaining the latest three recovery copies. Ordinary edits preserve those copies. Keep the adapter atomic; independent writes are not equivalent.
+[snapshot-storage.ts](src/storage/snapshot-storage.ts) serializes database access. A restore saves the original raw document and its replacement in one atomic `SQLiteStorage.multiSet` transaction.
+
+The app retains the latest three recovery copies. Ordinary edits preserve them.
 
 | Operation | Failure behavior |
 | --- | --- |
-| Load | Preserve the saved document and open recovery, including for future versions. A missing primary document with existing copies is an error. |
-| Ordinary edit | Publish immediately; offer Retry save on failure. Unsaved edits can be lost on exit. |
+| Load | Preserve the document and open recovery. A missing primary document with existing copies is also an error. |
+| Ordinary edit | Publish immediately; offer Retry save if persistence fails. Unsaved edits can be lost on exit. |
 | Restore or reset | Publish only after persistence succeeds. |
 
-Tests exercise real SQLite rollback and process interruption; native-device
-checks are still required.
+Tests cover SQLite rollback and process interruption. Native recovery changes require a new build and physical iPhone checks.
 
 ### Reset controls
 
@@ -146,127 +133,121 @@ checks are still required.
 | Full reset | Clears app data, reminder history, diagnostics, temporary backups, and session state; returns to Welcome |
 | iPhone Settings → Apps → PastPins → Reset on Next Launch | After force-quitting and reopening, deletes owned files before React Native starts |
 
-External backup files and iOS permissions survive reset. A failed native deletion leaves the reset request pending and blocks app storage until a successful cold launch. Reset cannot repair a broken binary; local copies cannot protect against device loss. The root boundary handles render/import failures, not every native or asynchronous crash.
+External backups and iOS permissions survive reset. Failed native deletion keeps the request pending and blocks storage until a successful cold launch.
 
-### Adding persistent storage
+Local copies cannot protect against device loss, and reset cannot repair a broken binary. The root boundary catches render/import failures, not all native or asynchronous crashes.
 
-- Register new files in [owned-files.json](src/storage/owned-files.json) and test both in-app and native reset handling.
-- Keep arrival bookkeeping separately versioned and excluded from backups. Malformed bookkeeping rebuilds without duplicate reminders; IO failures preserve it.
-- Keep diagnostics local and bounded to 50 allowlisted events with versions and codes. Never log raw errors, travel records, or coordinates. Sharing must be explicit.
+### Adding storage
+
+- Define backup and reset behavior for each new app-owned store.
+- Register new owned files in [owned-files.json](src/storage/owned-files.json). Test in-app and native reset handling.
+- Keep arrival bookkeeping separately versioned and excluded from backups. Malformed bookkeeping rebuilds without duplicate reminders; I/O failures preserve it.
+- Keep diagnostics local and bounded to 50 allowlisted events with versions and codes. Exclude raw errors, travel records, and coordinates. Sharing requires an explicit action.
 
 ## Geography
 
-World assets derive from `@rembish/iso-topojson`; regional assets use the immutable commit and checksum in [subdivisions-source.json](scripts/data/subdivisions-source.json). The [manifest](src/subdivisions/manifest.json) records coverage, source age, exclusions, and generated hashes. Do not hand-edit generated JSON or patch individual countries.
+World assets derive from `@rembish/iso-topojson`. Regional assets use the immutable commit and checksum in [subdivisions-source.json](scripts/data/subdivisions-source.json). The [manifest](src/subdivisions/manifest.json) records coverage, source age, exclusions, and generated hashes.
 
-- `bun run generate` rebuilds map assets and license notices.
-- `bun run subdivisions:refresh` redownloads and verifies the **same pinned source** before regenerating; it does not upgrade the source.
-- `bun run subdivisions:check` verifies hashes offline. For reproducibility, regenerate from the pin and compare outputs.
+| Command | Effect |
+| --- | --- |
+| `bun run generate` | Rebuild maps and license notices |
+| `bun run subdivisions:refresh` | Redownload and verify the same pinned source, then regenerate |
+| `bun run subdivisions:check` | Verify generated hashes offline |
 
-### Updating geography
+Do not hand-edit generated JSON or patch individual countries. To update the source:
 
-1. Review the upstream license and boundary policy.
-2. Record the immutable source commit, checksum, and date; regenerate assets.
-3. Audit removed/reassigned IDs and list references; add any required [migration](#data-upgrades).
-4. Check coverage and representative maps, including tiny islands and antimeridian countries.
-5. Refresh attribution and run `bun run verify`.
+1. Review its license and boundary policy; record the immutable commit, checksum, and date.
+2. Audit removed/reassigned IDs and list references. Add any required [migration](#data-upgrades).
+3. Regenerate and compare outputs. Check coverage, tiny islands, and antimeridian countries.
+4. Refresh attribution and run `bun run verify`.
 
-Regional IDs are `ne:<ne_id>`; names and ISO-style display codes are not unique identities. Natural Earth is a cartographic dataset with variable administrative levels, older boundaries, and partial coverage. Its [de facto boundary policy](https://www.naturalearthdata.com/about/disputed-boundaries-policy/) may differ from the ISO world map. Keep these limitations visible in About and retain [public attribution](README.md#credits).
+Regional IDs are `ne:<ne_id>`; names and display codes are not identities. Natural Earth has variable administrative levels, older boundaries, and partial coverage. Its [de facto boundary policy](https://www.naturalearthdata.com/about/disputed-boundaries-policy/) may differ from the ISO world map. Keep these limitations in About and preserve [attribution](README.md#credits).
 
 ## Website
 
-The website builds to plain HTML and CSS, with no browser scripts or new dependencies.
+The website uses plain HTML and CSS. [build.ts](website/build.ts) fills localized placeholders and writes three pages to the ignored `_site/` directory, outside Expo’s `dist/`.
 
-| To change… | Edit |
+| Change | File |
 | --- | --- |
 | Page text | [website.json](src/localization/locales/en/website.json) |
 | Layout and links | [Home](website/index.html), [Privacy](website/privacy/index.html), [Support](website/support/index.html) |
-| Appearance | [website/styles.css](website/styles.css) |
+| Appearance | [styles.css](website/styles.css) |
 
-Each page is an explicit HTML template. [build.ts](website/build.ts) replaces
-message placeholders with localized text and copies the CSS into `_site/`.
+Build with `bun run website:build` and verify before pushing. [GitHub Actions](.github/workflows/check.yml) deploys `main` to GitHub Pages; pull requests only verify. Keep the `/past-pins/` base path and check the live pages after deployment.
 
-### Build and deploy
-
-1. Run `bun run website:build` to generate `_site/`.
-2. Run `bun run verify` after your final edit.
-3. Push to `main`. [GitHub Actions](.github/workflows/check.yml) verifies, uploads `_site/`, and deploys to the `github-pages` environment.
-4. Check all three live URLs below.
-
-GitHub Settings → Pages must use **GitHub Actions** as its source. Pull requests
-verify without deploying. The `/past-pins/` base path matches this repository.
-Generated `_site/` files are ignored by Git and kept outside Expo's `dist/`.
-
-### App Store Connect URLs
-
-| App Store Connect field | URL |
+| App Store Connect field | Public page |
 | --- | --- |
-| Marketing URL | `https://kkd16.github.io/past-pins/` |
-| Privacy Policy URL | `https://kkd16.github.io/past-pins/privacy/` |
-| Support URL | `https://kkd16.github.io/past-pins/support/` |
+| Marketing URL | [Home](https://kkd16.github.io/past-pins/) |
+| Privacy Policy URL | [Privacy](https://kkd16.github.io/past-pins/privacy/) |
+| Support URL | [Support](https://kkd16.github.io/past-pins/support/) |
 
-Privacy and Support are also linked from Settings → About. Apple requires an
-accessible privacy policy in the app and its metadata; see the
-[App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage).
+Privacy and Support also appear in Settings → About. Keep these pages and store metadata consistent with the shipped app.
 
-## Release
+## Release an update
 
-### App Store readiness
+Use the existing EAS project, Apple team, and App Store Connect record for `io.github.kkd16.pastpins`. Never commit signing credentials.
 
-- [ ] Check the three public URLs and support contact details.
-- [ ] Update the website's availability text when the app is released.
-- [ ] Review the policy against the submitted build, SDKs, and enabled services.
-- [ ] Complete App Store Connect privacy disclosures, age rating, export compliance, review contact details, screenshots, and applicable regional trader declarations.
-- [ ] Complete the source/license and iPhone checks below.
+### Prepare the version
 
-The current app has no developer backend, analytics, ads, or automatic diagnostics
-upload. On-device processing alone is not App Store Connect data collection.
-Check [Apple's definitions and optional-disclosure rules](https://developer.apple.com/app-store/app-privacy-details/)
-for native services and optional support. Reassess when data practices change.
+1. Set the next `expo.version` in `app.json`. Match `package.json` with `bun pm pkg set version=1.0.1`, replacing the example version as needed.
+2. Complete any [data upgrades](#data-upgrades) and regression coverage.
+3. Run `bun run licenses:generate` and review [source and license obligations](#source-and-license-obligations).
+4. Run `bun run verify`, then commit the candidate. Rerun verification after any edit, merge, or rebase.
+
+[EAS](eas.json) increments the iOS build number for each production build. Set the public app version yourself for each release. See [Expo’s version guide](https://docs.expo.dev/build-reference/app-versions/).
+
+### Build and test
+
+```sh
+bunx eas-cli build --platform ios --profile production
+```
+
+1. Record the successful EAS build ID, iOS build number, app version, and source commit.
+2. Check the build against [Apple’s current requirements](https://developer.apple.com/news/upcoming-requirements/). Inspect the `.ipa` for identity/version, iPhone targeting, icon, reset settings, background modes, network security, and privacy manifests/signatures.
+3. Publish its source before distribution, following the [source release checklist](#source-and-license-obligations).
+4. Upload that build, replacing `BUILD_ID` below:
+
+```sh
+bunx eas-cli submit --platform ios --profile production --id BUILD_ID
+```
+
+[EAS Submit](https://docs.expo.dev/submit/ios/) uploads to TestFlight. Resolve processing or compliance questions, install the candidate, and run the [iPhone checks](#on-an-iphone). After fixes, verify, rebuild, upload, and retest.
+
+### Submit and monitor
+
+1. [Create a new iOS version](https://developer.apple.com/help/app-store-connect/update-your-app/create-a-new-version/) in the existing app record, matching `expo.version`.
+2. Add What’s New, refresh changed screenshots and metadata, and check the public URLs. Review privacy disclosures, age rating, export compliance, agreements, and regional requirements against the candidate.
+3. Select the exact tested build. Update reviewer contact details and notes for optional permissions, arrival reminders, backups, and recovery; sign-in is not required.
+4. Choose the release timing and [phased rollout](https://developer.apple.com/help/app-store-connect/update-your-app/release-a-version-update-in-phases/), then submit for App Review.
+5. After approval, release as scheduled. Check the public listing, crash reports, and support feedback.
+
+Review [App Privacy disclosures](https://developer.apple.com/app-store/app-privacy-details/) when SDKs, services, or support practices change. The app has no developer backend, analytics, ads, or automatic diagnostics upload.
+
+If a rollout causes problems, pause it and ship a corrected **newer** version that reads every schema already written. Never downgrade or erase user data. No OTA channel or remote error-reporting service is configured.
 
 ### Source and license obligations
 
-For every distributed build:
+For every distributed build, including TestFlight:
 
-- [ ] Align the `package.json` and `app.json` versions.
-- [ ] Run `bun run licenses:generate` to bundle the [GPL](LICENSE), [App Store permission](COPYING.iOS), copyright, and third-party notices in the app.
-- [ ] Tag and retain the exact source revision.
-- [ ] Publish its complete corresponding source, required dependency source, and build scripts/instructions. A moving `main` link is insufficient.
-- [ ] Link that source release from the release notes and provide access to recipients alongside the binary, using a method permitted by GPL section 6.
-- [ ] Check dependency licenses and contributor rights. Exclude signing keys and credentials from published files.
-
-The exception preserves GPL source obligations and cannot grant permissions
-for third-party GPL-only code. Obtain software-licensing legal review before
-App Store release if the distribution arrangement is uncertain. This setup
-cannot guarantee App Review approval or legal compliance.
-
-### Build and submit
-
-The iOS bundle identifier is `io.github.kkd16.pastpins`, configured in [app.json](app.json). Confirm its availability when registering the App ID, then use the same identifier for the Apple team, signing configuration, and App Store Connect app. The EAS project and build profiles are configured; Apple registration and signing must be completed with the appropriate account. Never commit signing credentials.
-
-```sh
-bunx eas-cli login
-bunx eas-cli build:configure --platform ios
-```
-
-The checked-in `eas.json` uses remote app versions and production auto-increment. Keep `expo.version` in `app.json` current. For an existing uploaded app, initialize the remote build number with `bunx eas-cli build:version:set --platform ios`. See [Expo app versions](https://docs.expo.dev/build-reference/app-versions/).
-
-For each candidate:
-
-```sh
-bun run verify
-bunx eas-cli build --platform ios --profile production
-bunx eas-cli submit --platform ios --profile production
-```
-
-Select the exact candidate build when submitting. [EAS Submit](https://docs.expo.dev/submit/ios/) uploads it to App Store Connect for TestFlight; it does not publish the app. Test that build, then select the same build for App Review and release.
+- Include the generated [GPL](LICENSE), [App Store permission](COPYING.iOS), copyright, and third-party notices.
+- Tag and retain the exact source revision. Publish complete corresponding source, required dependency source, and build scripts/instructions.
+- Link the source release in the release notes and provide recipients access alongside the binary, using a method permitted by GPL section 6. A moving `main` link is insufficient.
+- Check distribution rights and exclude credentials from published files. The App Store permission preserves GPL obligations and does not extend to third-party GPL-only code.
 
 ### On an iPhone
 
-- **Fresh install:** Welcome, skipping/accepting/denying permissions, offline editing, relaunch, export/import, and cancellation. Browsing must work without location access.
-- **Upgrade:** Populate a prior build with countries, regions, home, mixed lists, and nondefault preferences. Export a backup, then install the candidate over it with the same bundle identifier. Verify every value and relaunch twice. Test skipped versions and old backups as schemas accumulate.
-- **Failures:** In a development build, inject failed/interrupted writes, invalid imports, invalid/future documents, corrupt recovery history, and render failure before providers mount. Confirm preserved data, safe errors, export, and retry. Test unavailable and near-full storage.
-- **Native reset:** Enable the Settings switch, force-quit, reopen, and verify Welcome, cleared data/reminders/diagnostics, and the switch off. Test cancelling the request, deletion failure/retry, and a crash before JavaScript starts.
-- **Interactions:** Maps and gestures, status/home/Undo, mixed lists, sharing, restore/reset, and arrival reminders. Leave and return during pending pickers, confirmations, or location requests; stale actions must not apply. Test notification taps from a cold launch, permission revocation, disabling reminders, and background battery behavior.
-- **Accessibility:** Small iPhone, largest Dynamic Type, VoiceOver order/actions and announcements, long translations, and Reduce Motion. Check native sheets/pickers and exported image fidelity. JavaScript tests and bundle exports do not establish native correctness or frame rate.
+Record the device, iOS version, candidate build, and results. Use disposable data for destructive checks and a development build for failure injection.
 
-For App Store updates, use a [phased release](https://developer.apple.com/help/app-store-connect/update-your-app/release-a-version-update-in-phases/) and monitor crash reports and feedback. Pause a bad rollout and ship a corrected **newer** build that reads every schema already written; do not downgrade data or erase it automatically. No OTA channel or remote error-reporting service is configured.
+| Check | Verify |
+| --- | --- |
+| Fresh install | Welcome; skip, accept, or deny permissions; browse without location; edit offline; relaunch; export/import and cancel |
+| Upgrade | Populate the released app with countries, regions, home, mixed lists, and nondefault preferences. Export a backup, install the candidate over it, verify every value, and relaunch twice. |
+| Older versions | Upgrade across skipped versions and import backups from every released schema. |
+| Storage failures | Failed/interrupted writes, invalid imports, future/corrupt documents, corrupt recovery history, unavailable or near-full storage. Data survives; recovery, export, and retry work. |
+| Startup and reset | Render failure before providers mount; native reset before JavaScript starts; cancel reset; deletion failure/retry. Successful reset returns to Welcome, clears data/reminders/diagnostics, and turns the switch off. |
+| Interactions | Maps, gestures, status/home/Undo, mixed lists, sharing, restore/reset. Leave and return during pickers, confirmations, and location requests; stale actions must not apply. |
+| Arrival reminders | Background delivery, cold-launch notification taps, permission revocation, disabling reminders, battery and thermal behavior |
+| Accessibility | Small iPhone, largest Dynamic Type, VoiceOver order/actions and announcements, long translations, supported locale/RTL behavior, Reduce Motion, native sheets/pickers |
+| Network and images | Location lookup and external links on IPv6-only networks; exported image fidelity |
+
+JavaScript tests and exports do not establish native correctness or frame rate. Report any device checks that could not be run.

@@ -2,35 +2,26 @@
 
 Small, focused improvements are welcome.
 
-## Getting started
+## Make a change
 
-1. Follow the setup in [development.md](development.md).
-2. Read the project rules in [AGENTS.md](AGENTS.md).
-3. Make your change and run `bun run verify`.
+1. Read the [project rules](AGENTS.md) and follow the [development setup](development.md#run-locally).
+2. Keep the change focused on iPhone. Preserve released data and backups; follow the [data upgrade guide](development.md#data-upgrades) when needed.
+3. Add regression coverage for data or asynchronous failures where practical.
+4. Run `bun run verify` after your final edit. Fix failures before pushing.
 
-## Before opening a pull request
+## Open a pull request
 
-- Describe the change and how you checked it.
-- List any iPhone checks you could not run.
-- Remove credentials and personal travel data.
-- Identify borrowed code, assets, and data; include their origin and licenses.
-- Preserve third-party copyright and license notices.
+- Explain the problem, the resulting behavior, and how you checked it.
+- Report iPhone checks you could not run.
+- Exclude credentials and personal travel data.
+- Credit borrowed code, assets, and data. Include their licenses and preserve original notices.
 
-## License for contributions
+## Contribution terms
 
-By submitting an original contribution for inclusion in PastPins, you license
-that contribution under the **GNU GPL version 3 or any later version**, with
-the **Apple App Store permission in [COPYING.iOS](COPYING.iOS)**. You keep your
-copyright. No copyright assignment is required.
+Original contributions use **GNU GPL version 3 or later** with the **[Apple App Store permission](COPYING.iOS)**. By submitting work for inclusion, you agree to these terms. You keep your copyright.
 
-Only contribute work you have the right to license on those terms, including
-any necessary employer permission. Third-party terms must permit the intended
-distribution. GPL-only third-party code does not automatically acquire our
-App Store exception.
+Contribute only work you can license on these terms, with employer permission where needed. Third-party licenses must allow distribution; our permission does not extend to third-party GPL-only code.
 
-## Why there is an App Store exception
+## App Store permission
 
-The [full GPL text](LICENSE) is unchanged. The separate exception follows
-[Nextcloud iOS's wording](https://github.com/nextcloud/ios/blob/b8a008690b443493f4a31d2f4e243b65d74737c2/COPYING.iOS),
-with the project name changed. It permits otherwise-compliant App Store
-distribution; it does not waive source-code or license-notice obligations.
+The [GPL](LICENSE) is unchanged. The permission follows [Nextcloud iOS’s wording](https://github.com/nextcloud/ios/blob/b8a008690b443493f4a31d2f4e243b65d74737c2/COPYING.iOS), with the project name changed. Follow the [source release checklist](development.md#source-and-license-obligations) for source access and notices.
