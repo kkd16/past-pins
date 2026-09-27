@@ -2,7 +2,7 @@
 
 [← PastPins](README.md)
 
-[Run locally](#run-locally) · [Code](#code) · [Data upgrades](#data-upgrades) · [Geography](#geography) · [Website](#website) · [Release an update](#release-an-update)
+[Run locally](#run-locally) · [Code](#code) · [Data upgrades](#data-upgrades) · [Currency metadata](#currency-metadata) · [Geography](#geography) · [Website](#website) · [Release an update](#release-an-update)
 
 ## Run locally
 
@@ -44,7 +44,7 @@ Background reminders and native reset require a development or TestFlight build.
 | `bun run check` | Lint, types, test coverage, generated assets, and website build |
 | `bun run verify` | Full pre-push and CI gate, including Expo Doctor and iOS exports |
 | `bunx expo install <package>` | Add an Expo-compatible app dependency |
-| `bun run generate` | Regenerate geography and license notices |
+| `bun run generate` | Regenerate geography, currency funds, and license notices |
 | `bun run deps:update` | Update dependencies, align Expo versions, regenerate, and verify |
 | `bun run website:build` | Build the public pages in `_site/` |
 
@@ -144,13 +144,21 @@ Local copies cannot protect against device loss, and reset cannot repair a broke
 - Keep arrival bookkeeping separately versioned and excluded from backups. Malformed bookkeeping rebuilds without duplicate reminders; I/O failures preserve it.
 - Keep diagnostics local and bounded to 50 allowlisted events with versions and codes. Exclude raw errors, travel records, and coordinates. Sharing requires an explicit action.
 
+## Currency metadata
+
+Country currencies come from `countries-list`. The shared catalog excludes codes marked `IsFund="true"` in [SIX's ISO 4217 list](https://www.six-group.com/en/products-services/financial-information/market-reference-data/data-standards.html). This removes financial funds and accounting units while preserving multiple currencies and their upstream order. It does not determine how commonly a currency is used by travelers.
+
+`bun run currencies:refresh` downloads the current XML, validates it, and updates both [the source snapshot](scripts/data/currencies.xml) and [the generated fund codes](src/countries/fund-codes.json). Review and commit both files. `bun run currencies:generate` regenerates from the snapshot; `bun run currencies:check` verifies it offline as part of the shared check command. The app bundles only the generated JSON and makes no currency network requests. Currency filtering changes display metadata only, not geographic IDs, saved visits, or backups.
+
+Refresh rejects invalid downloads and older publication dates before writing, and reports added/removed fund codes for review. Dependency updates regenerate the saved snapshot; they do not fetch new currency data. After a refresh, review the source date and code changes and run `bun run verify`. If generation is interrupted after updating the XML, rerun `bun run currencies:generate` to rebuild its JSON before verification.
+
 ## Geography
 
 World assets derive from `@rembish/iso-topojson`. Regional assets use the immutable commit and checksum in [subdivisions-source.json](scripts/data/subdivisions-source.json). The [manifest](src/subdivisions/manifest.json) records coverage, source age, exclusions, and generated hashes.
 
 | Command | Effect |
 | --- | --- |
-| `bun run generate` | Rebuild maps and license notices |
+| `bun run generate` | Rebuild maps, currency funds, and license notices |
 | `bun run subdivisions:refresh` | Redownload and verify the same pinned source, then regenerate |
 | `bun run subdivisions:check` | Verify generated hashes offline |
 

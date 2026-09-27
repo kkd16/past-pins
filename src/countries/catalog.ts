@@ -5,9 +5,11 @@ import {
 } from 'countries-list';
 import { compareNames } from '../localization';
 import { countryFeatures } from './geography';
+import funds from './fund-codes.json';
 import type { Continent, Country, CountryId } from './types';
 
 const continentById = new Map<string, Continent>();
+const fundCodes = new Set(funds.codes);
 
 export const countries: readonly Country[] = countryFeatures.map((shape) => {
   const { iso_a2: code, name } = shape.properties;
@@ -29,7 +31,7 @@ export const countries: readonly Country[] = countryFeatures.map((shape) => {
     continent: continentById.get(continentId)!,
     capital: details.capital,
     languages: details.languages.map((code) => languages[code].name),
-    currencies: details.currency,
+    currencies: details.currency.filter((code) => !fundCodes.has(code)),
   };
 }).sort((a, b) => compareNames(a.name, b.name));
 export const countryById = new Map(
