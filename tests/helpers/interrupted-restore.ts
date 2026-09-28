@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite';
-import { createSnapshotStorage } from '../../src/storage/snapshot-storage';
+import { createDocumentStorage } from '../../src/storage/document-storage';
 
 const [databasePath, phase] = process.argv.slice(2);
 const database = new Database(databasePath);
@@ -9,20 +9,17 @@ const pause = async (message: string) => {
   setInterval(() => {}, 60_000);
   await new Promise(() => {});
 };
-const storage = createSnapshotStorage({
+const storage = createDocumentStorage({
   async getItem(key) { return database.query<{ value: string }, [string]>('SELECT value FROM kv WHERE key=?').get(key)?.value ?? null; },
-  async setItem(key, value) { write.run(key, value); },
-  async multiSet(entries) {
+  async setItem(key, value) {
     database.exec('BEGIN IMMEDIATE');
-    for (const [index, [key, value]] of entries.entries()) {
-      write.run(key, value);
-      if (phase === 'before' && index === 0) await pause('before');
-    }
+    write.run(key, value);
+    if (phase === 'before') await pause('before');
     database.exec('COMMIT');
   },
   async clear() { database.exec('DELETE FROM kv'); },
 });
 const data = await storage.load();
 data.preferences.haptics = false;
-await storage.save(data, { checkpoints: 'create' });
+await storage.save(data);
 await pause('after');

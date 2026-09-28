@@ -1,17 +1,15 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
-import type { AppData } from '../data/model';
 import type { createAppDataStore } from '../data/store';
 import { confirmDestructiveAction } from '../feedback/confirmDestructiveAction';
-import { formatDate, formatNumber, t } from '../localization';
+import { formatNumber, t } from '../localization';
 import { pickBackup, shareDataFile } from '../settings/backup-files';
 import { appStorage } from '../storage/app-storage';
-import type { Checkpoint } from '../storage/snapshot-storage';
 import { getPlaceStatistics } from '../places/statistics';
 import { theme } from '../theme';
 import { diagnostics } from './diagnostics-file';
@@ -29,7 +27,6 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
   focused?: boolean;
 }) {
   const snapshot = useSyncExternalStore(store?.subscribe ?? noSubscribe, store?.getSnapshot ?? noSnapshot);
-  const [checkpoints, setCheckpoints] = useState<{ items: Checkpoint[]; error: unknown }>({ items: [], error: null });
   const [working, setWorking] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,21 +35,10 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
   const disabled = store === undefined || working || !!snapshot?.busy || snapshot?.status === 'loading';
   const loadError = snapshot?.loadError;
 
-  const refreshCheckpoints = useCallback(async (current: () => boolean) => {
-    try {
-      const items = await appStorage.listCheckpoints();
-      if (current()) setCheckpoints({ items, error: null });
-    } catch (error) {
-      if (current()) setCheckpoints((previous) => ({ ...previous, error }));
-    }
-  }, []);
-
   useEffect(() => {
-    const origin = { focused };
-    session.current = origin;
-    void refreshCheckpoints(() => session.current === origin);
+    session.current = { focused };
     return () => { session.current = null; };
-  }, [focused, store, snapshot?.data, snapshot?.resetVersion, refreshCheckpoints]);
+  }, [focused, store, snapshot?.data, snapshot?.resetVersion]);
 
   useEffect(() => {
     if (message) AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
@@ -80,13 +66,6 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
       if (session.current) setWorking(false);
     }
   }
-  async function restore(data: AppData) {
-    if (store) await store.restore(data);
-    else await appStorage.save(data, { checkpoints: 'create' });
-    if (session.current) setMessage(t('recovery.restored'));
-    await refreshCheckpoints(() => session.current !== null);
-  }
-
   async function importBackup(current: () => boolean) {
     const data = await pickBackup();
     if (!data || !current()) return;
@@ -96,26 +75,17 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
       cities: formatNumber(getPlaceStatistics(data.places, 'city').saved),
       lists: formatNumber(data.lists.length),
     }), t('settings.replaceData'), current);
-    if (confirmed) await restore(data);
-  }
-
-  async function restoreCheckpoint(copy: Checkpoint, current: () => boolean) {
-    const data = await appStorage.readCheckpoint(copy.id);
-    if (!current()) return;
-    const confirmed = await confirmDestructiveAction(t('recovery.restoreCheckpointTitle'), t('recovery.restoreCheckpointMessage', {
-      date: formatDate(copy.createdAt),
-    }), t('recovery.restore'), current);
-    if (confirmed) await restore(data);
+    if (!confirmed) return;
+    if (store) await store.restore(data);
+    else await appStorage.save(data);
+    if (session.current) setMessage(t('recovery.restored'));
   }
 
   async function resetApp(current: () => boolean) {
     if (!await confirmDestructiveAction(t('settings.resetAppTitle'), t('settings.resetAppMessage'), t('settings.resetApp'), current)) return;
     if (store) await store.resetApp();
     else await appStorage.clear();
-    if (session.current) {
-      setCheckpoints({ items: [], error: null });
-      setMessage(t('recovery.resetComplete'));
-    }
+    if (session.current) setMessage(t('recovery.resetComplete'));
     await onRetry?.();
   }
 
@@ -146,15 +116,6 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
                 await shareDataFile(text, 'Recovery');
               })} />
               <AppText variant="caption">{t('recovery.savedFileDescription')}</AppText>
-            </View>
-            <View style={styles.group}>
-              <AppText variant="label" accessibilityRole="header">{t('recovery.checkpoints')}</AppText>
-              {checkpoints.error ? <AppText>{recoveryMessage(checkpoints.error)}</AppText> : !checkpoints.items.length && <AppText>{t('recovery.noCheckpoints')}</AppText>}
-              {checkpoints.items.map((copy) => <Button key={copy.id}
-                label={t('recovery.checkpoint', { date: formatDate(copy.createdAt) })}
-                variant="quiet" disabled={disabled}
-                onPress={() => void run('restore', (current) => restoreCheckpoint(copy, current))}
-              />)}
             </View>
             <View style={styles.group}>
               <Button label={t('recovery.diagnostics')} variant="quiet" disabled={disabled} onPress={() => void run('export', async (current) => {

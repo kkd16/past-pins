@@ -2,7 +2,7 @@ import { t } from '../localization';
 import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
 import { dataError, type DataError } from './data-error';
-import type { AppStorage, SaveOptions } from '../storage/snapshot-storage';
+import type { AppStorage } from '../storage/document-storage';
 import {
   validateAppData,
   validateListName,
@@ -109,14 +109,14 @@ export function createAppDataStore(
     return loading;
   }
 
-  async function replace(data: AppData, { reset = false, ...options }: SaveOptions & { reset?: boolean } = {}) {
+  async function replace(data: AppData, reset = false) {
     if (snapshot.status === 'loading' || snapshot.busy)
       throw new UserFacingError(t('common.errors.dataNotReady'));
     publish({ busy: true });
     try {
       await lastWrite;
       if (reset) await storage.clear();
-      else await storage.save(data, options);
+      else await storage.save(data);
       ++revision;
       publish({
         data,
@@ -282,9 +282,9 @@ export function createAppDataStore(
     async restore(data: AppData) {
       const next = validateAppData(data);
       next.onboardingCompleted ||= snapshot.data.onboardingCompleted;
-      await replace(next, { checkpoints: 'create' });
+      await replace(next);
     },
-    resetApp: () => replace(defaultAppData(), { reset: true }),
+    resetApp: () => replace(defaultAppData(), true),
     async clearTravel() {
       if (!editable())
         throw new UserFacingError(t('common.errors.dataNotReady'));
@@ -293,7 +293,7 @@ export function createAppDataStore(
         places: {},
         lists: [],
         homeCountryId: null,
-      }, { checkpoints: 'discard' });
+      });
     },
     async resetPreferences() {
       if (!editable()) throw new UserFacingError(t('common.errors.dataNotReady'));

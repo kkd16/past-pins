@@ -2,7 +2,7 @@ import { createDiagnosticLog } from '../src/recovery/diagnostics';
 import { mock } from 'bun:test';
 import type { NotificationPermissionsStatus, NotificationResponse } from 'expo-notifications';
 import type { ArrivalLocation } from '../src/location/arrivals';
-import { createSnapshotStorage } from '../src/storage/snapshot-storage';
+import { createDocumentStorage } from '../src/storage/document-storage';
 
 export const location = {
   hasServicesEnabledAsync: mock(async () => true),
@@ -50,8 +50,7 @@ export const haptics = { selectionAsync: mock(async () => {}) };
 mock.module('expo-haptics', () => haptics);
 
 export const arrivalDatabase = new Map<string, string>();
-export const arrivalStorage = createSnapshotStorage({
-  async multiSet(entries) { for (const [key, value] of entries) arrivalDatabase.set(key, value); },
+export const arrivalStorage = createDocumentStorage({
   async getItem(key) { return arrivalDatabase.get(key) ?? null; },
   async setItem(key, value) { arrivalDatabase.set(key, value); },
   async clear() { arrivalDatabase.clear(); },

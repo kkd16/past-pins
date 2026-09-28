@@ -9,9 +9,9 @@ import { createAppDataStore } from '../src/data/store';
 import { t } from '../src/localization';
 import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import {
-  createSnapshotStorage,
+  createDocumentStorage,
   type AppStorage,
-} from '../src/storage/snapshot-storage';
+} from '../src/storage/document-storage';
 
 const [regionOne, regionTwo] = getCountrySubdivisions('ca').map(({ id }) => id);
 
@@ -22,12 +22,7 @@ function fixture() {
   let confirmations = 0;
   let writes = 0;
   const feedback: boolean[] = [];
-  const storage = createSnapshotStorage({
-    async multiSet(entries) {
-      writes++;
-      if (writeFailure) throw new Error('Write failed');
-      for (const [key, value] of entries) values.set(key, value);
-    },
+  const storage = createDocumentStorage({
     async clear() {
       if (writeFailure) throw new Error('Write failed');
       values.clear();
@@ -521,7 +516,7 @@ describe('app data owner', () => {
     expect(await f.storage.load()).toEqual(replacement);
   });
 
-  test('restore copies incoming data before awaiting storage without changing its source', async () => {
+  test('restore clones incoming data before awaiting storage without changing its source', async () => {
     const f = fixture();
     await f.store.load();
     await f.store.completeOnboarding(false);
@@ -716,18 +711,12 @@ test('preference reset only publishes success after persistence and retains unsa
   expect((await f.storage.load()).preferences.haptics).toBe(true);
 });
 
-test('clearing travel data also removes recovery copies and reset removes every owned database key', async () => {
+test('reset removes every owned database key', async () => {
   const f = fixture();
   await f.store.load();
   await f.store.setStatus(['ca'], 'visited');
-  await f.store.restore(defaultAppData());
-  expect(await f.storage.listCheckpoints()).toHaveLength(1);
-  await f.store.clearTravel();
-  expect(await f.storage.listCheckpoints()).toEqual([]);
-  await f.store.restore(defaultAppData());
   await f.storage.setItem('country-arrivals', '{}');
   await f.store.resetApp();
-  expect(await f.storage.listCheckpoints()).toEqual([]);
   expect(await f.storage.getItem('country-arrivals')).toBeNull();
   expect(await f.storage.readRaw()).toBeNull();
 });

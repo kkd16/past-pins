@@ -22,7 +22,6 @@ export function createLocalization<const Messages extends object>(
       .get(preferredLocale)
       .find((candidate) => candidate in translations) ?? i18n.defaultLocale;
   i18n.locale = language;
-  const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
   const numberFormatter = new Intl.NumberFormat(locale);
   const percentFormatter = new Intl.NumberFormat(locale, {
     style: 'percent',
@@ -39,7 +38,6 @@ export function createLocalization<const Messages extends object>(
     t(key: MessageKey<Messages>, values?: TranslateOptions) {
       return i18n.t(key, values);
     },
-    formatDate: dateFormatter.format,
     formatNumber: numberFormatter.format,
     formatPercent(value: number) {
       return value > 0 && value < 0.001

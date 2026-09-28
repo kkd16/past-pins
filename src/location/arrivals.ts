@@ -2,7 +2,7 @@ import { countryIds } from '../countries/catalog';
 import { countryAtPoint } from '../countries/geography';
 import { isVisited } from '../data/model';
 import type { DataSnapshot } from '../data/store';
-import type { KeyValueStorage } from '../storage/snapshot-storage';
+import type { KeyValueStorage } from '../storage/document-storage';
 
 const STORAGE_KEY = 'country-arrivals';
 const REMINDER_INTERVAL = 7 * 24 * 60 * 60 * 1000;

@@ -35,7 +35,6 @@ export const translations = {
 export const {
   t,
   language,
-  formatDate,
   formatNumber,
   formatPercent,
   formatList,

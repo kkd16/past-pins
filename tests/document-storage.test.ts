@@ -5,9 +5,9 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { defaultAppData, type AppData } from '../src/data/model';
 import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import {
-  createSnapshotStorage,
+  createDocumentStorage,
   type KeyValueStorage,
-} from '../src/storage/snapshot-storage';
+} from '../src/storage/document-storage';
 
 const databases: Database[] = [];
 afterEach(() => {
@@ -21,13 +21,6 @@ function fixture() {
     'CREATE TABLE kv (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)',
   );
   const keyValue: KeyValueStorage = {
-    async multiSet(entries) {
-      database.transaction(() => {
-        for (const [key, value] of entries) database.query(
-          'INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
-        ).run(key, value);
-      })();
-    },
     async clear() {
       database.exec('DELETE FROM kv');
     },
@@ -48,10 +41,10 @@ function fixture() {
         .run(key, value);
     },
   };
-  return { database, keyValue, storage: createSnapshotStorage(keyValue) };
+  return { database, keyValue, storage: createDocumentStorage(keyValue) };
 }
 
-describe('atomic snapshot storage', () => {
+describe('atomic document storage', () => {
   test('reset waits for queued saves and removes every key, including corrupt data', async () => {
     const { storage, keyValue, database } = fixture();
     await keyValue.setItem('other-key', 'example');
@@ -64,7 +57,7 @@ describe('atomic snapshot storage', () => {
     expect(await storage.load()).toEqual(defaultAppData());
     await keyValue.setItem('app-data', '{broken');
     await storage.clear();
-    expect(await createSnapshotStorage(keyValue).load()).toEqual(
+    expect(await createDocumentStorage(keyValue).load()).toEqual(
       defaultAppData(),
     );
   });
@@ -102,7 +95,7 @@ describe('atomic snapshot storage', () => {
     });
     data.preferences.mapView = 'map';
     await storage.save(data);
-    expect(await createSnapshotStorage(keyValue).load()).toEqual(data);
+    expect(await createDocumentStorage(keyValue).load()).toEqual(data);
     expect(database.query('SELECT COUNT(*) AS count FROM kv').get()).toEqual({
       count: 1,
     });
@@ -124,7 +117,7 @@ describe('atomic snapshot storage', () => {
     expect(await storage.load()).toEqual(defaultAppData());
   });
 
-  test('rejects snapshots without lists and preserves the stored record until reset', async () => {
+  test('rejects documents without lists and preserves the stored record until reset', async () => {
     const { storage, keyValue } = fixture();
     const { lists: _lists, ...data } = defaultAppData();
     const original = JSON.stringify({ app: 'past-pins', schemaVersion: 1, data });
@@ -133,7 +126,7 @@ describe('atomic snapshot storage', () => {
     expect(await keyValue.getItem('app-data')).toBe(original);
   });
 
-  test('rejects malformed snapshots without overwriting them', async () => {
+  test('rejects malformed documents without overwriting them', async () => {
     const { storage, keyValue } = fixture();
     const data = defaultAppData();
     data.places.ca = 'lived';
@@ -166,7 +159,7 @@ describe('atomic snapshot storage', () => {
       }
       await write(key, value);
     };
-    const storage = createSnapshotStorage(keyValue);
+    const storage = createDocumentStorage(keyValue);
     const data = defaultAppData();
     data.places.ca = 'visited';
     data.lists.push({ id: 'list-one', name: 'Next trip', placeIds: ['ca'] });
@@ -195,7 +188,7 @@ describe('atomic snapshot storage', () => {
     });
   });
 
-  test('failed writes preserve the prior entire snapshot and permit retry', async () => {
+  test('failed writes preserve the prior entire document and permit retry', async () => {
     const { database, storage } = fixture();
     const initial = defaultAppData();
     initial.places.ca = 'visited';
@@ -236,101 +229,24 @@ describe('atomic snapshot storage', () => {
   });
 });
 
-describe('restore checkpoints', () => {
-  test('invalid replacement data preserves both records and permits a later restore', async () => {
-    const { storage, keyValue } = fixture();
-    const initial = defaultAppData();
-    initial.places.ca = 'visited';
-    await storage.save(initial);
-    await storage.save(initial, { checkpoints: 'create' });
-    const document = await storage.readRaw();
-    const history = await keyValue.getItem('data-checkpoints');
-    await expect(storage.save({ ...initial, places: { unknown: 'visited' } }, {
-      checkpoints: 'create',
-    })).rejects.toThrow('invalid-document');
-    expect(await storage.readRaw()).toBe(document);
-    expect(await keyValue.getItem('data-checkpoints')).toBe(history);
-    await storage.save(defaultAppData(), { checkpoints: 'create' });
-    expect(await storage.load()).toEqual(defaultAppData());
-    expect(await storage.listCheckpoints()).toHaveLength(2);
-  });
-
-  test('imports retain the original bytes, preserve the last three copies, and ordinary saves leave copies alone', async () => {
-    const { storage, keyValue } = fixture();
-    const original = ' { unreadable original bytes';
-    await keyValue.setItem('app-data', original);
-    const data = defaultAppData();
-    await storage.save(data, { checkpoints: 'create' });
-    expect((await storage.listCheckpoints())[0].document).toBe(original);
-    for (const id of ['ca', 'fr', 'jp']) {
-      data.places[id] = 'visited';
-      await storage.save(data, { checkpoints: 'create' });
-    }
-    const history = await storage.listCheckpoints();
-    expect(history).toHaveLength(3);
-    expect(new Set(history.map((copy) => copy.id)).size).toBe(3);
-    expect(history.map((copy) => JSON.parse(copy.document).data.places)).toEqual([
-      { ca: 'visited', fr: 'visited' }, { ca: 'visited' }, {},
-    ]);
-    data.preferences.haptics = false;
+test('repeated replacements keep only the current document', async () => {
+  const { storage, keyValue, database } = fixture();
+  await keyValue.setItem('app-data', '{ unreadable original');
+  const data = defaultAppData();
+  for (const id of ['ca', 'fr', 'jp']) {
+    data.places = { [id]: 'visited' };
     await storage.save(data);
-    expect(await storage.listCheckpoints()).toEqual(history);
-    const restored = await storage.readCheckpoint(history[1].id);
-    await storage.save(restored, { checkpoints: 'create' });
-    expect((await storage.load()).places).toEqual({ ca: 'visited' });
-    expect(JSON.parse((await storage.listCheckpoints())[0].document).data).toEqual(data);
-  });
+    expect(await storage.load()).toEqual(data);
+    expect(database.query('SELECT * FROM kv').all()).toEqual([
+      { key: 'app-data', value: encodeDocument(data) },
+    ]);
+  }
+});
 
-  test('a checkpoint write failure rolls back both records and retry succeeds', async () => {
-    const { database, storage } = fixture();
-    const initial = defaultAppData();
-    initial.places.ca = 'visited';
-    await storage.save(initial);
-    await storage.save(initial, { checkpoints: 'create' });
-    const before = await storage.listCheckpoints();
-    database.exec("CREATE TRIGGER fail_checkpoint BEFORE UPDATE ON kv WHEN NEW.key = 'data-checkpoints' BEGIN SELECT RAISE(ABORT, 'disk full'); END");
-    await expect(storage.save(defaultAppData(), { checkpoints: 'create' })).rejects.toThrow('storage-write');
-    expect(await storage.load()).toEqual(initial);
-    expect(await storage.listCheckpoints()).toEqual(before);
-    database.exec('DROP TRIGGER fail_checkpoint');
-    await storage.save(defaultAppData(), { checkpoints: 'create' });
-    expect(await storage.load()).toEqual(defaultAppData());
-    expect(await storage.listCheckpoints()).toHaveLength(2);
-  });
-
-  test('future data is preserved byte-for-byte and is available for raw export', async () => {
-    const { storage, keyValue } = fixture();
-    const text = ' { "app": "past-pins", "schemaVersion": 999, "data": { "future": true } }\n';
-    await keyValue.setItem('app-data', text);
-    await expect(storage.load()).rejects.toThrow('unsupported-version');
-    expect(await storage.readRaw()).toBe(text);
-    expect(await keyValue.getItem('data-checkpoints')).toBeNull();
-  });
-
-  test('missing primary with recovery history is not silently treated as a new user', async () => {
-    const { storage, database } = fixture();
-    await storage.save(defaultAppData());
-    await storage.save(defaultAppData(), { checkpoints: 'create' });
-    database.exec("DELETE FROM kv WHERE key='app-data'");
-    await expect(storage.load()).rejects.toThrow('invalid-document');
-    const [copy] = await storage.listCheckpoints();
-    await storage.save(await storage.readCheckpoint(copy.id), { checkpoints: 'create' });
-    expect(await storage.load()).toEqual(defaultAppData());
-  });
-
-  test('corrupt checkpoint metadata blocks replacement, and full reset remains available', async () => {
-    const { storage, keyValue } = fixture();
-    await storage.save(defaultAppData());
-    const original = await storage.readRaw();
-    for (const history of ['{bad', JSON.stringify([{ id: 'bad-date', createdAt: Number.MAX_SAFE_INTEGER, document: original }])]) {
-      await keyValue.setItem('data-checkpoints', history);
-      await expect(storage.listCheckpoints()).rejects.toThrow('invalid-document');
-      await expect(storage.save(defaultAppData(), { checkpoints: 'create' })).rejects.toThrow('invalid-document');
-      expect(await storage.readRaw()).toBe(original);
-      expect(await keyValue.getItem('data-checkpoints')).toBe(history);
-    }
-    await storage.clear();
-    expect(await storage.listCheckpoints()).toEqual([]);
-    expect(await storage.load()).toEqual(defaultAppData());
-  });
+test('future data is preserved byte-for-byte and is available for raw export', async () => {
+  const { storage, keyValue } = fixture();
+  const text = ' { "app": "past-pins", "schemaVersion": 999, "data": { "future": true } }\n';
+  await keyValue.setItem('app-data', text);
+  await expect(storage.load()).rejects.toThrow('unsupported-version');
+  expect(await storage.readRaw()).toBe(text);
 });

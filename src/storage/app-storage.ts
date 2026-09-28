@@ -4,14 +4,13 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { assertStartupResetComplete } from '../../modules/past-pins-recovery/src/PastPinsRecoveryModule';
 import { diagnostics } from '../recovery/diagnostics-file';
 import ownedFiles from './owned-files.json';
-import { createSnapshotStorage } from './snapshot-storage';
+import { createDocumentStorage } from './document-storage';
 
 const database = new SQLiteStorage(ownedFiles.databaseName);
 
-export const appStorage = createSnapshotStorage({
+export const appStorage = createDocumentStorage({
   getItem: async (key) => { assertStartupResetComplete(); return database.getItem(key); },
   setItem: async (key, value) => { assertStartupResetComplete(); await database.setItem(key, value); },
-  multiSet: async (entries) => { assertStartupResetComplete(); await database.multiSet(entries); },
   async clear() {
     assertStartupResetComplete();
     if (Paths.cache.exists) {

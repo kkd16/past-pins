@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 import { defaultAppData } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
 import { encodeDocument } from '../src/data/document';
-import { createSnapshotStorage } from '../src/storage/snapshot-storage';
+import { createDocumentStorage } from '../src/storage/document-storage';
 import { createArrivalTracker, parseArrival, type Arrival, type ArrivalLocation } from '../src/location/arrivals';
 
 const day = 24 * 60 * 60 * 1000;
@@ -26,7 +26,7 @@ async function fixture() {
   const values = new Map<string, string>();
   const getItem = mock(async (key: string) => values.get(key) ?? null);
   const setItem = mock(async (key: string, value: string) => { values.set(key, value); });
-  const storage = createSnapshotStorage({ getItem, setItem, multiSet: async (entries) => { for (const [key, value] of entries) values.set(key, value); }, clear: async () => { values.clear(); } });
+  const storage = createDocumentStorage({ getItem, setItem, clear: async () => { values.clear(); } });
   const app = createAppDataStore(storage, { confirmStatusChange: async () => true });
   await app.load();
   await app.completeOnboarding(true);

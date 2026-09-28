@@ -40,7 +40,7 @@ See [development.md](development.md) for local setup, recovery, and releasing up
 - Preserve data and backup contracts distributed through TestFlight or the App Store. Keep released fixtures unchanged; add pure forward migrations and new fixtures when stored formats need conversion.
 - Saved documents and imported backups must use the same decoder. Test migrations from every affected released schema.
 - Preserve unknown, future, and corrupt documents until explicit recovery. Never silently clear data or drop unknown geographic IDs. Audit stored IDs and list membership before catalog changes.
-- Preserve the atomic checkpoint-plus-document transaction and serialized storage queue. Cover import failures, interrupted transactions, repeated loads, and stale asynchronous actions when persistence changes.
+- Keep one current document with atomic writes and a serialized storage queue. Cover import failures, interrupted transactions, repeated loads, and stale asynchronous actions when persistence changes.
 - New app-owned storage needs a backup/reset policy, native cold-reset ownership where relevant, and regression coverage.
 - Keep diagnostics bounded, local, and free of raw errors or user data.
 - Native recovery changes require a new iPhone build and physical-device cold-launch/reset checks. Expo Go and JavaScript tests cannot validate this safeguard.

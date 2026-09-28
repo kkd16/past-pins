@@ -6,7 +6,7 @@ import { DataError } from '../src/data/data-error';
 import { encodeDocument } from '../src/data/document';
 import { defaultAppData } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
-import { formatDate, t } from '../src/localization';
+import { t } from '../src/localization';
 import { arrivalDatabase, arrivalStorage } from './native-location';
 import { backupFile, documentPicker, sharing } from './native-sharing';
 import { native } from './setup';
@@ -80,7 +80,6 @@ test('repeated presses share one confirmation and a cancelled action can be retr
   await press(t('settings.restoreBackup'));
   await answer(true);
   expect(store.getSnapshot().data.places).toEqual({});
-  expect(await arrivalStorage.listCheckpoints()).toHaveLength(1);
 });
 
 test('works without app providers and exports unreadable original bytes', async () => {
@@ -94,14 +93,13 @@ test('works without app providers and exports unreadable original bytes', async 
   await arrivalStorage.save(defaultAppData());
 });
 
-test.each(['picker', 'confirmation'] as const)('cancelling the %s leaves data and checkpoints unchanged', async (stage) => {
+test.each(['picker', 'confirmation'] as const)('cancelling the %s leaves data unchanged', async (stage) => {
   const before = await arrivalStorage.readRaw();
   if (stage === 'picker') documentPicker.getDocumentAsync.mockResolvedValueOnce({ canceled: true, assets: null });
   await press(t('settings.restoreBackup'));
   if (stage === 'confirmation') await answer(false);
   else expect(native.Alert.alert).not.toHaveBeenCalled();
   expect(await arrivalStorage.readRaw()).toBe(before);
-  expect(await arrivalStorage.listCheckpoints()).toEqual([]);
   expect(button(t('settings.restoreBackup')).props.disabled).toBe(false);
 });
 
@@ -115,7 +113,6 @@ test.each(['blur', 'return', 'data-change'] as const)('a pending restore cannot 
   const data = store.getSnapshot().data;
   await answer(true);
   expect(store.getSnapshot().data).toBe(data);
-  expect(await arrivalStorage.listCheckpoints()).toEqual([]);
 });
 
 test('failed restore preserves data, reports a safe message, and allows retry', async () => {
@@ -130,30 +127,17 @@ test('failed restore preserves data, reports a safe message, and allows retry', 
     await press(t('settings.restoreBackup'));
     await answer(true);
     expect(store.getSnapshot().data.places).toEqual({});
-    expect(await arrivalStorage.listCheckpoints()).toHaveLength(1);
   } finally { saving.mockRestore(); }
 });
 
-test('confirmed recovery-copy restore replaces data and saves the displaced copy', async () => {
-  await press(t('recovery.moreOptions'));
-  await act(async () => store.restore(defaultAppData()));
-  const [copy] = await arrivalStorage.listCheckpoints();
-  await press(t('recovery.checkpoint', { date: formatDate(copy.createdAt) }));
-  expect(store.getSnapshot().data.places).toEqual({});
-  await answer(true);
-  expect(store.getSnapshot().data.places).toEqual({ ca: 'visited' });
-  expect(await arrivalStorage.listCheckpoints()).toHaveLength(2);
-});
-
-test('a failed checkpoint refresh does not report an already committed import as failed', async () => {
+test.each([true, false])('successful import stores only the replacement and announces completion with store %p', async (withStore) => {
+  await act(async () => root.render(<RecoveryScreen store={withStore ? store : null} />));
   await press(t('settings.restoreBackup'));
-  const listing = spyOn(arrivalStorage, 'listCheckpoints').mockRejectedValue(new DataError('storage-read'));
-  try {
-    await answer(true);
-    expect(store.getSnapshot().data.places).toEqual({});
-    expect(native.Alert.alert).toHaveBeenCalledTimes(1);
-    expect(native.AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenCalledWith(t('recovery.restored'), { queue: true });
-  } finally { listing.mockRestore(); }
+  await answer(true);
+  expect((await arrivalStorage.load()).places).toEqual({});
+  expect([...arrivalDatabase.entries()]).toEqual([['app-data', encodeDocument(defaultAppData())]]);
+  expect(native.Alert.alert).toHaveBeenCalledTimes(1);
+  expect(native.AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenCalledWith(t('recovery.restored'), { queue: true });
 });
 
 test('full reset is confirmed, recovers from failure, and retries the app only after success', async () => {
@@ -230,12 +214,12 @@ test('failed reads show a short explanation and keep extra tools behind more opt
   expect(buttons()).not.toContain(t('settings.resetApp'));
 });
 
-test.each([undefined, new Error('render failed')])('a newer saved format keeps update guidance visible with crash %p', async (error) => {
+test.each([false, true])('a newer saved format keeps update guidance visible with crash %p', async (crashed) => {
   const loading = spyOn(arrivalStorage, 'load').mockRejectedValueOnce(new DataError('unsupported-version'));
   try {
     const failed = createAppDataStore(arrivalStorage, { confirmStatusChange: async () => true });
     await failed.load();
-    await act(async () => root.render(<RecoveryScreen store={failed} error={error} />));
+    await act(async () => root.render(<RecoveryScreen store={failed} error={crashed ? new Error('render failed') : undefined} />));
     expect(root.container.queryAll((node) => node.props.children === t('recovery.errors.unsupported-version'))).toHaveLength(1);
     expect(root.container.queryAll((node) => node.props.children === t('recovery.loadTitle'))).toHaveLength(1);
     expect(root.container.queryAll((node) => node.props.children === t('recovery.crashMessage'))).toHaveLength(0);

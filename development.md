@@ -105,13 +105,11 @@ Preserve unknown, future, and corrupt documents for explicit recovery. Never sil
 
 ### Persistence and recovery
 
-[snapshot-storage.ts](src/storage/snapshot-storage.ts) serializes database access. A restore saves the original raw document and its replacement in one atomic `SQLiteStorage.multiSet` transaction.
-
-The app retains the latest three recovery copies. Ordinary edits preserve them.
+[document-storage.ts](src/storage/document-storage.ts) serializes database access. Edits and confirmed backup imports replace the single current document with an atomic `SQLiteStorage.setItem` write. Export a backup before importing if you want to keep the current data.
 
 | Operation | Failure behavior |
 | --- | --- |
-| Load | Preserve the document and open recovery. A missing primary document with existing copies is also an error. |
+| Load | Preserve the document and open recovery. |
 | Ordinary edit | Publish immediately; offer Retry save if persistence fails. Unsaved edits can be lost on exit. |
 | Restore or reset | Publish only after persistence succeeds. |
 
@@ -121,15 +119,15 @@ Tests cover SQLite rollback and process interruption. Native recovery changes re
 
 | Action | Effect |
 | --- | --- |
-| Settings → Data and recovery | Raw saved-file export, backup import, copy restore, diagnostics, confirmed full reset |
-| Clear travel | Removes countries, regions, cities, lists, home, and recovery copies; keeps preferences and reminder history |
-| Reset preferences | Keeps travel and copies; disables arrival reminders |
+| Settings → Your saved data | Raw saved-file export, backup import, diagnostics, confirmed full reset |
+| Clear travel | Removes countries, regions, cities, lists, and home; keeps preferences and reminder history |
+| Reset preferences | Keeps travel; disables arrival reminders |
 | Full reset | Clears app data, reminder history, diagnostics, temporary backups, and session state; returns to Welcome |
 | iPhone Settings → Apps → PastPins → Reset on Next Launch | After force-quitting and reopening, deletes owned files before React Native starts |
 
 External backups and iOS permissions survive reset. Failed native deletion keeps the request pending and blocks storage until a successful cold launch.
 
-Local copies cannot protect against device loss, and reset cannot repair a broken binary. The root boundary catches render/import failures, not all native or asynchronous crashes.
+Reset cannot repair a broken binary. The root boundary catches render/import failures, not all native or asynchronous crashes.
 
 ### Adding storage
 
@@ -256,7 +254,7 @@ Record the device, iOS version, candidate build, and results. Use disposable dat
 | Fresh install | Welcome; skip, accept, or deny permissions; browse without location; edit offline; relaunch; export/import and cancel |
 | Saved data | Populate the candidate with countries, regions, cities, home, mixed lists, and nondefault preferences. Relaunch twice, then export, reset, import, and verify every value. |
 | Documents | Round-trip the v1 fixtures and city lists; reject malformed, inconsistent, and unknown-place backups without altering saved data. |
-| Storage failures | Failed/interrupted writes, invalid imports, future/corrupt documents, corrupt recovery history, unavailable or near-full storage. Data survives; recovery, export, and retry work. |
+| Storage failures | Failed/interrupted writes, invalid imports, future/corrupt documents, unavailable or near-full storage. Data survives; recovery, export, and retry work. |
 | Startup and reset | Render failure before providers mount; native reset before JavaScript starts; cancel reset; deletion failure/retry. Successful reset returns to Welcome, clears data/reminders/diagnostics, and turns the switch off. |
 | Interactions | Maps, gestures, status/home, mixed lists, sharing, restore/reset. Leave and return during pickers, confirmations, and location requests; stale actions must not apply. |
 | Arrival reminders | Background delivery, cold-launch notification taps, permission revocation, disabling reminders, battery and thermal behavior |

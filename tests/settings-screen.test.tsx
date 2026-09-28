@@ -8,7 +8,7 @@ import { defaultAppData, defaultPreferences } from '../src/data/model';
 import { createToastStore } from '../src/feedback/store';
 import { formatNumber, t } from '../src/localization';
 import { getCountrySubdivisions } from '../src/subdivisions/catalog';
-import { arrivalStorage } from './native-location';
+import { arrivalDatabase, arrivalStorage } from './native-location';
 import { backupFile } from './native-sharing';
 import { native, navigation } from './setup';
 
@@ -95,6 +95,9 @@ test('backup preview shows simple totals and keeps data intact until confirmed',
   await press(t('settings.restoreBackup'));
   await answer(true);
   expect(await arrivalStorage.load()).toEqual({ ...backup, onboardingCompleted: true });
+  expect([...arrivalDatabase.entries()]).toEqual([
+    ['app-data', encodeDocument({ ...backup, onboardingCompleted: true })],
+  ]);
   expect(toast.getSnapshot()?.message).toBe(t('settings.backupRestored'));
 });
 
