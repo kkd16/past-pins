@@ -98,10 +98,13 @@ export function validateAppData(value: unknown): AppData {
   ) {
     throw new DataError('invalid-document');
   }
-  const prefs = value.preferences;
   if (
-    !object(prefs) ||
-    !exactKeys(prefs, Object.keys(defaultPreferences)) ||
+    !object(value.preferences) ||
+    Object.keys(value.preferences).some((key) => !Object.hasOwn(defaultPreferences, key))
+  )
+    throw new DataError('invalid-document');
+  const prefs = { ...defaultPreferences, ...value.preferences };
+  if (
     (prefs.mapView !== 'globe' && prefs.mapView !== 'map') ||
     (prefs.countryGrouping !== 'continent' &&
       prefs.countryGrouping !== 'alphabetical') ||

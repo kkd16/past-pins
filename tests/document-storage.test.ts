@@ -126,6 +126,24 @@ describe('atomic document storage', () => {
     expect(await keyValue.getItem('app-data')).toBe(original);
   });
 
+  test('loads omitted preferences without rewriting storage and persists defaults on save', async () => {
+    const { storage, keyValue } = fixture();
+    const data = defaultAppData();
+    data.places.ca = 'visited';
+    data.preferences.haptics = false;
+    const original = JSON.stringify({
+      app: 'past-pins', schemaVersion: 1,
+      data: { ...data, preferences: { haptics: false } },
+    });
+    await keyValue.setItem('app-data', original);
+    const loaded = await storage.load();
+    expect(loaded).toEqual(data);
+    expect(await storage.load()).toEqual(data);
+    expect(await storage.readRaw()).toBe(original);
+    await storage.save(loaded);
+    expect(await storage.readRaw()).toBe(encodeDocument(data));
+  });
+
   test('rejects malformed documents without overwriting them', async () => {
     const { storage, keyValue } = fixture();
     const data = defaultAppData();
@@ -133,7 +151,9 @@ describe('atomic document storage', () => {
     data.homeCountryId = 'ca';
     for (const invalid of [
       { ...data, extra: true },
-      { ...data, preferences: {} },
+      { ...data, preferences: null },
+      { ...data, preferences: { haptics: 'false' } },
+      { ...data, preferences: { future: true } },
       { ...data, places: { ca: 'visited' } },
       { ...data, places: null },
       { ...data, places: { unknown: 'visited' } },

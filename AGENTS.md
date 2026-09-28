@@ -9,6 +9,7 @@ Keep `ios.supportsTablet` set to `false`. Do not add iPad layouts, workarounds, 
 - Prefer native controls and documented library defaults. Reuse existing helpers before adding dependencies, wrappers, or state.
 - Fix demonstrated problems at their source. Explain behavior changes and cover data and asynchronous failures where practical.
 - Keep code free of comments. Put architectural explanations and development guidance in documentation.
+- Keep documentation concise; avoid duplicated guidance and speculative future design.
 
 ## Use project commands
 

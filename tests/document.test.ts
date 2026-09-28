@@ -166,7 +166,32 @@ describe('current backup format', () => {
     expect(() => validateAppData({ ...defaultAppData(), places, homeCountryId: 'city:6167865' })).toThrow();
   });
 
-  test('requires complete valid preferences without extra fields', () => {
+  test('defaults omitted preference fields', () => {
+    const preferences = populated.data.preferences;
+    for (const key of Object.keys(preferences)) {
+      const partial: Record<string, unknown> = { ...preferences };
+      delete partial[key];
+      expect<unknown>(decodeDocument(JSON.stringify({
+        ...populated, data: { ...populated.data, preferences: partial },
+      }))).toEqual({
+        ...populated.data,
+        preferences: { ...defaultAppData().preferences, ...partial },
+      });
+    }
+    expect<unknown>(decodeDocument(JSON.stringify({
+      ...populated, data: { ...populated.data, preferences: {} },
+    }))).toEqual({ ...populated.data, preferences: defaultAppData().preferences });
+  });
+
+  test('requires a preferences object', () => {
+    for (const preferences of [undefined, null, false, [], 'defaults']) {
+      expect(() => decodeDocument(JSON.stringify({
+        ...populated, data: { ...populated.data, preferences },
+      }))).toThrow('invalid-document');
+    }
+  });
+
+  test('rejects invalid preference values and extra fields', () => {
     const data = defaultAppData();
     for (const patch of [
       { mapView: 'satellite' },

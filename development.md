@@ -51,7 +51,9 @@ Key patterns:
 
 ## Data format
 
-The unreleased v1 document is `{ app: "past-pins", schemaVersion: 1, data }`. There are no older formats or migrations. Once distributed through TestFlight or the App Store, preserve its contract and fixtures.
+The v1 document is `{ app: "past-pins", schemaVersion: 1, data }`.
+
+Omitted fields within `preferences` use defaults; saves write all preferences. Invalid values, unknown fields, and missing required data are rejected.
 
 - **Model:** [model.ts](src/data/model.ts) defines transitions; [document.ts](src/data/document.ts) decodes both saved files and imports.
   - Countries, regions, and cities share one status map; lists store catalog IDs.
