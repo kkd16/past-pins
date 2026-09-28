@@ -3,6 +3,8 @@ import { geoContains } from 'd3-geo';
 
 import type { City, CityParentIndex } from '../src/cities/types';
 import type { SubdivisionFeature } from './subdivision-data';
+import type { Subdivision } from '../src/subdivisions/types';
+import { searchName } from '../src/places/search';
 
 export type CityRegionFeature = SubdivisionFeature & {
   properties: SubdivisionFeature['properties'] & { gn_id: number };
@@ -126,12 +128,14 @@ export function createCityParentIndex(cities: readonly CityRecord[]): CityParent
   return result;
 }
 
-export function createCityDatabase(cities: readonly CityRecord[], countryNames: ReadonlyMap<string, string> = new Map()) {
+export function createCityDatabase(cities: readonly CityRecord[], countryNames: ReadonlyMap<string, string> = new Map(), regions: readonly Subdivision[] = []) {
+  const regionById = new Map(regions.map((region) => [region.id, region]));
   const database = new Database(':memory:');
   database.exec(`
     CREATE TABLE cities (
       geonameId INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
+      searchName TEXT NOT NULL,
       countryId TEXT NOT NULL,
       regionId TEXT,
       adminName TEXT NOT NULL,
@@ -139,14 +143,20 @@ export function createCityDatabase(cities: readonly CityRecord[], countryNames: 
       latitude REAL NOT NULL,
       population INTEGER NOT NULL
     );
-    CREATE VIRTUAL TABLE city_search USING fts5(name, aliases, tokenize="unicode61 remove_diacritics 2 categories 'L* N* Co M*'", content='');
+    CREATE VIRTUAL TABLE city_search USING fts5(name, aliases, context, tokenize="unicode61 remove_diacritics 2 categories 'L* N* Co M*'", content='');
+    CREATE VIRTUAL TABLE city_suggestions USING fts5(name, tokenize='trigram', content='', detail=none);
   `);
-  const insertCity = database.prepare('INSERT INTO cities VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  const insertSearch = database.prepare('INSERT INTO city_search(rowid, name, aliases) VALUES (?, ?, ?)');
+  const insertCity = database.prepare('INSERT INTO cities VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  const insertSearch = database.prepare('INSERT INTO city_search(rowid, name, aliases, context) VALUES (?, ?, ?, ?)');
+  const insertSuggestion = database.prepare('INSERT INTO city_suggestions(rowid, name) VALUES (?, ?)');
   database.transaction(() => {
     for (const city of cities) {
-      insertCity.run(city.geonameId, city.name, city.countryId, city.regionId ?? null, city.adminName, city.longitude, city.latitude, city.population);
-      insertSearch.run(city.geonameId, city.name, `${city.aliases} ${city.adminName} ${countryNames.get(city.countryId) ?? ''} ${city.countryId}`);
+      const name = searchName(city.name);
+      const region = city.regionId ? regionById.get(city.regionId) : undefined;
+      const context = [city.adminName, countryNames.get(city.countryId), city.countryId, region?.code, region?.code.split('-').at(-1), ...(region?.aliases ?? [])].filter(Boolean).join(' ');
+      insertCity.run(city.geonameId, city.name, name, city.countryId, city.regionId ?? null, city.adminName, city.longitude, city.latitude, city.population);
+      insertSearch.run(city.geonameId, name, searchName(city.aliases), searchName(context));
+      insertSuggestion.run(city.geonameId, name);
     }
   })();
   database.exec(`
@@ -154,6 +164,7 @@ export function createCityDatabase(cities: readonly CityRecord[], countryNames: 
     CREATE INDEX cities_country ON cities(countryId, population DESC, geonameId);
     CREATE INDEX cities_region ON cities(regionId, population DESC, geonameId);
     INSERT INTO city_search(city_search) VALUES ('optimize');
+    INSERT INTO city_suggestions(city_suggestions) VALUES ('optimize');
     VACUUM;
   `);
   const bytes = database.serialize();

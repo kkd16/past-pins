@@ -67,6 +67,7 @@ const inputs = {
     new URL(import.meta.url),
     new URL('./city-data.ts', import.meta.url),
     new URL('./subdivision-data.ts', import.meta.url),
+    new URL('../src/places/search.ts', import.meta.url),
   ].map((url) => Bun.file(url).text()))).join('\n')),
 };
 const manifestFile = Bun.file(new URL('manifest.json', output));
@@ -82,7 +83,7 @@ if (values.check) {
 } else {
   const countryIds = new Set(countryFeatures.map(({ properties }) => properties.iso_a2.toLowerCase()));
   const upstream = JSON.parse(texts.get('subdivisions.geojson.gz')!) as SubdivisionSourceData;
-  const { features } = selectSubdivisions(upstream, countryIds);
+  const { features, regions } = selectSubdivisions(upstream, countryIds);
   const { cities, excluded, linked } = selectCities(
     texts.get('cities500.txt.gz')!,
     parseAdminCodes(texts.get('admin1CodesASCII.txt.gz')!),
@@ -93,7 +94,7 @@ if (values.check) {
   const outputs: Record<string, string> = {};
   const files = {
     'parents.json': new TextEncoder().encode(JSON.stringify(createCityParentIndex(cities)) + '\n'),
-    'catalog.db': createCityDatabase(cities, new Map(countryFeatures.map(({ properties }) => [properties.iso_a2.toLowerCase(), properties.name]))),
+    'catalog.db': createCityDatabase(cities, new Map(countryFeatures.map(({ properties }) => [properties.iso_a2.toLowerCase(), properties.name])), regions),
   };
   for (const [file, bytes] of refreshed) await Bun.write(new URL(file, snapshots), bytes);
   if (values.refresh) await Bun.write(sourceFile, JSON.stringify(source, null, 2) + '\n');

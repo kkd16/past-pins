@@ -26,6 +26,7 @@
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "expo-task-manager": "~57.0.20",
+    "fuse.js": "^7.5.0",
     "gl-matrix": "^3.4.4",
     "i18n-js": "^4.5.3",
     "react": "19.2.3",

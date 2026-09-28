@@ -8,17 +8,18 @@ import {
 } from 'react-native';
 
 import { DataFeedback } from '../components/DataFeedback';
-import { IconButton } from '../components/IconButton';
+import { ChoiceMenu } from '../components/ChoiceMenu';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { continents, countryById } from '../countries/catalog';
+import { countryById } from '../countries/catalog';
 import { CountryBulkActions } from '../countries/CountryBulkActions';
 import { CountryList } from '../countries/CountryList';
 import { CountryScopeControl } from '../countries/CountryScopeControl';
+import { PlaceFilterBar } from '../places/PlaceFilterBar';
+import type { PlaceLocation } from '../places/location';
 import {
   selectCountrySections,
-  type CountryFilters,
   type CountryScope,
 } from '../countries/filters';
 import { showStatusPicker } from '../countries/StatusPicker';
@@ -35,31 +36,32 @@ import { t } from '../localization';
 const emptySelection: ReadonlySet<string> = new Set();
 
 export function CountriesScreen({
-  filters,
   query,
   scope,
   intent,
+  location,
   onQueryChange,
   onScopeChange,
-  onOpenFilters,
+  onOpenLocation,
   onResetFilters,
   onSelect,
   onOpenRegions,
   onModeChange,
 }: {
-  filters: CountryFilters;
   query: string;
   scope: CountryScope;
   intent?: string;
+  location: PlaceLocation;
   onQueryChange: (query: string) => void;
   onScopeChange: (scope: CountryScope) => void;
-  onOpenFilters: () => void;
+  onOpenLocation: () => void;
   onResetFilters: () => void;
   onSelect: (id: CountryId) => void;
   onOpenRegions: (countryId: string) => void;
   onModeChange: (mode: PlacesMode) => void;
 }) {
   const { setStatus } = appData;
+  const grouping = useAppData((snapshot) => snapshot.data.preferences.countryGrouping);
   const places = useAppData((snapshot) => snapshot.data.places);
   const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
   const dataStatus = useAppData((snapshot) => snapshot.status);
@@ -67,7 +69,9 @@ export function CountriesScreen({
   const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
   const reducedMotion = useReducedMotion();
   const guard = useActionGuard(resetVersion);
-  const { continent, grouping } = filters;
+  const continent = location.kind === 'continent' ? location.id : 'all';
+  const searching = query.trim() !== '';
+  const narrowed = searching || continent !== 'all';
   const regionProgress = useMemo(
     () => getCountryRegionProgress(places),
     [places],
@@ -103,8 +107,6 @@ export function CountriesScreen({
   const selecting = selection?.filterKey === filterKey;
   const selectedIds = selecting ? selection.ids : emptySelection;
   const disabled = dataStatus !== 'ready' || busy;
-  const hasFilters = continent !== 'all' || grouping !== 'continent';
-  const continentName = continents.find(({ id }) => id === continent)?.name;
   const select = useCallback(
     (id: CountryId) => {
       Keyboard.dismiss();
@@ -145,21 +147,16 @@ export function CountriesScreen({
           <>
             <ScreenHeader
               title={t('places.title')}
-              subtitle={continentName ?? t('countries.subtitle')}
             >
-              <IconButton
-                name="filter"
-                color={hasFilters ? theme.color.accent : theme.color.textMuted}
-                accessibilityLabel={
-                  hasFilters
-                    ? t('countries.filtersApplied')
-                    : t('countries.filters')
-                }
+              <ChoiceMenu
+                title={t('countries.organization')}
+                value={grouping}
+                options={[
+                  { value: 'continent', label: t('countries.byContinent') },
+                  { value: 'alphabetical', label: t('countries.alphabetical') },
+                ]}
                 disabled={disabled}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  onOpenFilters();
-                }}
+                onChange={(countryGrouping) => appData.updatePreferences({ countryGrouping })}
               />
             </ScreenHeader>
             <View style={styles.controls}>
@@ -170,12 +167,14 @@ export function CountriesScreen({
                 placeholder={t('countries.search')}
                 accessibilityLabel={t('countries.searchLabel')}
               />
-              <CountryScopeControl value={scope} onChange={onScopeChange} />
+              <PlaceFilterBar location={location} onOpenLocation={onOpenLocation}>
+                <CountryScopeControl value={scope} onChange={onScopeChange} />
+              </PlaceFilterBar>
             </View>
             <DataFeedback />
           </>
         }
-        scrollResetKey={JSON.stringify([scope, continent, grouping, intent])}
+        scrollResetKey={JSON.stringify([query, scope, continent, grouping, intent])}
         sections={sections}
         places={places}
         homeCountryId={homeCountryId}
@@ -185,9 +184,12 @@ export function CountriesScreen({
         onSelect={select}
         regionProgress={regionProgress}
         onOpenRegions={onOpenRegions}
-        onReset={onResetFilters}
+        emptyAction={{
+          label: t(searching ? 'common.clearSearch' : narrowed ? 'countries.resetFilters' : 'countries.empty.browse'),
+          onPress: () => { Keyboard.dismiss(); if (searching) onQueryChange(''); else onResetFilters(); },
+        }}
         scope={scope}
-        narrowed={query.trim() !== '' || continent !== 'all'}
+        narrowed={narrowed}
         selecting={selecting}
         selectedIds={selectedIds}
         onStartSelection={() => {

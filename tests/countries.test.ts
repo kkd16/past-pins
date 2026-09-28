@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test';
 
 import { continents, countries, countryIds } from '../src/countries/catalog';
 import { countryFeatures } from '../src/countries/geography';
-import { normalizeSearch, searchCountries } from '../src/countries/search';
+import { searchCountries } from '../src/countries/search';
+import { normalizeSearch } from '../src/places/search';
 
 describe('published country catalog', () => {
   test('every checklist entry has a unique ID and a map shape', () => {
@@ -39,14 +40,14 @@ describe('published country catalog', () => {
     expect(searchCountries('Co\u0302te').map(({ id }) => id)).toContain('ci');
   });
 
-  test('search returns the full catalog for blank queries and sorts matches by name', () => {
+  test('blank browsing is alphabetical and search ranks primary names before aliases', () => {
     expect(searchCountries('')).toEqual([...countries]);
     expect(searchCountries('   ')).toEqual([...countries]);
     const results = searchCountries('island');
     expect(results.length).toBeGreaterThan(1);
-    expect(results).toEqual(
-      [...results].sort((a, b) => a.name.localeCompare(b.name, 'en')),
-    );
+    expect(results.slice(-2).map(({ id }) => id)).toEqual(['is', 'pn']);
+    const primary = results.slice(0, -2);
+    expect(primary).toEqual([...primary].sort((a, b) => a.name.localeCompare(b.name, 'en')));
   });
 
   test('search includes the authoritative and native country names', () => {
@@ -58,7 +59,7 @@ describe('published country catalog', () => {
   });
 
   test('search normalizes case before removing accent marks', () => {
-    expect(normalizeSearch('  İSTANBUL ', 'tr')).toBe('istanbul');
-    expect(normalizeSearch('CÔTE', 'fr')).toBe('cote');
+    expect(normalizeSearch('  İSTANBUL ')).toBe('istanbul');
+    expect(normalizeSearch('CÔTE')).toBe('cote');
   });
 });

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useCityCatalogStatus } from '../cities/database';
 import { useAppData } from '../data/AppData';
-import { searchNeedsCities, searchPlacesPage, type Place, type PlaceSearchOptions } from './catalog';
+import { searchNeedsCities, searchPlacesPage, searchPlaceSuggestions, type Place, type PlaceSearchOptions } from './catalog';
 
 export function usePlaceSearch(options: Omit<PlaceSearchOptions, 'offset' | 'limit'>) {
   const catalog = useCityCatalogStatus();
@@ -10,26 +10,28 @@ export function usePlaceSearch(options: Omit<PlaceSearchOptions, 'offset' | 'lim
   const needsCities = searchNeedsCities(options);
   const key = JSON.stringify([options, resetVersion, needsCities ? catalog.revision : 0]);
   const session = useRef<{ busy: boolean; key: string } | null>(null);
-  const [result, setResult] = useState({ key: '', places: [] as Place[], more: false, loading: false, error: false });
+  const [result, setResult] = useState({ key: '', places: [] as Place[], suggestions: [] as Place[], more: false, loading: false, error: false });
   const active = result.key === key ? result : undefined;
   const ready = !needsCities || catalog.ready;
 
   const fetchPage = useCallback((offset: number, token: { busy: boolean; key: string }) => {
     token.busy = true;
     const [request] = JSON.parse(key) as [PlaceSearchOptions];
-    return searchPlacesPage({ ...request, offset, limit: 50 }).then(
-      (places) => {
-        if (session.current === token) setResult((previous) => ({
-          key, places: offset ? [...previous.places, ...places] : places,
-          more: places.length === 50, loading: false, error: false,
-        }));
-      },
-      () => {
-        if (session.current === token) setResult((previous) => ({
-          key, places: offset ? previous.places : [], more: false, loading: false, error: true,
-        }));
-      },
-    ).finally(() => { token.busy = false; });
+    return searchPlacesPage({ ...request, offset, limit: 50 }).then(async (places) => {
+      if (session.current !== token) return;
+      const suggestions = offset ? [] : await searchPlaceSuggestions(request, places);
+      if (session.current === token) setResult((previous) => ({
+        key, places: offset ? [...previous.places, ...places] : places,
+        suggestions: offset ? previous.suggestions : suggestions,
+        more: places.length === 50, loading: false, error: false,
+      }));
+    }).catch(() => {
+      if (session.current === token) setResult((previous) => ({
+        key, places: offset ? previous.places : [], suggestions: [], more: false, loading: false, error: true,
+      }));
+    }).finally(() => {
+      token.busy = false;
+    });
   }, [key]);
   useEffect(() => {
     const token = { busy: false, key };
@@ -41,6 +43,7 @@ export function usePlaceSearch(options: Omit<PlaceSearchOptions, 'offset' | 'lim
   const error = (needsCities && catalog.error) || !!active?.error;
   return {
     places: active?.places ?? [],
+    suggestions: active?.suggestions ?? [],
     loading: !error && (!active || active.loading),
     error,
     more: !!active?.more,

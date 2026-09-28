@@ -15,7 +15,6 @@
   "emptyListHint": "Add places for your trip.",
   "addPlaces": "Add places",
   "editPlaces": "Edit places",
-  "independent": "Your travel statuses stay the same.",
   "count": {
     "one": "%{amount} place",
     "other": "%{amount} places"

@@ -1,7 +1,5 @@
 {
   "subtitle": "Countries & territories",
-  "filters": "Filters",
-  "filtersApplied": "Filters, active",
   "search": "Search countries",
   "searchLabel": "Search countries and territories",
   "placesToShow": "Places to show",
@@ -20,8 +18,6 @@
   "organization": "Organization",
   "byContinent": "By continent",
   "alphabetical": "Alphabetical",
-  "continent": "Continent",
-  "allContinents": "All continents",
   "resetFilters": "Reset filters",
   "select": "Select",
   "selectedCount": {
@@ -54,7 +50,6 @@
     "livedMessage": "Mark a place Lived to add it here.",
     "completeTitle": "Every place visited",
     "completeMessage": "You’ve visited every place on the map.",
-    "clearFilters": "Clear search & filters",
     "browse": "Browse places",
     "noSearchResults": "No matching countries."
   },

@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { useSyncExternalStore } from 'react';
 
-import { buildCitiesById, buildCitySearch, cityFromRow, type CityQuery, type CityRow } from './query';
+import { buildCitiesById, buildCitySearch, buildCitySuggestions, cityFromRow, type CityQuery, type CityRow, type CitySearchRow, type StaticSearchMatch } from './query';
 import { isCityId } from './index';
 import type { City, CitySearchOptions } from './types';
 
@@ -35,27 +35,30 @@ export function useCityCatalogStatus() {
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-async function queryCities({ sql, params }: CityQuery) {
+async function queryCities<T = CityRow>({ sql, params }: CityQuery) {
   const connection = database;
   if (!connection) throw new Error('City catalog unavailable.');
   try {
-    const rows = await connection.getAllAsync<CityRow>(sql, params);
-    return rows.map(cityFromRow);
+    return await connection.getAllAsync<T>(sql, params);
   } catch (error) {
     if (database === connection) setCityCatalogDatabase(null, true);
     throw error;
   }
 }
 
-export function searchCities(options: CitySearchOptions): Promise<City[]> {
-  return queryCities(buildCitySearch(options));
+export function searchCityMatches(options: CitySearchOptions, staticMatches: readonly StaticSearchMatch[] = []) {
+  return queryCities<CitySearchRow>(buildCitySearch(options, staticMatches));
+}
+
+export async function getCitySuggestions(options: CitySearchOptions) {
+  return (await queryCities(buildCitySuggestions(options))).map(cityFromRow);
 }
 
 export async function getCities(ids: readonly string[]): Promise<City[]> {
   const connection = database;
   if (!connection) throw new Error('City catalog unavailable.');
   if (!ids.length) return [];
-  const cities = await queryCities(buildCitiesById(ids));
+  const cities = (await queryCities(buildCitiesById(ids))).map(cityFromRow);
   const found = new Set(cities.map((city) => city.id));
   if (ids.some((id) => isCityId(id) && !found.has(id))) {
     if (database === connection) setCityCatalogDatabase(null, true);

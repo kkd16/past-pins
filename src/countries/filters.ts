@@ -1,7 +1,7 @@
 import { isVisited, type AppData, type PlaceStatus } from '../data/model';
 import { t } from '../localization';
-import { continents } from './catalog';
-import { searchCountries } from './search';
+import { continents, countries } from './catalog';
+import { searchCountries, suggestCountries } from './search';
 import type { Country } from './types';
 
 export type CountryScope =
@@ -20,11 +20,6 @@ export const countryScopes: { value: CountryScope; label: string }[] = [
   { value: 'not-visited', label: t('countries.status.notVisited') },
 ];
 
-export const defaultCountryFilters: CountryFilters = {
-  continent: 'all',
-  grouping: 'continent',
-};
-
 export function readCountryScope(value: unknown): CountryScope {
   return countryScopes.find((scope) => scope.value === value)?.value ?? 'all';
 }
@@ -38,30 +33,21 @@ export function matchesCountryScope(
   return scope === 'all' || status === scope;
 }
 
-export function readCountryFilters(params: {
-  continent?: string | string[];
-  grouping?: string | string[];
-}): CountryFilters {
-  return {
-    continent: continents.find(({ id }) => id === params.continent)?.id ?? 'all',
-    grouping: params.grouping === 'alphabetical' ? 'alphabetical' : 'continent',
-  };
-}
-
 export function selectCountrySections(
   query: string,
   scope: CountryScope,
   filters: CountryFilters,
   places: AppData['places'],
 ): CountrySection[] {
-  const results = searchCountries(query).filter((country) => {
-    if (
-      filters.continent !== 'all' &&
-      country.continent.id !== filters.continent
-    )
-      return false;
-    return matchesCountryScope(places[country.id], scope);
-  });
+  const matchesFilters = (country: Country) =>
+    (filters.continent === 'all' || country.continent.id === filters.continent) && matchesCountryScope(places[country.id], scope);
+  const results = searchCountries(query).filter(matchesFilters);
+  if (query.trim()) {
+    if (results.length) return [{ key: 'results', title: t('places.searchResults'), data: results }];
+    const eligible = new Set(countries.filter(matchesFilters).map(({ id }) => id));
+    const suggestions = suggestCountries(query, eligible);
+    return suggestions.length ? [{ key: 'similar', title: t('places.similarNames'), data: suggestions }] : [];
+  }
   if (filters.grouping === 'alphabetical') {
     return results.length
       ? [{ key: 'all', title: t('countries.alphabetical'), data: results }]

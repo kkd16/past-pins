@@ -31,7 +31,7 @@ export function AppNavigator() {
         <Stack.Screen name="settings/about" options={{ title: t('common.about') }} />
         <Stack.Screen name="settings/licenses" options={{ title: t('common.licenses') }} />
         <Stack.Screen name="settings/license" options={{ title: t('common.license') }} />
-        <Stack.Screen name="map-search" options={modalOptions} />
+        <Stack.Screen name="map-search" options={{ ...sheetOptions, sheetAllowedDetents: [1] }} />
         <Stack.Screen name="share" options={modalOptions} />
         <Stack.Screen name="stamps/index" options={{ title: t('stamps.title') }} />
         <Stack.Screen name="stamps/[id]" options={modalOptions} />
@@ -53,8 +53,8 @@ export function AppNavigator() {
           options={{ ...sheetOptions, sheetAllowedDetents: [0.65, 1] }}
         />
         <Stack.Screen
-          name="filters"
-          options={{ ...sheetOptions, sheetAllowedDetents: [0.7, 1] }}
+          name="place-location"
+          options={{ ...sheetOptions, sheetAllowedDetents: [1] }}
         />
       </Stack.Protected>
       <Stack.Protected guard={welcome}>

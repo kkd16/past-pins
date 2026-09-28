@@ -2,14 +2,13 @@ import { describe, expect, test } from 'bun:test';
 
 import { countries } from '../src/countries/catalog';
 import {
-  defaultCountryFilters,
-  readCountryFilters,
   readCountryScope,
   selectCountrySections,
   type CountrySection,
 } from '../src/countries/filters';
 import type { AppData } from '../src/data/model';
 
+const defaultCountryFilters = { continent: 'all', grouping: 'continent' } as const;
 const places: AppData['places'] = {
   ca: 'lived',
   fr: 'visited',
@@ -168,22 +167,6 @@ describe('country list filters', () => {
   });
 
   test('route parameters support valid options and default invalid inputs', () => {
-    expect(readCountryFilters({})).toEqual({
-      continent: 'all',
-      grouping: 'continent',
-    });
-    expect(
-      readCountryFilters({ continent: 'EU', grouping: 'alphabetical' }),
-    ).toEqual({ continent: 'EU', grouping: 'alphabetical' });
-    expect(
-      readCountryFilters({ continent: 'invalid', grouping: 'alphabetical' }),
-    ).toEqual({ continent: 'all', grouping: 'alphabetical' });
-    expect(
-      readCountryFilters({ continent: 'EU', grouping: ['alphabetical'] }),
-    ).toEqual({ continent: 'EU', grouping: 'continent' });
-    expect(
-      readCountryFilters({ continent: ['EU'], grouping: 'alphabetical' }),
-    ).toEqual({ continent: 'all', grouping: 'alphabetical' });
     expect(readCountryScope('all')).toBe('all');
     expect(readCountryScope('visited')).toBe('visited');
     expect(readCountryScope('wishlist')).toBe('wishlist');

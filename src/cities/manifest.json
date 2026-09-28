@@ -5,11 +5,11 @@
     "subdivisions": "01e445ff748c9d0df8d6f701d8e2ad7c6a6620b45cbaab3ec5a7b4d5dad3e7b2",
     "bun": "1.4.2",
     "geometry": "3.1.1",
-    "generator": "cfcda4787679e0c7011c65f0288bcf8eab7309d72725b76b6ecb1f716148c814"
+    "generator": "3d52f02e32d724361918b30a201872c3aa48f154a6920420fc38486dffcd99ff"
   },
   "outputs": {
     "parents.json": "f1d04029c6260a16bc8772bec36816463dbc1c707e3e1b311fe0a18e52efca51",
-    "catalog.db": "2b08b7a13088531e745750ae79d01a96fde3c5bd074665c13cc9f20df5fc0be6"
+    "catalog.db": "57fa334f2e7f57812c92de7b2cd83ae30675d29e7bb9d0240f955d1ad8a12b80"
   },
   "source": {
     "name": "GeoNames",

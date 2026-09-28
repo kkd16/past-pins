@@ -19,6 +19,7 @@ test.each(['download', 'validation'])('failed city refresh preserves source snap
       symlink(join(project, 'scripts/city-data.ts'), join(directory, 'scripts/city-data.ts')),
       symlink(join(project, 'scripts/subdivision-data.ts'), join(directory, 'scripts/subdivision-data.ts')),
       symlink(join(project, 'src/countries'), join(directory, 'src/countries')),
+      symlink(join(project, 'src/places'), join(directory, 'src/places')),
       symlink(join(project, 'node_modules'), join(directory, 'node_modules')),
     ]);
     const snapshots = source.snapshots.map((snapshot) => ({ ...snapshot, zipEntry: null }));

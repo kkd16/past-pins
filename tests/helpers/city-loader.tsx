@@ -4,7 +4,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'test-renderer';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { searchCities, useCityCatalogStatus } from '../../src/cities/database';
+import { searchCityMatches, useCityCatalogStatus } from '../../src/cities/database';
 import ownedFiles from '../../src/storage/owned-files.json';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -86,7 +86,7 @@ if (scenario === 'unmount') {
   await act(async () => root.unmount());
   await act(async () => initialize.resolve());
   expect(connections[0].close).toHaveBeenCalledTimes(1);
-  await expect(searchCities({ query: '' })).rejects.toThrow('City catalog unavailable');
+  await expect(searchCityMatches({ query: '' })).rejects.toThrow('City catalog unavailable');
 } else {
   if (scenario === 'late-initialization') {
     expect(status()).toMatchObject({ ready: false, error: false });
@@ -96,7 +96,7 @@ if (scenario === 'unmount') {
     expect(status()).toMatchObject({ ready: true, error: false });
     connections[0].failQueries = true;
     await act(async () => {
-      await expect(searchCities({ query: 'Toronto' })).rejects.toThrow('City query failed');
+      await expect(searchCityMatches({ query: 'Toronto' })).rejects.toThrow('City query failed');
     });
     expect(status()).toMatchObject({ ready: false, error: true });
   }
@@ -114,7 +114,7 @@ if (scenario === 'unmount') {
   if (scenario === 'late-initialization') await act(async () => initialize.resolve());
   expect(connections[0].close).toHaveBeenCalledTimes(1);
   expect(status()).toMatchObject({ ready: true, error: false });
-  expect(await searchCities({ query: '' })).toEqual([]);
+  expect(await searchCityMatches({ query: '' })).toEqual([]);
   await act(async () => root.unmount());
   expect(connections[1].close).toHaveBeenCalledTimes(1);
 }

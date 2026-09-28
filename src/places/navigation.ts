@@ -41,7 +41,7 @@ export function placesHref(
     params: {
       mode,
       scope,
-      continent,
+      location: continent === 'all' ? 'anywhere' : `continent:${continent}`,
       query: '',
       intent: String(++intent),
     },
@@ -50,5 +50,5 @@ export function placesHref(
 
 export function citiesHref(countryId: string, regionId?: string) {
   const href = placesHref('cities');
-  return { ...href, params: { ...href.params, countryId, regionId } };
+  return { ...href, params: { ...href.params, location: regionId ?? countryId } };
 }

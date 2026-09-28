@@ -5,7 +5,7 @@ import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { SheetHeader } from '../components/SheetHeader';
 import { SearchField } from '../components/SearchField';
 import type { Place } from '../places/catalog';
 import { PlaceRow } from '../places/PlaceRow';
@@ -13,6 +13,7 @@ import { getPlaceStatus } from '../data/model';
 import { useAppData } from '../data/AppData';
 import { usePlaceSearch } from '../places/usePlaceSearch';
 import { PlaceSearchFooter } from '../places/PlaceFeedback';
+import { PlaceSuggestions } from '../places/PlaceSuggestions';
 import { theme } from '../theme';
 import { t } from '../localization';
 
@@ -40,20 +41,14 @@ export function PlaceSearchScreen({
   const searchLabel = t(
     countriesOnly ? 'countries.search' : 'places.searchAll',
   );
+  const renderPlace = (place: Place) => <PlaceRow place={place} status={getPlaceStatus(data, place.id)}
+    home={data.homeCountryId === place.id} disabled={disabled}
+    onPress={(selected) => { Keyboard.dismiss(); onSelect(selected.id); }} />;
   return (
     <Screen onAccessibilityEscape={onCancel}>
       <View style={styles.header}>
         {onCancel && (
-          <ScreenHeader title={title} compact>
-            <Button
-              label={t('common.cancel')}
-              variant="quiet"
-              onPress={() => {
-                Keyboard.dismiss();
-                onCancel();
-              }}
-            />
-          </ScreenHeader>
+          <SheetHeader title={title} onDismiss={() => { Keyboard.dismiss(); onCancel(); }} />
         )}
         <SearchField
           autoFocus
@@ -78,20 +73,23 @@ export function PlaceSearchScreen({
         keyboardDismissMode="interactive"
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          onClear && (
-            <Button
-              label={t('countries.details.clearHome')}
-              variant="quiet"
-              onPress={() => {
-                Keyboard.dismiss();
-                onClear();
-              }}
-              disabled={disabled}
-            />
-          )
+          <>
+            <PlaceSuggestions places={ready ? results.suggestions : []} renderPlace={renderPlace} />
+            {onClear && (
+              <Button
+                label={t('countries.details.clearHome')}
+                variant="quiet"
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onClear();
+                }}
+                disabled={disabled}
+              />
+            )}
+          </>
         }
         ListEmptyComponent={
-          ready && !results.loading && !results.error ? (
+          ready && !results.loading && !results.error && !results.suggestions.length ? (
             <View style={styles.empty}>
               <AppText tone="muted">
                 {t(
@@ -108,18 +106,7 @@ export function PlaceSearchScreen({
         }
         onEndReached={results.loadMore}
         ListFooterComponent={<PlaceSearchFooter {...results} />}
-        renderItem={({ item }) => (
-          <PlaceRow
-            place={item}
-            status={getPlaceStatus(data, item.id)}
-            home={data.homeCountryId === item.id}
-            disabled={disabled}
-            onPress={(place) => {
-              Keyboard.dismiss();
-              onSelect(place.id);
-            }}
-          />
-        )}
+        renderItem={({ item }) => renderPlace(item)}
       />
     </Screen>
   );

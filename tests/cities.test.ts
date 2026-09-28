@@ -94,6 +94,14 @@ describe('offline city search', () => {
     expect(search({ query: 'बायकोनूर' }).map((city) => city.name)).toEqual(['Baikonur']);
   });
 
+  test('matches short name prefixes without expanding short aliases or country codes', () => {
+    expect(search({ query: 'sa' }).map(({ id }) => id)).toEqual(['city:5', 'city:1']);
+    expect(search({ query: 'San Pe AA' }).map(({ id }) => id)).toEqual(['city:1']);
+    expect(search({ query: 'San Pedro Ex' })).toEqual([]);
+    expect(search({ query: '東' }).map(({ id }) => id)).toEqual(['city:4']);
+    expect(search({ query: 'बी' }).map(({ id }) => id)).toEqual(['city:6']);
+  });
+
   test('applies country, region, membership and exclusions before pagination', () => {
     expect(search({ query: '', countryIds: ['bb', 'cc'], offset: 1, limit: 1 })[0].id).toBe('city:4');
     expect(search({ query: 'san', excludedIds: ['city:5', 'city:2'], limit: 1 })[0].id).toBe('city:1');
@@ -134,7 +142,7 @@ describe('bundled city integrity', () => {
       if (parent.regionId && subdivisionById.get(parent.regionId)?.countryId !== parent.countryId) throw new Error('Invalid city region.');
     }
     expect(Bun.file(new URL('../src/cities/parents.json', import.meta.url)).size).toBeLessThan(3.5 * 1024 * 1024);
-    expect(Bun.file(new URL('../src/cities/catalog.db', import.meta.url)).size).toBeLessThan(55 * 1024 * 1024);
+    expect(Bun.file(new URL('../src/cities/catalog.db', import.meta.url)).size).toBeLessThan(68 * 1024 * 1024);
     expect(isCityId('city:01')).toBe(false);
     expect(isCityId('city:99999999999999999999')).toBe(false);
     expect(isCityId('city:1')).toBe(false);

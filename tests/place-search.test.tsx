@@ -23,8 +23,9 @@ mock.module('../src/components/Button', () => ({ Button: 'Button' }));
 mock.module('../src/components/DataFeedback', () => ({ DataFeedback: 'DataFeedback' }));
 mock.module('../src/components/Icon', () => ({ Icon: 'Icon' }));
 mock.module('../src/components/Screen', () => ({ Screen: 'Screen' }));
-mock.module('../src/components/ScreenHeader', () => ({ ScreenHeader: 'ScreenHeader' }));
+mock.module('../src/components/SheetHeader', () => ({ SheetHeader: 'SheetHeader' }));
 mock.module('../src/components/SearchField', () => ({ SearchField: 'SearchField' }));
+mock.module('../src/support/ReportErrorButton', () => ({ ReportErrorButton: 'ReportErrorButton' }));
 
 const { PlaceSearchScreen } = await import('../src/screens/PlaceSearchScreen');
 const onSelect = mock();
@@ -80,7 +81,7 @@ test.each(['loading', 'load-error'] as const)(
     expect(element('FlatList').props.ListEmptyComponent).toBeNull();
     expect(element('DataFeedback')).toBeDefined();
     expect(element('Button', t('countries.details.clearHome')).props.disabled).toBe(true);
-    await act(async () => element('Button', t('common.cancel')).props.onPress());
+    await act(async () => element('SheetHeader').props.onDismiss());
     expect(native.Keyboard.dismiss).toHaveBeenCalledTimes(1);
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();

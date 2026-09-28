@@ -1,7 +1,7 @@
 import { afterEach, expect, mock, test } from 'bun:test';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { clearCityCatalogDatabase, getCities, searchCities, setCityCatalogDatabase } from '../src/cities/database';
+import { clearCityCatalogDatabase, getCities, searchCityMatches, setCityCatalogDatabase } from '../src/cities/database';
 
 afterEach(() => setCityCatalogDatabase(null));
 
@@ -11,11 +11,11 @@ function database(getAllAsync: (...args: unknown[]) => Promise<unknown[]>) {
 
 test('queries fail before the catalog opens and propagate database failures', async () => {
   setCityCatalogDatabase(null);
-  await expect(searchCities({ query: 'Toronto' })).rejects.toThrow();
+  await expect(searchCityMatches({ query: 'Toronto' })).rejects.toThrow();
   await expect(getCities(['city:6167865'])).rejects.toThrow();
   setCityCatalogDatabase(database(async () => { throw new Error('query failed'); }));
-  await expect(searchCities({ query: 'Toronto' })).rejects.toThrow('query failed');
-  await expect(searchCities({ query: 'Toronto' })).rejects.toThrow('City catalog unavailable');
+  await expect(searchCityMatches({ query: 'Toronto' })).rejects.toThrow('query failed');
+  await expect(searchCityMatches({ query: 'Toronto' })).rejects.toThrow('City catalog unavailable');
 });
 
 test('batch details query once and leave requested ordering to the place catalog', async () => {
@@ -34,27 +34,27 @@ test('cleanup of an old provider cannot clear its replacement connection', async
   setCityCatalogDatabase(oldDatabase);
   setCityCatalogDatabase(replacement);
   clearCityCatalogDatabase(oldDatabase);
-  expect(await searchCities({ query: '' })).toEqual([]);
+  expect(await searchCityMatches({ query: '' })).toEqual([]);
   clearCityCatalogDatabase(replacement);
-  await expect(searchCities({ query: '' })).rejects.toThrow();
+  await expect(searchCityMatches({ query: '' })).rejects.toThrow();
 });
 
 test('late failures from an earlier connection do not poison a replacement', async () => {
   let reject!: (error: Error) => void;
   const pending = new Promise<unknown[]>((_, fail) => { reject = fail; });
   setCityCatalogDatabase(database(() => pending));
-  const earlier = searchCities({ query: 'first' });
+  const earlier = searchCityMatches({ query: 'first' });
   setCityCatalogDatabase(database(async () => []));
   reject(new Error('old connection closed'));
   await expect(earlier).rejects.toThrow('old connection closed');
-  expect(await searchCities({ query: 'replacement' })).toEqual([]);
+  expect(await searchCityMatches({ query: 'replacement' })).toEqual([]);
 });
 
 test('missing known cities invalidate the connection and work after catalog replacement', async () => {
   setCityCatalogDatabase(database(async () => []));
   expect(await getCities(['unknown', 'city:1', 'city:01'])).toEqual([]);
   await expect(getCities(['city:6167865'])).rejects.toThrow('City catalog is missing a place');
-  await expect(searchCities({ query: 'Toronto' })).rejects.toThrow('City catalog unavailable');
+  await expect(searchCityMatches({ query: 'Toronto' })).rejects.toThrow('City catalog unavailable');
   setCityCatalogDatabase(database(async () => [
     { geonameId: 6167865, name: 'Toronto', countryId: 'ca', regionId: null, adminName: 'Ontario', longitude: -79.4163, latitude: 43.70011, population: 2731571 },
   ]));
@@ -69,5 +69,5 @@ test('missing rows from an earlier connection cannot invalidate its replacement'
   setCityCatalogDatabase(database(async () => []));
   resolve([]);
   await expect(earlier).rejects.toThrow('City catalog is missing a place');
-  expect(await searchCities({ query: 'replacement' })).toEqual([]);
+  expect(await searchCityMatches({ query: 'replacement' })).toEqual([]);
 });

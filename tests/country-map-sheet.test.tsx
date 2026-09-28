@@ -268,8 +268,8 @@ test.each(['map', 'list'])('country actions work from the %s card', async (entry
   expect(router.navigate).toHaveBeenCalledWith({
     pathname: '/countries',
     params: {
-      mode: 'cities', scope: 'all', continent: 'all', query: '',
-      intent: expect.any(String), countryId: props.id, regionId: undefined,
+      mode: 'cities', scope: 'all', location: props.id, query: '',
+      intent: expect.any(String),
     },
   });
   expect(router.push.mock.calls).toEqual([

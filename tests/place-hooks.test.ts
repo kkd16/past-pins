@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 import { join } from 'node:path';
 
 test.each([
-  'cold-list', 'stale-query', 'stale-page', 'pagination',
+  'cold-list', 'stale-query', 'stale-page', 'stale-suggestions', 'suggestion-failure', 'pagination',
   'reset-list', 'reset-search', 'reset-page', 'retry-list', 'retry-search', 'catalog-retry',
   'missing-row', 'region-filters', 'route-context',
   'catalog-recovery',

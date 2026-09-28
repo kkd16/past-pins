@@ -78,6 +78,8 @@ Typecheck generates Router types on a fresh checkout. `bun run` lists all script
 - Countries, regions, and cities share one status map. Child visits promote source-linked parents; lists store catalog IDs.
 - Stamps and statistics derive from travel data.
 - Cameras, filters, and selections last only for the session.
+- Places and list editing share a location picker. Choosing a country or region applies immediately; changing place type keeps the nearest supported parent. Status filters stay visible as wrapping chips. The list editor's Selected view shows the complete draft, independently of browse filters.
+- Search ranks names ahead of aliases and geographic context. SQLite applies filters before pagination. When there is no strong match, Fuse.js scores up to 100 indexed city candidates and the eligible country/region names to offer three suggestions. The bundled catalog includes the suggestion index; searches never load the full city catalog into JavaScript.
 - Background checks update reminder metadata; travel changes require confirmation.
 
 ### State and rendering

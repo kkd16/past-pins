@@ -83,7 +83,9 @@ describe('region browsing and progress', () => {
     ).toEqual([ontario]);
     expect(selectSubdivisions('jp', 'Canada', 'all', statuses)).toEqual([]);
     expect(selectSubdivisions('ca', 'Canada', 'all', statuses)).toEqual([
-      ...canada,
+      ontario,
+      quebec,
+      ...canada.filter(({ id }) => id !== ontario.id && id !== quebec.id),
     ]);
   });
 });

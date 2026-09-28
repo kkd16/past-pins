@@ -12,6 +12,7 @@ const paths = {
   filter: 'M4 6h16M7 12h10M10 18h4',
   list: 'M4 5h2M10 5h10M4 11h2M10 11h10M4 17h2M10 17h5M19 14v6M16 17h6',
   chevronRight: 'm9 5 7 7-7 7',
+  chevronDown: 'm5 9 7 7 7-7',
   expand: 'M14 4h6v6M20 4l-6 6M10 20H4v-6M4 20l6-6',
   north: 'm12 3 7 17-7-4-7 4Z M12 3v13',
   home: 'm3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10',

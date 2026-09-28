@@ -4,13 +4,11 @@ import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
-import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { countries, countryById } from '../countries/catalog';
-import { CountryScopeControl } from '../countries/CountryScopeControl';
 import { matchesCountryScope, type CountryScope } from '../countries/filters';
+import { CountryScopeControl } from '../countries/CountryScopeControl';
 import { showStatusPicker } from '../countries/StatusPicker';
 import { appData } from '../data/app-data';
 import { useAppData } from '../data/AppData';
@@ -21,23 +19,23 @@ import { PlaceSearchFooter } from '../places/PlaceFeedback';
 import { PlaceKindControl, type PlacesMode } from '../places/PlaceKindControl';
 import { PlaceRow } from '../places/PlaceRow';
 import { usePlaceSearch } from '../places/usePlaceSearch';
-import { subdivisionById } from '../subdivisions/catalog';
+import { getLocationFilters, locationParam, type PlaceLocation } from '../places/location';
+import { PlaceFilterBar } from '../places/PlaceFilterBar';
+import { PlaceSuggestions } from '../places/PlaceSuggestions';
 import { theme } from '../theme';
 
-export function PlacesListScreen({ mode, continent, query, scope, intent, countryId, regionId,
-  onQueryChange, onScopeChange, onModeChange, onOpenFilters, onResetFilters, onSelect,
+export function PlacesListScreen({ mode, location, query, scope, intent,
+  onQueryChange, onScopeChange, onModeChange, onOpenLocation, onResetFilters, onSelect,
 }: {
   mode: 'regions' | 'cities';
-  continent: string;
+  location: PlaceLocation;
   query: string;
   scope: CountryScope;
   intent?: string;
-  countryId?: string;
-  regionId?: string;
   onQueryChange: (query: string) => void;
   onScopeChange: (scope: CountryScope) => void;
   onModeChange: (mode: PlacesMode) => void;
-  onOpenFilters: () => void;
+  onOpenLocation: () => void;
   onResetFilters: () => void;
   onSelect: (place: Place) => void;
 }) {
@@ -52,19 +50,18 @@ export function PlacesListScreen({ mode, continent, query, scope, intent, countr
     : Object.keys(data.places).filter((id) =>
       matchesCountryScope(data.places[id], scope === 'not-visited' ? 'visited' : scope),
     ), [data.places, scope]);
-  const countryIds = useMemo(() => continent === 'all' ? undefined
-    : countries.filter((country) => country.continent.id === continent).map(({ id }) => id), [continent]);
   const results = usePlaceSearch({
-    query, countryId, regionId, countryIds,
+    query,
+    ...getLocationFilters(location),
     scope: kind,
     ids: scope === 'not-visited' ? undefined : statusIds,
     excludedIds: scope === 'not-visited' ? statusIds : undefined,
   });
   const disabled = dataStatus !== 'ready' || busy;
-  const narrowed = continent !== 'all' || !!countryId;
-  const parentName = regionId ? subdivisionById.get(regionId)?.name : countryId ? countryById.get(countryId)?.name : undefined;
+  const searching = query.trim() !== '';
+  const locationKey = locationParam(location);
   useLayoutEffect(() => { list.current?.scrollToOffset({ offset: 0, animated: false }); },
-    [query, scope, continent, countryId, regionId, intent, mode]);
+    [query, scope, locationKey, intent, mode]);
   const select = useCallback((place: Place) => { Keyboard.dismiss(); onSelect(place); }, [onSelect]);
   const changeStatus = useCallback((place: Place) => {
     Keyboard.dismiss();
@@ -73,6 +70,8 @@ export function PlacesListScreen({ mode, continent, query, scope, intent, countr
       if (isCurrent()) void appData.setStatus([place.id], status, { preserveLived: false, isCurrent });
     });
   }, [guard]);
+  const renderPlace = (place: Place) => <PlaceRow place={place} status={data.places[place.id] ?? 'unvisited'}
+    disabled={disabled} onPress={select} onChangeStatus={changeStatus} />;
   return (
     <Screen>
       <FlatList
@@ -89,28 +88,26 @@ export function PlacesListScreen({ mode, continent, query, scope, intent, countr
         onEndReached={results.loadMore}
         ListHeaderComponent={
           <>
-            <ScreenHeader title={t('places.title')} subtitle={parentName}>
-              <IconButton name="filter" color={narrowed ? theme.color.accent : theme.color.textMuted}
-                accessibilityLabel={t(narrowed ? 'countries.filtersApplied' : 'countries.filters')}
-                disabled={disabled} onPress={() => { Keyboard.dismiss(); onOpenFilters(); }} />
-            </ScreenHeader>
+            <ScreenHeader title={t('places.title')} />
             <View style={styles.controls}>
               <PlaceKindControl value={mode} onChange={onModeChange} />
               <SearchField value={query} onChangeText={onQueryChange}
                 placeholder={t(mode === 'cities' ? 'places.searchCities' : 'places.searchRegions')}
                 accessibilityLabel={t(mode === 'cities' ? 'places.searchCities' : 'places.searchRegions')} />
-              <CountryScopeControl value={scope} onChange={onScopeChange} />
-              {parentName && <Button label={t('lists.allPlaces')} variant="quiet" onPress={onResetFilters} />}
+              <PlaceFilterBar location={location} onOpenLocation={onOpenLocation}>
+                <CountryScopeControl value={scope} onChange={onScopeChange} />
+              </PlaceFilterBar>
               <DataFeedback />
             </View>
+            <PlaceSuggestions places={dataStatus === 'ready' ? results.suggestions : []} renderPlace={renderPlace} />
           </>
         }
-        renderItem={({ item }) => <PlaceRow place={item} status={data.places[item.id] ?? 'unvisited'}
-          disabled={disabled} onPress={select} onChangeStatus={changeStatus} />}
-        ListEmptyComponent={dataStatus === 'ready' && !results.loading && !results.error ? (
+        renderItem={({ item }) => renderPlace(item)}
+        ListEmptyComponent={dataStatus === 'ready' && !results.loading && !results.error && !results.suggestions.length ? (
           <View style={styles.empty}>
             <AppText variant="heading">{t('places.noSearchResults')}</AppText>
-            <Button label={t('countries.resetFilters')} variant="quiet" onPress={onResetFilters} />
+            <Button label={t(searching ? 'common.clearSearch' : 'countries.resetFilters')} variant="quiet"
+              onPress={() => { Keyboard.dismiss(); if (searching) onQueryChange(''); else onResetFilters(); }} />
           </View>
         ) : null}
         ListFooterComponent={<PlaceSearchFooter {...results} />}

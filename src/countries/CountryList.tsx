@@ -30,7 +30,7 @@ export function CountryList({
   onSelect,
   regionProgress,
   onOpenRegions,
-  onReset,
+  emptyAction,
   scrollResetKey,
   scope,
   narrowed,
@@ -48,7 +48,7 @@ export function CountryList({
   onSelect: (id: CountryId) => void;
   regionProgress: ReadonlyMap<string, RegionProgress>;
   onOpenRegions: (countryId: string) => void;
-  onReset: () => void;
+  emptyAction: { label: string; onPress: () => void };
   scrollResetKey: string;
   scope: CountryScope;
   narrowed: boolean;
@@ -160,13 +160,9 @@ export function CountryList({
               {empty.message}
             </AppText>
             <Button
-              label={
-                narrowed
-                  ? t('countries.empty.clearFilters')
-                  : t('countries.empty.browse')
-              }
+              label={emptyAction.label}
               variant="quiet"
-              onPress={onReset}
+              onPress={emptyAction.onPress}
             />
           </View>
         ) : null

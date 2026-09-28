@@ -9,7 +9,7 @@ import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { normalizeSearch } from '../countries/search';
+import { normalizeSearch } from '../places/search';
 import { appData as app } from '../data/app-data';
 import { useAppData } from '../data/AppData';
 import { getListStatistics } from '../lists/places';

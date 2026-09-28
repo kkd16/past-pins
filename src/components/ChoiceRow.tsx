@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { theme } from '../theme';
 import { AppPressable } from './AppPressable';
@@ -7,11 +7,13 @@ import { Icon } from './Icon';
 
 export function ChoiceRow({
   label,
+  description,
   selected,
   onPress,
   disabled = false,
 }: {
   label: string;
+  description?: string;
   selected: boolean;
   onPress: () => void;
   disabled?: boolean;
@@ -24,9 +26,10 @@ export function ChoiceRow({
       onPress={onPress}
       style={[styles.row, selected && styles.selected]}
     >
-      <AppText tone={selected ? 'accent' : 'default'} style={styles.label}>
-        {label}
-      </AppText>
+      <View style={styles.label}>
+        <AppText tone={selected ? 'accent' : 'default'}>{label}</AppText>
+        {description && <AppText variant="caption" tone="muted">{description}</AppText>}
+      </View>
       {selected && <Icon name="check" color={theme.color.accent} />}
     </AppPressable>
   );
@@ -40,7 +43,7 @@ const styles = StyleSheet.create({
     padding: theme.space.md,
     borderRadius: theme.radius.sm,
   },
-  label: { flex: 1 },
+  label: { flex: 1, gap: theme.space.xs },
   selected: {
     backgroundColor: theme.color.selectedSurface,
   },

@@ -56,14 +56,14 @@ describe('shared place navigation', () => {
     expect(first.params).toMatchObject({
       mode: 'regions',
       scope: 'visited',
-      continent: 'NA',
+      location: 'continent:NA',
       query: '',
     });
     expect(second.params.intent).not.toBe(first.params.intent);
     expect(placesHref('countries').params).toMatchObject({
       mode: 'countries',
       scope: 'all',
-      continent: 'all',
+      location: 'anywhere',
       query: '',
     });
   });
@@ -74,14 +74,12 @@ describe('shared place navigation', () => {
       const navigate = createPlacesNavigation();
       const regionId = getCountrySubdivisions('ca')[0].id;
       expect(navigate(citiesHref('ca', regionId))).toMatchObject({
-        mode: 'cities', countryId: 'ca', regionId,
+        mode: 'cities', location: regionId,
       });
       navigate('/stats');
 
       const params = navigate(placesHref(mode, 'visited', 'NA'));
-      expect(params).toMatchObject({ mode, scope: 'visited', continent: 'NA', query: '' });
-      expect(params).not.toHaveProperty('countryId');
-      expect(params).not.toHaveProperty('regionId');
+      expect(params).toMatchObject({ mode, scope: 'visited', location: 'continent:NA', query: '' });
     },
   );
 
@@ -92,8 +90,7 @@ describe('shared place navigation', () => {
 
     const params = navigate(citiesHref('ca'));
     expect(params).toMatchObject({
-      mode: 'cities', countryId: 'ca', scope: 'all', continent: 'all', query: '',
+      mode: 'cities', location: 'ca', scope: 'all', query: '',
     });
-    expect(params).not.toHaveProperty('regionId');
   });
 });

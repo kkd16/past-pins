@@ -11,12 +11,10 @@ import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Checkmark } from '../components/Checkmark';
-import { ChoiceControl } from '../components/ChoiceControl';
 import { DataFeedback } from '../components/DataFeedback';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { SearchField } from '../components/SearchField';
-import { countryById } from '../countries/catalog';
 import { appData } from '../data/app-data';
 import { useAppData } from '../data/AppData';
 import type { TravelList } from '../data/model';
@@ -25,12 +23,20 @@ import { getPlaceSubtitle, type Place } from '../places/catalog';
 import { usePlaceSearch } from '../places/usePlaceSearch';
 import { PlaceSearchFooter } from '../places/PlaceFeedback';
 import { PlaceKindControl, type PlacesMode } from '../places/PlaceKindControl';
+import { getLocationFilters, locationParam, type PlaceLocation } from '../places/location';
+import { PlaceFilterBar } from '../places/PlaceFilterBar';
+import { PlaceSuggestions } from '../places/PlaceSuggestions';
 import { theme } from '../theme';
 
 type Props = {
   id: string;
   onDone: () => void;
   onCancel: () => void;
+  mode: PlacesMode;
+  location: PlaceLocation;
+  onModeChange: (mode: PlacesMode) => void;
+  onBrowseCountry: (id: string) => void;
+  onOpenLocation: () => void;
 };
 
 export function ListPlacesScreen(props: Props) {
@@ -69,6 +75,11 @@ function ListPlacesEditor({
   list,
   onDone,
   onCancel,
+  mode,
+  location,
+  onModeChange,
+  onBrowseCountry,
+  onOpenLocation,
 }: Props & { list: TravelList }) {
   const { setListPlaces } = appData;
   const busy = useAppData((snapshot) => snapshot.busy);
@@ -76,9 +87,7 @@ function ListPlacesEditor({
   const [originalPlaces] = useState(list.placeIds);
   const [selected, setSelected] = useState(() => new Set(originalPlaces));
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState<'all' | 'selected'>('all');
-  const [countryId, setCountryId] = useState<string>();
-  const [mode, setMode] = useState<PlacesMode>('countries');
+  const [browsing, setBrowsing] = useState(true);
   const results = useRef<FlatList<Place>>(null);
   const exited = useRef(false);
   const stale = list.placeIds !== originalPlaces;
@@ -86,18 +95,15 @@ function ListPlacesEditor({
   const changed =
     selected.size !== originalPlaces.length ||
     originalPlaces.some((placeId) => !selected.has(placeId));
-  const scopes = [
-    { value: 'all', label: t('lists.allPlaces') },
-    { value: 'selected', label: t('lists.selected') },
-  ] as const;
-  const found = usePlaceSearch({
-    query, countryId,
-    scope: scope === 'selected' ? 'all' : mode === 'cities' ? 'city' : mode === 'regions' ? 'region' : 'country',
-    ids: scope === 'selected' ? [...selected] : undefined,
-  });
+  const found = usePlaceSearch(browsing ? {
+    query,
+    ...getLocationFilters(location),
+    scope: mode === 'cities' ? 'city' : mode === 'regions' ? 'region' : 'country',
+  } : { query: '', scope: 'all', ids: [...selected] });
+  const locationKey = locationParam(location);
   useLayoutEffect(() => {
     results.current?.scrollToOffset({ offset: 0, animated: false });
-  }, [query, scope, countryId, mode]);
+  }, [query, browsing, locationKey, mode]);
 
   const toggle = useCallback((placeId: string) => {
     setSelected((current) => {
@@ -108,18 +114,12 @@ function ListPlacesEditor({
     });
   }, []);
 
-  function changeScope(value: typeof scope) {
-    setScope(value);
-    setCountryId(undefined);
-  }
-
-  const browseCountry = useCallback((nextCountryId?: string) => {
-    setCountryId(nextCountryId);
-    setMode(nextCountryId ? 'cities' : 'countries');
+  const browseCountry = useCallback((nextCountryId: string) => {
+    onBrowseCountry(nextCountryId);
     setQuery('');
-    setScope('all');
+    setBrowsing(true);
     Keyboard.dismiss();
-  }, []);
+  }, [onBrowseCountry]);
 
   function cancel() {
     if (exited.current) return;
@@ -136,6 +136,11 @@ function ListPlacesEditor({
       onDone();
     }
   }
+
+  const renderPlace = (place: Place) => <PlaceRow place={place} selected={selected.has(place.id)}
+    disabled={disabled} onToggle={toggle} onBrowseCountry={browseCountry} />;
+  const scopeControl = <Button label={t(browsing ? 'lists.selected' : 'lists.allPlaces')} variant="quiet"
+    style={styles.scopeControl} onPress={() => { Keyboard.dismiss(); setBrowsing(!browsing); }} />;
 
   return (
     <Screen onAccessibilityEscape={cancel}>
@@ -182,67 +187,39 @@ function ListPlacesEditor({
                   amount: formatNumber(selected.size),
                 })}
               </AppText>
-              <AppText variant="caption" tone="muted">
-                {t('lists.independent')}
-              </AppText>
             </View>
             <DataFeedback />
             {stale && (
               <AppText tone="muted">{t('lists.changedElsewhere')}</AppText>
             )}
-            {countryId && (
-              <View style={styles.breadcrumb}>
-                <Button
-                  label={t('lists.allPlaces')}
-                  variant="quiet"
-                  onPress={() => browseCountry()}
-                />
-                <AppText variant="heading" accessibilityRole="header">
-                  {countryById.get(countryId)!.name}
-                </AppText>
-              </View>
-            )}
-            {scope === 'all' && <PlaceKindControl value={mode} onChange={(next) => {
-              setMode(next);
-              if (next === 'countries') setCountryId(undefined);
-            }} />}
-            <SearchField
-              value={query}
-              onChangeText={setQuery}
-              placeholder={t('lists.searchPlaces')}
-              accessibilityLabel={t('lists.searchPlaces')}
-            />
-            <ChoiceControl
-              value={scope}
-              options={scopes}
-              accessibilityLabel={t('countries.placesToShow')}
-              onChange={changeScope}
-            />
+            {browsing && <>
+              <PlaceKindControl value={mode} onChange={onModeChange} />
+              <SearchField value={query} onChangeText={setQuery}
+                placeholder={t('lists.searchPlaces')} accessibilityLabel={t('lists.searchPlaces')} />
+            </>}
+            {browsing ? <PlaceFilterBar location={location} onOpenLocation={onOpenLocation}>
+              {scopeControl}
+            </PlaceFilterBar> : scopeControl}
+            <PlaceSuggestions places={found.suggestions} renderPlace={renderPlace} />
           </View>
         }
-        ListEmptyComponent={!found.loading && !found.error ?
+        ListEmptyComponent={!found.loading && !found.error && !found.suggestions.length ?
           <View style={styles.empty}>
-            {scope === 'selected' && selected.size === 0 ? (
+            {!browsing && selected.size === 0 ? (
               <AppText tone="muted">{t('lists.noSelectedPlaces')}</AppText>
             ) : (
               <>
                 <AppText>{t('lists.noPlacesFound')}</AppText>
                 <AppText tone="muted">{t('lists.noPlacesFoundHint')}</AppText>
+                {browsing && query.trim() !== '' && <Button label={t('common.clearSearch')} variant="quiet"
+                  onPress={() => { Keyboard.dismiss(); setQuery(''); }} />}
               </>
             )}
           </View> : null
         }
         onEndReached={found.loadMore}
         ListFooterComponent={<PlaceSearchFooter {...found} />}
-        renderItem={({ item }) => (
-          <PlaceRow
-            place={item}
-            selected={selected.has(item.id)}
-            disabled={disabled}
-            onToggle={toggle}
-            onBrowseCountry={browseCountry}
-          />
-        )}
+        renderItem={({ item }) => renderPlace(item)}
       />
     </Screen>
   );
@@ -306,7 +283,7 @@ const styles = StyleSheet.create({
   content: { paddingVertical: theme.space.md, paddingBottom: theme.space.xl },
   header: { gap: theme.space.md, paddingBottom: theme.space.lg },
   summary: { gap: theme.space.xs },
-  breadcrumb: { alignItems: 'flex-start', gap: theme.space.xs },
+  scopeControl: { alignSelf: 'flex-start' },
   card: { borderRadius: theme.radius.sm, backgroundColor: theme.color.surface },
   row: {
     minHeight: theme.size.row,
@@ -327,6 +304,6 @@ const styles = StyleSheet.create({
   },
   selectedRow: { backgroundColor: theme.color.selectedSurface },
   name: { flex: 1, gap: theme.space.xs },
-  separator: { height: theme.space.xs },
+  separator: { height: theme.space.sm },
   empty: { padding: theme.space.xl, gap: theme.space.sm },
 });

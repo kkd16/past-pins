@@ -44,6 +44,7 @@ const database = {
 } as unknown as SQLiteDatabase;
 type Result = {
   places: Place[];
+  suggestions?: Place[];
   loading: boolean;
   error: boolean;
   retry: () => void;
@@ -128,6 +129,34 @@ async function stalePage() {
   expect(current.every(({ countryId }) => countryId === 'jp')).toBe(true);
   await finish(previous);
   expect(result().places).toBe(current);
+}
+
+async function staleSuggestions() {
+  await search({ query: 'Tornto', scope: 'city', countryId: 'ca' });
+  await finish();
+  const suggestion = requests.at(-1)!;
+  expect(suggestion.sql).toContain('city_suggestions');
+  await search({ query: 'Seattle', scope: 'city', countryId: 'us' });
+  await finish();
+  const current = result().places;
+  expect(current[0].name).toBe('Seattle');
+  await finish(suggestion);
+  expect(result().places).toBe(current);
+  expect(result().suggestions).toEqual([]);
+}
+
+async function suggestionFailure() {
+  const options = { query: 'Tornto', scope: 'city' as const, countryId: 'ca' };
+  await search(options);
+  await finish();
+  expect(requests.at(-1)!.sql).toContain('city_suggestions');
+  await fail();
+  expect(result()).toMatchObject({ loading: false, error: true, suggestions: [] });
+  await act(async () => result().retry());
+  await finish();
+  await finish();
+  expect(result()).toMatchObject({ loading: false, error: false });
+  expect(result().suggestions?.[0].id).toBe(cityId);
 }
 
 async function pagination() {
@@ -308,29 +337,56 @@ async function regionFilters() {
 
 async function routeContext() {
   let params: Record<string, unknown> = {};
+  const router = {
+    setParams: mock((next: Record<string, unknown>) => { params = { ...params, ...next }; }),
+    push: mock(),
+    navigate: mock(),
+  };
   mock.module('expo-router', () => ({
-    router: { setParams: mock(), push: mock(), navigate: mock() },
+    router,
     useLocalSearchParams: () => params,
   }));
   mock.module('../../src/screens/CountriesScreen', () => ({ CountriesScreen: 'CountriesScreen' }));
   mock.module('../../src/screens/PlacesListScreen', () => ({ PlacesListScreen: 'PlacesListScreen' }));
   const { default: CountriesRoute } = await import('../../src/app/(tabs)/countries');
   const cases = [
-    { countryId: 'ca', regionId: toronto.regionId, expectedCountry: 'ca', expectedRegion: toronto.regionId },
-    { countryId: ['ca'], regionId: toronto.regionId },
-    { countryId: 'ca', regionId: [toronto.regionId], expectedCountry: 'ca' },
-    { countryId: 42, regionId: 'ca' },
-    { regionId: 'unknown-region' },
-    { countryId: 'us', regionId: toronto.regionId, expectedCountry: 'us' },
-    { countryId: 'ca', regionId: cityId, expectedCountry: 'ca' },
+    { location: 'ca', expected: { kind: 'country', id: 'ca' } },
+    { location: toronto.regionId, expected: { kind: 'region', id: toronto.regionId } },
+    { location: 'continent:NA', expected: { kind: 'continent', id: 'NA' } },
+    { location: ['ca'], expected: { kind: 'anywhere' } },
+    { location: 42, expected: { kind: 'anywhere' } },
+    { location: 'unknown-region', expected: { kind: 'anywhere' } },
+    { location: cityId, expected: { kind: 'anywhere' } },
   ];
   for (const item of cases) {
-    params = { mode: 'cities', countryId: item.countryId, regionId: item.regionId };
+    params = { mode: 'cities', location: item.location };
     await act(async () => root.render(<CountriesRoute />));
     const [screen] = root.container.queryAll((node) => node.type === 'PlacesListScreen');
-    expect(screen.props.countryId).toBe(item.expectedCountry);
-    expect(screen.props.regionId).toBe(item.expectedRegion);
+    expect(screen.props.location).toEqual(item.expected);
   }
+  const render = () => act(async () => root.render(<CountriesRoute />));
+  const screen = () => root.container.queryAll((node) => node.type === 'PlacesListScreen')[0];
+  params = { mode: 'cities', location: 'ca', query: 'Toronto', scope: 'visited' };
+  await render();
+  expect(screen().props.query).toBe('Toronto');
+  expect(router.setParams).not.toHaveBeenCalled();
+  await act(async () => screen().props.onQueryChange('Montréal'));
+  await render();
+  expect(screen().props.query).toBe('Montréal');
+  await act(async () => screen().props.onScopeChange('wishlist'));
+  await render();
+  expect(screen().props.query).toBe('Montréal');
+  expect(screen().props.scope).toBe('wishlist');
+  await act(async () => screen().props.onOpenLocation());
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/place-location', params: {
+    location: 'ca', mode: 'cities', scope: 'wishlist', query: 'Montréal',
+  } });
+  await act(async () => screen().props.onResetFilters());
+  await render();
+  expect(screen().props).toMatchObject({ query: '', scope: 'all', location: { kind: 'anywhere' } });
+  params = { ...params, query: 'Seattle', location: 'us' };
+  await render();
+  expect(screen().props.query).toBe('Seattle');
 }
 
 try {
@@ -340,6 +396,8 @@ try {
   if (scenario === 'cold-list') await coldList();
   else if (scenario === 'stale-query') await staleQuery();
   else if (scenario === 'stale-page') await stalePage();
+  else if (scenario === 'stale-suggestions') await staleSuggestions();
+  else if (scenario === 'suggestion-failure') await suggestionFailure();
   else if (scenario === 'pagination') await pagination();
   else if (scenario === 'reset-list') await reset('list');
   else if (scenario === 'reset-search') await reset('search');

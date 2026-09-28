@@ -41,12 +41,14 @@ describe('custom list places', () => {
     expect(getStaticPlace('unknown')).toBeUndefined();
   });
 
-  test('finds a country and its regions together, with countries first', () => {
+  test('ranks the exact country before regional aliases and parent-country matches', () => {
     const matches = searchStaticPlaces({ query: 'Canada', scope: 'all' });
     expect(matches[0]?.id).toBe('ca');
-    expect(matches.slice(1).map(({ id }) => id)).toEqual(
-      getCountrySubdivisions('ca').map(({ id }) => id),
-    );
+    expect(matches.slice(1).map(({ id }) => id)).toEqual([
+      ontario.id,
+      quebec.id,
+      ...getCountrySubdivisions('ca').filter(({ id }) => id !== ontario.id && id !== quebec.id).map(({ id }) => id),
+    ]);
     expect(
       searchStaticPlaces({ query: '  QUÉBEC   Canada ', scope: 'all' }).map(({ id }) => id),
     ).toEqual([quebec.id]);
