@@ -126,6 +126,10 @@ Use the existing EAS project, Apple team, and App Store Connect record for `io.g
 
 ### Source and license obligations
 
+- **Notices:** `bun run licenses:generate` includes app dependencies, development tools, and data credits. `bun run licenses:check` checks the result; missing text stops generation.
+  - [Supplemental sources](licenses/sources.json) pin omitted/embedded notices and declared license terms with available author credits. Review pins on upgrades; commit sources and output together. Native tool bindings share their parent's notice.
+  - EAS merges CocoaPods notices before bundling. For local Mac builds, run `bun run licenses:generate --native` after `pod install`; regenerate without `--native` before committing.
+
 For every distributed build, including TestFlight:
 
 - Include [GPL](LICENSE), [App Store permission](COPYING.iOS), copyright, and third-party notices.

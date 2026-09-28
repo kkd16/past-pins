@@ -1,150 +1,68 @@
-import { readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { rename, rm } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
-type InventoryPackage = {
-  name: string;
-  license: string;
-  paths: string[];
-  homepage?: string;
-};
-type Notice = { name: string; version: string; license: string; text: string };
+import sourceData from '../licenses/sources.json';
+import { mergeNotices, packageNotice, readNotice, type LicenseSource, type Notice } from './license-data';
+import { autolinkedPackages, nativeNotices } from './native-license-data';
 
-const { values } = parseArgs({ options: { check: { type: 'boolean' } } });
-const root = fileURLToPath(new URL('..', import.meta.url));
+const { values } = parseArgs({ options: {
+  check: { type: 'boolean' },
+  native: { type: 'boolean' },
+} });
+const root = resolve(import.meta.dir, '..');
+const sources = sourceData as LicenseSource[];
 const output = join(root, 'licenses/notices.json');
-const result = Bun.spawnSync({
-  cmd: [process.execPath, 'pm', 'licenses', '--prod', '--json'],
-  cwd: root,
-  stdout: 'pipe',
-  stderr: 'pipe',
-});
-if (result.exitCode !== 0) throw new Error(result.stderr.toString());
-const inventory = Object.values(
-  JSON.parse(result.stdout.toString()) as Record<string, InventoryPackage[]>,
-).flat();
-const earcutPath = join(root, 'node_modules/earcut');
-const earcut = await Bun.file(join(earcutPath, 'package.json')).json();
-inventory.push({
-  name: earcut.name,
-  license: earcut.license,
-  paths: [earcutPath],
-});
-
-function licenseFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.name === 'node_modules' || entry.name === '.git') return [];
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) return licenseFiles(path);
-    return entry.isFile() &&
-      /^(licen[cs]e|copying|notice)([._-]|$)/i.test(entry.name)
-      ? [path]
-      : [];
-  });
+const inventory = Bun.spawnSync([process.execPath, 'pm', 'licenses', '--json'], { cwd: root, stdout: 'pipe', stderr: 'pipe' });
+if (inventory.exitCode !== 0) throw new Error(inventory.stderr.toString());
+const inventoryPackages = Object.values(JSON.parse(inventory.stdout.toString()) as Record<string, { paths: string[] }[]>).flat();
+const paths = [...new Set(inventoryPackages.flatMap((pkg) => pkg.paths))].sort();
+if (!paths.length) throw new Error('Bun returned an empty dependency inventory.');
+const packages = await Promise.all(paths.map(async (path) => {
+  const pkg = await Bun.file(join(path, 'package.json')).json();
+  return { path, id: `${pkg.name}@${pkg.version}` };
+}));
+const notices: Notice[] = [];
+const grouped = new Set(sources.flatMap((source) => source.includes ?? []));
+for (const { path } of packages.filter((pkg) => !grouped.has(pkg.id))) {
+  notices.push(await packageNotice(root, path, sources));
 }
-
-const notices = new Map<string, Notice>();
+const credited = new Set(notices.map((notice) => `${notice.name}@${notice.version}`));
+for (const { id } of packages.filter((pkg) => grouped.has(pkg.id))) {
+  if (!sources.some((source) => source.includes?.includes(id) && source.packages.some((parent) => credited.has(parent)))) {
+    throw new Error(`Missing license owner for ${id}.`);
+  }
+}
 const project = await Bun.file(join(root, 'package.json')).json();
-notices.set(`PastPins@${project.version}`, {
-  name: 'PastPins',
-  version: project.version,
-  license: 'GPL-3.0-or-later with Apple App Store permission',
-  text: (await Promise.all(
-    ['NOTICE', 'LICENSE', 'COPYING.iOS'].map(async (file) =>
-      `${file}\n\n${(await Bun.file(join(root, file)).text()).trim()}`,
-    ),
-  )).join('\n\n---\n\n'),
+notices.push({
+  name: 'PastPins', version: project.version, license: 'GPL-3.0-or-later with Apple App Store permission',
+  text: (await Promise.all(['NOTICE', 'LICENSE', 'COPYING.iOS'].map(async (file) => `${file}\n\n${await readNotice(join(root, file))}`))).join('\n\n---\n\n'),
+}, {
+  name: 'Expo local-module template', version: 'SDK 57', license: 'MIT',
+  text: await readNotice(join(root, 'modules/past-pins-recovery/LICENSE')),
 });
-notices.set('expo-local-module-template', {
-  name: 'Expo local-module template',
-  version: 'SDK 57',
-  license: 'MIT',
-  text: await Bun.file(join(root, 'modules/past-pins-recovery/LICENSE')).text(),
-});
-const missing: string[] = [];
-for (const pkg of inventory) {
-  for (const directory of pkg.paths) {
-    const { name, version } = await Bun.file(
-      join(directory, 'package.json'),
-    ).json();
-    const id = `${name}@${version}`;
-    if (notices.has(id)) continue;
-    const files = licenseFiles(directory).sort();
-    const texts = await Promise.all(
-      files.map(
-        async (path) =>
-          `${relative(directory, path)}\n\n${(await Bun.file(path).text()).replaceAll('\r\n', '\n').trim()}`,
-      ),
-    );
-    if (name === '@rembish/iso-topojson') {
-      texts.push(
-        await Bun.file(join(root, 'licenses/iso-topojson-CC-BY-4.0.md')).text(),
-      );
-    }
-    if (!texts.length) {
-      missing.push(id);
-      texts.push(
-        `The installed package declares the ${pkg.license} license but does not include its license text.`,
-      );
-      if (pkg.homepage) texts.push(`Project: ${pkg.homepage}`);
-    }
-    notices.set(id, {
-      name,
-      version,
-      license: pkg.license,
-      text: texts.join('\n\n---\n\n'),
-    });
-  }
-}
-
-const subdivisionSource = await Bun.file(
-  join(root, 'scripts/data/subdivisions-source.json'),
-).json();
-notices.set(`natural-earth-admin-1@${subdivisionSource.version}`, {
-  name: 'Natural Earth Admin 1',
-  version: subdivisionSource.version,
-  license: subdivisionSource.license,
-  text: await Bun.file(
-    join(root, 'licenses/natural-earth-public-domain.md'),
-  ).text(),
+const subdivisions = await Bun.file(join(root, 'scripts/data/subdivisions-source.json')).json();
+const cities = await Bun.file(join(root, 'scripts/data/cities-source.json')).json();
+notices.push({
+  name: 'Natural Earth Admin 1', version: subdivisions.version, license: subdivisions.license,
+  text: await readNotice(join(root, 'licenses/natural-earth-public-domain.md')),
+}, {
+  name: 'GeoNames', version: cities.snapshotDate, license: cities.license,
+  text: await readNotice(join(root, 'licenses/geonames-CC-BY-4.0.md')),
 });
 
-const citySource = await Bun.file(join(root, 'scripts/data/cities-source.json')).json();
-notices.set(`geonames@${citySource.snapshotDate}`, {
-  name: 'GeoNames',
-  version: citySource.snapshotDate,
-  license: citySource.license,
-  text: await Bun.file(join(root, 'licenses/geonames-CC-BY-4.0.md')).text(),
-});
-
-const generated =
-  JSON.stringify(
-    [...notices.values()].sort(
-      (a, b) =>
-        a.name.localeCompare(b.name, 'en') ||
-        a.version.localeCompare(b.version, 'en'),
-    ),
-    null,
-    2,
-  ) + '\n';
+const merged = values.native ? await nativeNotices(root, notices, sources, autolinkedPackages(root)) : mergeNotices(notices);
+const generated = JSON.stringify(merged, null, 2) + '\n';
 if (values.check) {
-  if (
-    !(await Bun.file(output).exists()) ||
-    (await Bun.file(output).text()) !== generated
-  ) {
-    throw new Error(
-      'License notices are stale. Run bun run licenses:generate.',
-    );
-  }
-  console.log(`License notices match ${notices.size} project and third-party entries.`);
+  if (!(await Bun.file(output).exists()) || await Bun.file(output).text() !== generated) throw new Error('License notices are stale. Run bun run licenses:generate.');
+  console.log(`Verified ${merged.length} notices against all installed dependencies${values.native ? ' and CocoaPods' : ''}.`);
 } else {
-  await Bun.write(output, generated);
-  console.log(
-    `Generated ${notices.size} license notices (${Math.round(generated.length / 1024)} KB).`,
-  );
+  const pending = `${output}.${process.pid}.tmp`;
+  try {
+    await Bun.write(pending, generated);
+    await rename(pending, output);
+  } finally {
+    await rm(pending, { force: true });
+  }
+  console.log(`Generated ${merged.length} license notices${values.native ? ', including CocoaPods' : ''}.`);
 }
-if (missing.length)
-  console.warn(
-    `${missing.length} packages omit license texts; their notices preserve declared licenses and project links.`,
-  );

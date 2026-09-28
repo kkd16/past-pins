@@ -41,6 +41,7 @@
     "topojson-client": "^3.1.0"
   },
   "devDependencies": {
+    "@expo/plist": "^0.8.1",
     "@types/bun": "1.4.2",
     "@types/d3-geo": "^3.1.1",
     "@types/geojson": "^7946.0.16",
@@ -84,7 +85,8 @@
     "currencies:check": "bun scripts/generate-currencies.ts --check",
     "cities:generate": "bun scripts/generate-cities.ts",
     "cities:refresh": "bun scripts/generate-cities.ts --refresh",
-    "cities:check": "bun scripts/generate-cities.ts --check"
+    "cities:check": "bun scripts/generate-cities.ts --check",
+    "eas-build-post-install": "bun run licenses:generate --native"
   },
   "private": true,
   "overrides": {

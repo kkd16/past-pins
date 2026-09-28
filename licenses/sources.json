@@ -1,0 +1,429 @@
+[
+  {
+    "packages": [
+      "@rembish/iso-topojson@1.4.0"
+    ],
+    "file": "licenses/iso-topojson-CC-BY-4.0.md",
+    "url": "https://registry.npmjs.org/@rembish/iso-topojson/1.4.0"
+  },
+  {
+    "packages": [
+      "@react-native/assets-registry@0.86.3",
+      "@react-native/babel-plugin-codegen@0.86.3",
+      "@react-native/babel-plugin-codegen@0.87.1",
+      "@react-native/babel-preset@0.87.1",
+      "@react-native/codegen@0.86.3",
+      "@react-native/codegen@0.87.1",
+      "@react-native/community-cli-plugin@0.86.3",
+      "@react-native/debugger-shell@0.86.3",
+      "@react-native/dev-middleware@0.86.3",
+      "@react-native/gradle-plugin@0.86.3",
+      "@react-native/js-polyfills@0.86.3",
+      "@react-native/js-polyfills@0.87.1",
+      "@react-native/metro-babel-transformer@0.87.1",
+      "@react-native/metro-config@0.87.1",
+      "@react-native/normalize-colors@0.86.3",
+      "@react-native/virtualized-lists@0.86.3"
+    ],
+    "file": "node_modules/react-native/LICENSE",
+    "url": "https://github.com/react/react-native/blob/v0.86.3/LICENSE"
+  },
+  {
+    "packages": [
+      "@react-native/js-polyfills@0.86.3",
+      "@react-native/js-polyfills@0.87.1"
+    ],
+    "file": "licenses/upstream/node-console.txt",
+    "url": "https://github.com/react/react-native/blob/v0.86.3/packages/polyfills/console.js"
+  },
+  {
+    "packages": [
+      "standard-navigation@0.0.5"
+    ],
+    "file": "licenses/upstream/standard-navigation.txt",
+    "url": "https://github.com/react-navigation/standard-navigation/blob/4ebc8b3229da88cb6ade1ff4484491915bedd7cc/LICENSE"
+  },
+  {
+    "packages": [
+      "react-native@0.86.3"
+    ],
+    "file": "licenses/upstream/react-native-dependencies.txt",
+    "url": "https://github.com/react/react-native/tree/v0.86.3/packages/react-native/third-party-podspecs",
+    "pods": {
+      "ReactNativeDependencies": "0.86.3",
+      "React-Core-prebuilt": "0.86.3",
+      "ReactCodegen": "0.86.3",
+      "ReactAppDependencyProvider": "0.86.3",
+      "glog": "0.3.5",
+      "boost": "1.84.0",
+      "DoubleConversion": "1.1.6",
+      "fast_float": "8.0.0",
+      "fmt": "12.1.0",
+      "RCT-Folly": "2024.11.18.00",
+      "SocketRocket": "0.7.1"
+    }
+  },
+  {
+    "packages": [
+      "expo@57.0.25"
+    ],
+    "file": "licenses/upstream/web-streams-polyfill-4.1.0.txt",
+    "url": "https://github.com/MattiasBuelens/web-streams-polyfill/blob/v4.1.0/LICENSE"
+  },
+  {
+    "packages": [
+      "react-native@0.86.3"
+    ],
+    "file": "licenses/upstream/bezier-easing.txt",
+    "url": "https://github.com/gre/bezier-easing/blob/v2.1.0/LICENSE"
+  },
+  {
+    "packages": [
+      "d3-array@3.2.4"
+    ],
+    "file": "licenses/upstream/quickselect-1.1.1.txt",
+    "url": "https://github.com/mourner/quickselect/blob/v1.1.1/LICENSE"
+  },
+  {
+    "packages": [
+      "@expo/metro-runtime@57.0.16"
+    ],
+    "file": "licenses/upstream/deno-1.37.0.txt",
+    "url": "https://github.com/denoland/deno/blob/v1.37.0/LICENSE.md"
+  },
+  {
+    "packages": [
+      "expo-router@57.0.23"
+    ],
+    "file": "node_modules/expo/LICENSE",
+    "url": "https://github.com/expo/expo/blob/9349d1457178dd9cccb8bdd3aed47473c49134e1/LICENSE"
+  },
+  {
+    "packages": [
+      "react-native@0.86.3"
+    ],
+    "file": "licenses/upstream/hermes-dependencies.txt",
+    "url": "https://github.com/facebook/hermes/tree/3477757eb2475555cf8d8df24bfb1deb0613880d",
+    "pods": {
+      "hermes-engine": "250829098.0.17"
+    }
+  },
+  {
+    "packages": [
+      "expo-router@57.0.23"
+    ],
+    "file": "licenses/upstream/react-navigation.txt",
+    "url": "https://github.com/react-navigation/react-navigation/blob/90950419c0ee5dec77cd40cee0687add80dcf625/packages/core/LICENSE"
+  },
+  {
+    "file": "licenses/upstream/meta-mit.txt",
+    "url": "https://raw.githubusercontent.com/facebook/react/d083ec1da1e5252abd3ddfdde6dfbc09701a2c51/LICENSE",
+    "packages": [
+      "babel-plugin-react-compiler@1.0.0",
+      "react-devtools-core@6.1.5"
+    ]
+  },
+  {
+    "file": "licenses/upstream/fb55-boolbase.txt",
+    "url": "https://raw.githubusercontent.com/fb55/boolbase/54811f01c797a6bb1c263183ae90b7dd627e0638/LICENSE",
+    "packages": [
+      "boolbase@1.0.0"
+    ]
+  },
+  {
+    "file": "licenses/upstream/facebook-watchman.txt",
+    "url": "https://raw.githubusercontent.com/facebook/watchman/v4.9.0/LICENSE",
+    "packages": [
+      "bser@2.1.1",
+      "fb-watchman@2.0.2"
+    ]
+  },
+  {
+    "file": "licenses/upstream/meta-mit.txt",
+    "url": "https://raw.githubusercontent.com/facebook/flow/fc6996aded63b52b78d802f3123a7c477c76c45e/LICENSE",
+    "packages": [
+      "flow-estree@0.331.0",
+      "flow-parser@0.331.0"
+    ]
+  },
+  {
+    "file": "licenses/upstream/meta-mit.txt",
+    "url": "https://raw.githubusercontent.com/facebook/hermes/8eff1a6ac16c336ca7cf7ad4cc947e420bfc8ef2/LICENSE",
+    "packages": [
+      "hermes-compiler@250829098.0.17"
+    ]
+  },
+  {
+    "file": "licenses/upstream/meta-mit.txt",
+    "url": "https://raw.githubusercontent.com/react/metro/f8269d5ffe9b083c6af7a6ab69cebfeb526df792/LICENSE",
+    "packages": [
+      "metro@0.84.5",
+      "metro@0.84.6",
+      "metro@0.87.1",
+      "metro-babel-transformer@0.84.5",
+      "metro-babel-transformer@0.84.6",
+      "metro-babel-transformer@0.87.1",
+      "metro-cache@0.84.5",
+      "metro-cache@0.84.6",
+      "metro-cache@0.87.1",
+      "metro-cache-key@0.84.5",
+      "metro-cache-key@0.84.6",
+      "metro-cache-key@0.87.1",
+      "metro-config@0.84.5",
+      "metro-config@0.84.6",
+      "metro-config@0.87.1",
+      "metro-core@0.84.5",
+      "metro-core@0.84.6",
+      "metro-core@0.87.1",
+      "metro-file-map@0.84.5",
+      "metro-file-map@0.84.6",
+      "metro-file-map@0.87.1",
+      "metro-minify-terser@0.84.5",
+      "metro-minify-terser@0.84.6",
+      "metro-minify-terser@0.87.1",
+      "metro-resolver@0.84.5",
+      "metro-resolver@0.84.6",
+      "metro-resolver@0.87.1",
+      "metro-runtime@0.84.5",
+      "metro-runtime@0.84.6",
+      "metro-runtime@0.87.1",
+      "metro-source-map@0.84.5",
+      "metro-source-map@0.84.6",
+      "metro-source-map@0.87.1",
+      "metro-symbolicate@0.84.5",
+      "metro-symbolicate@0.84.6",
+      "metro-symbolicate@0.87.1",
+      "metro-transform-plugins@0.84.5",
+      "metro-transform-plugins@0.84.6",
+      "metro-transform-plugins@0.87.1",
+      "metro-transform-worker@0.84.5",
+      "metro-transform-worker@0.84.6",
+      "metro-transform-worker@0.87.1",
+      "ob1@0.84.5",
+      "ob1@0.84.6",
+      "ob1@0.87.1"
+    ]
+  },
+  {
+    "file": "licenses/upstream/thekashey-react-remove-scroll-bar.txt",
+    "url": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/8ca9ba5ea52de03308fe8ced94f7b159a44d28ff/LICENSE",
+    "packages": [
+      "react-remove-scroll-bar@2.3.8"
+    ]
+  },
+  {
+    "file": "licenses/upstream/evert-structured-header.txt",
+    "url": "https://raw.githubusercontent.com/evert/structured-header/8d428b5a525ec7410fa2499767dc58616ee641cf/LICENSE",
+    "packages": [
+      "structured-headers@0.4.1"
+    ]
+  },
+  {
+    "packages": [
+      "fb-dotslash@0.5.8"
+    ],
+    "file": "licenses/upstream/meta-mit.txt",
+    "url": "https://raw.githubusercontent.com/facebook/dotslash/8060e2dec764bceba5809cf6a15906644aad0078/LICENSE-MIT"
+  },
+  {
+    "packages": [
+      "imurmurhash@0.1.4"
+    ],
+    "file": "licenses/upstream/imurmurhash-0.1.4.txt",
+    "url": "https://raw.githubusercontent.com/jensyt/imurmurhash-js/9f40361c7e2835a9b7b8eaa1cbab2a9f94ee22a2/LICENSE"
+  },
+  {
+    "packages": [
+      "keyv@4.5.4"
+    ],
+    "file": "licenses/upstream/keyv-4.5.4.txt",
+    "url": "https://raw.githubusercontent.com/jaredwray/keyv/0575171e37ee5ecb67489b2f39630593d8a9c76a/LICENSE"
+  },
+  {
+    "packages": [
+      "stream-buffers@2.2.0"
+    ],
+    "file": "licenses/upstream/stream-buffers-2.2.0.txt",
+    "url": "https://raw.githubusercontent.com/samcday/node-stream-buffer/17024f70e0107175ede0ebcfbe9de7102d8be25f/UNLICENSE"
+  },
+  {
+    "packages": [
+      "@types/json5@0.0.29"
+    ],
+    "file": "licenses/upstream/types-json5-0.0.29.txt",
+    "url": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/c06b1d776527b5422e8f76f3edf36982fd87e0cc/LICENSE"
+  },
+  {
+    "packages": [
+      "unrs-resolver@1.12.2"
+    ],
+    "file": "licenses/upstream/unrs-resolver-1.12.2.txt",
+    "url": "https://raw.githubusercontent.com/unrs/unrs-resolver/ccb26d205e2938b16069c64a28996b48ee97ff94/LICENSE",
+    "includes": [
+      "@unrs/resolver-binding-android-arm-eabi@1.12.2",
+      "@unrs/resolver-binding-android-arm64@1.12.2",
+      "@unrs/resolver-binding-darwin-arm64@1.12.2",
+      "@unrs/resolver-binding-darwin-x64@1.12.2",
+      "@unrs/resolver-binding-freebsd-x64@1.12.2",
+      "@unrs/resolver-binding-linux-arm-gnueabihf@1.12.2",
+      "@unrs/resolver-binding-linux-arm-musleabihf@1.12.2",
+      "@unrs/resolver-binding-linux-arm64-gnu@1.12.2",
+      "@unrs/resolver-binding-linux-arm64-musl@1.12.2",
+      "@unrs/resolver-binding-linux-loong64-gnu@1.12.2",
+      "@unrs/resolver-binding-linux-loong64-musl@1.12.2",
+      "@unrs/resolver-binding-linux-ppc64-gnu@1.12.2",
+      "@unrs/resolver-binding-linux-riscv64-gnu@1.12.2",
+      "@unrs/resolver-binding-linux-riscv64-musl@1.12.2",
+      "@unrs/resolver-binding-linux-s390x-gnu@1.12.2",
+      "@unrs/resolver-binding-linux-x64-gnu@1.12.2",
+      "@unrs/resolver-binding-linux-x64-musl@1.12.2",
+      "@unrs/resolver-binding-openharmony-arm64@1.12.2",
+      "@unrs/resolver-binding-wasm32-wasi@1.12.2",
+      "@unrs/resolver-binding-win32-arm64-msvc@1.12.2",
+      "@unrs/resolver-binding-win32-ia32-msvc@1.12.2",
+      "@unrs/resolver-binding-win32-x64-msvc@1.12.2"
+    ]
+  },
+  {
+    "packages": [
+      "@humanfs/types@0.15.0"
+    ],
+    "file": "licenses/upstream/humanfs-types.txt",
+    "url": "https://raw.githubusercontent.com/humanwhocodes/humanfs/85069f193cbacc371c3beb649ce746f8c5a493be/packages/core/LICENSE"
+  },
+  {
+    "packages": [
+      "esrecurse@4.3.0"
+    ],
+    "file": "licenses/upstream/esrecurse.txt",
+    "url": "https://github.com/estools/esrecurse/blob/8ceb63797813d9ac69572a671b95cf58ffdf35b6/esrecurse.js"
+  },
+  {
+    "packages": [
+      "bplist-parser@0.3.1",
+      "bplist-parser@0.3.2"
+    ],
+    "file": "licenses/upstream/bplist-parser.txt",
+    "url": "https://github.com/nearinfinity/node-bplist-parser/blob/84abe1c3b552a807461b28a5a28084ce4f827ce1/README.md"
+  },
+  {
+    "packages": [
+      "natural-compare@1.4.0"
+    ],
+    "file": "licenses/upstream/natural-compare.txt",
+    "url": "https://raw.githubusercontent.com/litejs/natural-compare-lite/a8e1e32c85713ba7d079445207a808ce6f4852f9/LICENSE"
+  },
+  {
+    "packages": [
+      "@expo/devcert@1.2.1"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/@expo/devcert/1.2.1",
+    "attribution": "MIT © Dave Wasmer. Source: package README."
+  },
+  {
+    "packages": [
+      "@expo/sdk-runtime-versions@1.0.0"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/@expo/sdk-runtime-versions/1.0.0",
+    "attribution": "Author: Expo <support@expo.io>. Declared license: MIT."
+  },
+  {
+    "packages": [
+      "@expo/ws-tunnel@2.0.0"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/@expo/ws-tunnel/2.0.0",
+    "attribution": "Publisher: Expo. Declared license: MIT."
+  },
+  {
+    "packages": [
+      "client-only@0.0.1"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/client-only/0.0.1",
+    "attribution": "Declared license: MIT."
+  },
+  {
+    "packages": [
+      "server-only@0.0.1"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/server-only/0.0.1",
+    "attribution": "Declared license: MIT."
+  },
+  {
+    "packages": [
+      "stable-hash@0.0.5"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/stable-hash/0.0.5",
+    "attribution": "Created by Shu Ding. Released under the MIT License. Source: package README."
+  },
+  {
+    "packages": [
+      "test-renderer@1.2.0"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/test-renderer/1.2.0",
+    "attribution": "Author: Maciej Jastrzebski <mdjastrzebski@gmail.com>. Declared license: MIT."
+  },
+  {
+    "packages": [
+      "badgin@1.2.3"
+    ],
+    "file": "licenses/upstream/mit-terms.txt",
+    "url": "https://registry.npmjs.org/badgin/1.2.3",
+    "attribution": "Author: Julian Hundeloh. Declared license: MIT.\n\nTinycon: Copyright (c) 2015 Tom Moor. MIT Licensed.\nSource: https://github.com/tommoor/tinycon/blob/463cdbc226abf229e1e68048a3efa9b9e2928b41/tinycon.js"
+  },
+  {
+    "packages": [
+      "@expo/xcpretty@4.4.5"
+    ],
+    "file": "licenses/upstream/bsd-3-clause-terms.txt",
+    "url": "https://registry.npmjs.org/@expo/xcpretty/4.4.5",
+    "attribution": "Author: Evan Bacon <bacon@expo.io>. Declared license: BSD-3-Clause."
+  },
+  {
+    "packages": [
+      "jimp-compact@0.16.1"
+    ],
+    "file": "licenses/upstream/jimp.txt",
+    "url": "https://raw.githubusercontent.com/jimp-dev/jimp/v0.16.1/LICENSE"
+  },
+  {
+    "packages": [
+      "lightningcss@1.33.0"
+    ],
+    "file": "node_modules/lightningcss/LICENSE",
+    "url": "https://github.com/parcel-bundler/lightningcss/blob/1d680fa14e9a089c92dc0929f869d6757ae91c30/LICENSE",
+    "includes": [
+      "lightningcss-android-arm64@1.33.0",
+      "lightningcss-darwin-arm64@1.33.0",
+      "lightningcss-darwin-x64@1.33.0",
+      "lightningcss-freebsd-x64@1.33.0",
+      "lightningcss-linux-arm-gnueabihf@1.33.0",
+      "lightningcss-linux-arm64-gnu@1.33.0",
+      "lightningcss-linux-arm64-musl@1.33.0",
+      "lightningcss-linux-x64-gnu@1.33.0",
+      "lightningcss-linux-x64-musl@1.33.0",
+      "lightningcss-win32-arm64-msvc@1.33.0",
+      "lightningcss-win32-x64-msvc@1.33.0"
+    ]
+  },
+  {
+    "packages": [
+      "expo-sqlite@57.0.3"
+    ],
+    "file": "licenses/upstream/sqlite-3.50.3.txt",
+    "url": "https://raw.githubusercontent.com/expo/expo/9e5319c0f821a27b7924841903abae50e2b41790/packages/expo-sqlite/vendor/sqlite3/sqlite3.c"
+  },
+  {
+    "packages": [
+      "expo-gl@57.0.2"
+    ],
+    "file": "licenses/upstream/stb-image.txt",
+    "url": "https://raw.githubusercontent.com/expo/expo/b9503d06b8e130abfca1bc16f671dbefb41ad709/packages/expo-gl/common/stb_image.h"
+  }
+]

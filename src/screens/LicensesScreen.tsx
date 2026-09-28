@@ -10,6 +10,13 @@ import { InfoPage, InfoSection } from '../settings/InfoPage';
 import { SettingsRow } from '../settings/SettingsSection';
 import { theme } from '../theme';
 
+function description(notice: (typeof notices)[number]) {
+  return notice.license ? t('settings.libraryVersion', {
+    version: notice.version,
+    license: notice.license,
+  }) : notice.version;
+}
+
 export function LicensesScreen({
   onSelect,
 }: {
@@ -50,10 +57,7 @@ export function LicensesScreen({
           <SettingsRow
             title={item.name}
             disclosure
-            value={t('settings.libraryVersion', {
-              version: item.version,
-              license: item.license,
-            })}
+            value={description(item)}
             onPress={() => {
               Keyboard.dismiss();
               onSelect(item.name, item.version);
@@ -78,12 +82,7 @@ export function LicenseScreen({
   return (
     <InfoPage>
       <InfoSection title={notice?.name ?? t('settings.licenseNotFound')}>
-        {notice
-          ? t('settings.libraryVersion', {
-              version: notice.version,
-              license: notice.license,
-            })
-          : t('settings.missingLicense')}
+        {notice ? description(notice) : t('settings.missingLicense')}
       </InfoSection>
       {notice && (
         <AppText variant="caption" selectable accessibilityLanguage="en">
