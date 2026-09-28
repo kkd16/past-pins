@@ -9,7 +9,7 @@ import { createAppDataStore } from '../src/data/store';
 import { t } from '../src/localization';
 import { arrivalDatabase, arrivalStorage } from './native-location';
 import { backupFile, documentPicker, sharing } from './native-sharing';
-import { native } from './setup';
+import { mailComposer, native } from './setup';
 
 mock.module('react-native-safe-area-context', () => ({
   SafeAreaProvider: 'SafeAreaProvider',
@@ -30,6 +30,8 @@ beforeEach(async () => {
   await arrivalStorage.load();
   native.Alert.alert.mockReset();
   native.AccessibilityInfo.announceForAccessibilityWithOptions.mockClear();
+  mailComposer.isAvailableAsync.mockReset().mockResolvedValue(true);
+  mailComposer.composeAsync.mockReset().mockResolvedValue({ status: 'cancelled' });
   backupFile.text.mockReset().mockResolvedValue(encodeDocument(defaultAppData()));
   backupFile.write.mockClear();
   sharing.shareAsync.mockClear();
@@ -53,6 +55,18 @@ async function answer(yes: boolean) {
   const choices = native.Alert.alert.mock.calls.at(-1)![2]!;
   await act(async () => choices[yes ? 1 : 0].onPress?.());
 }
+
+test.each(['confirm', 'cancel', 'leave'] as const)('reporting from recovery respects %s before opening email', async (action) => {
+  await press(t('recovery.moreOptions'));
+  await press(t('support.error.label'));
+  expect(native.Alert.alert.mock.calls[0][0]).toBe(t('support.error.title'));
+  expect(mailComposer.composeAsync).not.toHaveBeenCalled();
+  if (action === 'leave') await act(async () => root.render(<RecoveryScreen store={store} focused={false} />));
+  await answer(action !== 'cancel');
+  expect(mailComposer.composeAsync).toHaveBeenCalledTimes(action === 'confirm' ? 1 : 0);
+  expect(sharing.shareAsync).not.toHaveBeenCalled();
+  expect(backupFile.write).not.toHaveBeenCalled();
+});
 
 test('recovery actions wait for initialization and enable when only raw storage is available', async () => {
   await press(t('recovery.moreOptions'));
@@ -207,7 +221,7 @@ test('failed reads show a short explanation and keep extra tools behind more opt
   expect(button(t('recovery.moreOptions')).props.accessibilityState).toEqual({ expanded: false });
   await press(t('recovery.moreOptions'));
   expect(buttons()).toContain(t('recovery.savedFile'));
-  expect(buttons()).toContain(t('recovery.diagnostics'));
+  expect(buttons()).toContain(t('support.error.label'));
   expect(buttons()).toContain(t('settings.resetApp'));
   expect(button(t('recovery.fewerOptions')).props.accessibilityState).toEqual({ expanded: true });
   await press(t('recovery.fewerOptions'));

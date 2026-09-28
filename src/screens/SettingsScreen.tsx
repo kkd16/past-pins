@@ -17,6 +17,7 @@ import { useActionGuard } from '../navigation/useActionGuard';
 import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
 import { getPlaceStatistics } from '../places/statistics';
+import { composeSupportEmail } from '../support/compose-email';
 import { theme } from '../theme';
 
 type DataAction = 'export' | 'restore' | 'clear' | 'reset' | 'resetApp';
@@ -215,6 +216,16 @@ export function SettingsScreen({
             busy={operation === 'restore'}
             onPress={() => void run('restore', importBackup)}
           />
+        </SettingsSection>
+        <SettingsSection title={t('settings.support')}>
+          {(['bug', 'feature'] as const).map((kind) => (
+            <SettingsRow
+              key={kind}
+              title={t(`support.${kind}.label`)}
+              disabled={recoveryDisabled}
+              onPress={() => void composeSupportEmail(kind, guard())}
+            />
+          ))}
         </SettingsSection>
         <SettingsSection title={t('settings.app')}>
           <SettingsRow

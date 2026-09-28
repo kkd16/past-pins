@@ -1,0 +1,29 @@
+{
+  "error": {
+    "label": "Report an error",
+    "title": "Email an error report?",
+    "details": "Includes the error log, app/build version, device make/model, and iOS version. No saved places, location, device name, or unique IDs.",
+    "subject": "PastPins error report",
+    "body": "What happened?\n\n\nTechnical report:"
+  },
+  "bug": {
+    "label": "Report a bug",
+    "title": "Email a bug report?",
+    "details": "Includes app/build version, device make/model, and iOS version. No error log or saved places.",
+    "subject": "PastPins bug report",
+    "body": "What happened?\n\n\nWhat did you expect?\n\n\nSteps to reproduce:\n\n\nTechnical details:"
+  },
+  "feature": {
+    "label": "Request a feature",
+    "title": "Email a feature request?",
+    "details": "Your message only. No diagnostics or device details.",
+    "subject": "PastPins feature request",
+    "body": "What would you like PastPins to do?\n\n\nHow would it help you?\n\n"
+  },
+  "consent": "%{details}\n\nOpens an email draft to the app owner. You choose whether to send it. Your sender name and email address will be included.",
+  "createEmail": "Create email draft",
+  "emailUnavailable": "Mail is unavailable",
+  "emailSetup": "Make sure an email account is set up in Apple Mail and sending is allowed on this iPhone, then try again.",
+  "emailFailed": "Email couldn’t be completed",
+  "emailRetry": "Please try creating the email again."
+}

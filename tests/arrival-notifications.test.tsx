@@ -303,11 +303,11 @@ test('a failed arrival confirmation records safe diagnostics without logging the
     await act(async () => root.render(<Confirmation />));
     expect(native.Alert.alert).not.toHaveBeenCalled();
     expect(warning).not.toHaveBeenCalled();
-    const text = await diagnosticLog.export();
-    expect(JSON.parse(text).events).toContainEqual(
+    const events = await diagnosticLog.getEvents();
+    expect(events).toContainEqual(
       expect.objectContaining({ operation: 'reminders', code: 'unexpected' }),
     );
-    expect(text).not.toContain('private arrival details');
+    expect(JSON.stringify(events)).not.toContain('private arrival details');
   } finally {
     read.mockRestore();
     warning.mockRestore();

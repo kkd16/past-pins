@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { t } from '../localization';
+import { ReportErrorButton } from '../support/ReportErrorButton';
 import { theme } from '../theme';
 
 export function PlaceFeedback({ loading, error, onRetry }: {
@@ -17,6 +18,7 @@ export function PlaceFeedback({ loading, error, onRetry }: {
         {t(error ? 'places.loadError' : 'places.loading')}
       </AppText>
       {error && <Button label={t('places.retry')} variant="quiet" onPress={onRetry} />}
+      {error && <ReportErrorButton />}
     </View>
   );
 }

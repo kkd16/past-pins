@@ -1,7 +1,7 @@
 import { CURRENT_SCHEMA_VERSION } from '../data/model';
 import { DATA_ERROR_CODES, DataError } from '../data/data-error';
 
-const operations = ['load', 'save', 'restore', 'reset', 'render', 'reminders', 'export'] as const;
+const operations = ['load', 'save', 'restore', 'reset', 'render', 'reminders', 'export', 'catalog'] as const;
 const codes = [...DATA_ERROR_CODES, 'unexpected'] as const;
 export type DiagnosticOperation = typeof operations[number];
 type Event = {
@@ -61,9 +61,9 @@ export function createDiagnosticLog(storage: {
         await storage.write(JSON.stringify(events));
       }).catch(() => undefined);
     },
-    async export() {
+    async getEvents() {
       await pending;
-      return JSON.stringify({ app: 'past-pins', ...version, schemaVersion: CURRENT_SCHEMA_VERSION, events: await read() }, null, 2);
+      return (await read()).map((event) => ({ ...event }));
     },
     async clear() {
       const clearing = pending.then(async () => { await storage.clear(); events = []; });

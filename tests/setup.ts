@@ -8,6 +8,20 @@ import {
   type Ref,
 } from 'react';
 import type { AccessibilityInfo, Alert } from 'react-native';
+import type { MailComposerOptions } from 'expo-mail-composer';
+
+export const device = {
+  manufacturer: 'Apple', modelName: 'iPhone 16', modelId: 'iPhone17,3',
+  osName: 'iOS', osVersion: '18.0', osBuildId: '22A3354', isDevice: true,
+  deviceName: 'Private Person’s iPhone', uniqueId: 'private-identifier',
+};
+mock.module('expo-device', () => device);
+
+export const mailComposer = {
+  isAvailableAsync: mock(async () => true),
+  composeAsync: mock(async (_options: MailComposerOptions) => ({ status: 'cancelled' })),
+};
+mock.module('expo-mail-composer', () => mailComposer);
 
 export const native = {
   AppState: {

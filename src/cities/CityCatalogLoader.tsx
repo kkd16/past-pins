@@ -2,8 +2,9 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { clearCityCatalogDatabase, setCityCatalogDatabase, setCityCatalogRetry } from './database';
+import { clearCityCatalogDatabase, setCityCatalogDatabase, setCityCatalogRetry, useCityCatalogStatus } from './database';
 import manifest from './manifest.json';
+import { diagnostics } from '../recovery/diagnostics-file';
 import ownedFiles from '../storage/owned-files.json';
 
 const directory = new Directory(Paths.cache, ownedFiles.catalogDirectory).uri;
@@ -20,8 +21,12 @@ function CatalogConnection() {
 }
 
 export function CityCatalogLoader() {
+  const catalog = useCityCatalogStatus();
   const [attempt, setAttempt] = useState(0);
   const lifecycle = useRef({ active: true, generation: 0 });
+  useEffect(() => {
+    if (catalog.error) diagnostics.record('catalog', undefined);
+  }, [catalog]);
   useEffect(() => {
     const state = lifecycle.current;
     state.active = true;

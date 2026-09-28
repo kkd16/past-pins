@@ -16,7 +16,7 @@ export async function shareBackup(data: AppData) {
   await shareDataFile(encodeDocument(data, true), 'Backup');
 }
 
-export async function shareDataFile(text: string, kind: 'Backup' | 'Recovery' | 'Diagnostics') {
+export async function shareDataFile(text: string, kind: 'Backup' | 'Recovery') {
   const file = new File(
     Paths.cache,
     `Past-Pins-${kind}-${new Date().toISOString().slice(0, 10)}.json`,

@@ -15,6 +15,7 @@ import { theme } from '../theme';
 import { diagnostics } from './diagnostics-file';
 import type { DiagnosticOperation } from './diagnostics';
 import { recoveryMessage } from './error-message';
+import { composeSupportEmail } from '../support/compose-email';
 
 export type RecoveryStore = ReturnType<typeof createAppDataStore>;
 const noSubscribe = () => () => {};
@@ -118,10 +119,7 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
               <AppText variant="caption">{t('recovery.savedFileDescription')}</AppText>
             </View>
             <View style={styles.group}>
-              <Button label={t('recovery.diagnostics')} variant="quiet" disabled={disabled} onPress={() => void run('export', async (current) => {
-                const text = await diagnostics.export();
-                if (current()) await shareDataFile(text, 'Diagnostics');
-              })} />
+              <Button label={t('support.error.label')} variant="quiet" disabled={disabled} onPress={() => void composeSupportEmail('error', guard())} />
               <AppText variant="caption">{t('recovery.diagnosticsDescription')}</AppText>
             </View>
             <Button label={t('settings.resetApp')} variant="quiet" disabled={disabled} onPress={() => void run('reset', resetApp)} />

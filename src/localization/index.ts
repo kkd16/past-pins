@@ -14,6 +14,7 @@ import places from './locales/en/places.json';
 import sharing from './locales/en/sharing.json';
 import onboarding from './locales/en/onboarding.json';
 import recovery from './locales/en/recovery.json';
+import support from './locales/en/support.json';
 
 export const translations = {
   en: {
@@ -30,6 +31,7 @@ export const translations = {
     sharing,
     onboarding,
     recovery,
+    support,
   },
 };
 export const {

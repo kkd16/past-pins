@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test';
 import { join } from 'node:path';
 
-test.each(['retry', 'load-failure', 'delete-failure', 'late-initialization', 'unmount'])('city catalog loader: %s', async (scenario) => {
+test.each(['mail', 'device', 'feature'])('support email module loading: %s', async (scenario) => {
   const child = Bun.spawn([
     process.execPath, '--preload', join(import.meta.dir, 'setup.ts'),
-    join(import.meta.dir, 'helpers/city-loader.tsx'), scenario,
+    join(import.meta.dir, 'helpers/support-email-loading.ts'), scenario,
   ], { stdout: 'pipe', stderr: 'pipe' });
   const [output, errors, exit] = await Promise.all([
     new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,

@@ -10,7 +10,7 @@ import { formatNumber, t } from '../src/localization';
 import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import { arrivalDatabase, arrivalStorage } from './native-location';
 import { backupFile } from './native-sharing';
-import { native, navigation } from './setup';
+import { mailComposer, native, navigation } from './setup';
 
 const { appData } = await import('../src/data/app-data');
 let toast = createToastStore();
@@ -45,6 +45,8 @@ beforeEach(async () => {
   toast = createToastStore();
   navigation.focused = true;
   native.Alert.alert.mockReset();
+  mailComposer.isAvailableAsync.mockReset().mockResolvedValue(true);
+  mailComposer.composeAsync.mockReset().mockResolvedValue({ status: 'cancelled' });
   backupFile.text.mockReset();
   root = createRoot({ isStrictMode: true });
   await act(async () => root.render(<SettingsScreen onOpen={() => {}} />));
@@ -70,6 +72,26 @@ async function answer(confirmed: boolean) {
   const buttons = native.Alert.alert.mock.calls.at(-1)![2]!;
   await act(async () => buttons[confirmed ? 1 : 0].onPress?.());
 }
+
+test.each(['bug', 'feature'] as const)('Settings %s email requires consent and leaves saved data unchanged', async (kind) => {
+  const before = await arrivalStorage.readRaw();
+  await press(t(`support.${kind}.label`));
+  await press(t(`support.${kind === 'bug' ? 'feature' : 'bug'}.label`));
+  expect(native.Alert.alert).toHaveBeenCalledTimes(1);
+  expect(native.Alert.alert.mock.calls[0][0]).toBe(t(`support.${kind}.title`));
+  expect(mailComposer.composeAsync).not.toHaveBeenCalled();
+  await answer(true);
+  expect(mailComposer.composeAsync.mock.calls[0][0].subject).toBe(t(`support.${kind}.subject`));
+  expect(await arrivalStorage.readRaw()).toBe(before);
+});
+
+test.each(['bug', 'feature'] as const)('leaving Settings cancels the pending %s email', async (kind) => {
+  await press(t(`support.${kind}.label`));
+  navigation.focused = false;
+  await act(async () => root.render(<SettingsScreen onOpen={() => {}} />));
+  await answer(true);
+  expect(mailComposer.composeAsync).not.toHaveBeenCalled();
+});
 
 test('backup preview shows simple totals and keeps data intact until confirmed', async () => {
   const firstRegion = getCountrySubdivisions('ca').find(({ code }) => code === 'CA-ON')!.id;

@@ -15,6 +15,8 @@ const initialize = Promise.withResolvers<void>();
 const scenario = process.argv[2];
 type Connection = { database: SQLiteDatabase; close: ReturnType<typeof mock>; failQueries: boolean };
 const connections: Connection[] = [];
+const diagnosticRecord = mock();
+mock.module('../../src/recovery/diagnostics-file', () => ({ diagnostics: { record: diagnosticRecord } }));
 
 mock.module('expo-file-system', () => ({
   Paths: { cache: 'file:///cache' },
@@ -54,6 +56,7 @@ mock.module(join(import.meta.dir, '../../node_modules/expo-sqlite/src/SQLiteData
       execAsync: async () => {},
       getFirstAsync: async () => {
         if (first && (scenario === 'late-initialization' || scenario === 'unmount')) await initialize.promise;
+        if (first && scenario === 'load-failure') throw new Error('Private database path');
         return { geonameId: 6167865 };
       },
       getAllAsync: async () => {
@@ -78,7 +81,7 @@ function status() {
 
 await act(async () => root.render(<><CityCatalogLoader /><Probe /></>));
 expect(connections).toHaveLength(1);
-expect(events).toEqual(['copy']);
+expect(events).toEqual(scenario === 'load-failure' ? ['copy', 'close'] : ['copy']);
 if (scenario === 'unmount') {
   await act(async () => root.unmount());
   await act(async () => initialize.resolve());
@@ -87,6 +90,8 @@ if (scenario === 'unmount') {
 } else {
   if (scenario === 'late-initialization') {
     expect(status()).toMatchObject({ ready: false, error: false });
+  } else if (scenario === 'load-failure') {
+    expect(status()).toMatchObject({ ready: false, error: true });
   } else {
     expect(status()).toMatchObject({ ready: true, error: false });
     connections[0].failQueries = true;
@@ -113,4 +118,8 @@ if (scenario === 'unmount') {
   await act(async () => root.unmount());
   expect(connections[1].close).toHaveBeenCalledTimes(1);
 }
+expect(diagnosticRecord.mock.calls).toEqual(
+  Array.from({ length: scenario === 'delete-failure' ? 2 : ['retry', 'load-failure'].includes(scenario) ? 1 : 0 },
+    () => ['catalog', undefined]),
+);
 process.stdout.write('passed');

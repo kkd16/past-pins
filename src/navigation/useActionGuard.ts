@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 
-export function useActionGuard(scope: unknown) {
+export function useActionGuard(scope?: unknown) {
   const session = useRef<object | null>(null);
   useFocusEffect(
     useCallback(() => {

@@ -134,7 +134,8 @@ Reset cannot repair a broken binary. The root boundary catches render/import fai
 - Define backup and reset behavior for each new app-owned store.
 - Register new owned files in [owned-files.json](src/storage/owned-files.json). Test in-app and native reset handling.
 - Keep arrival bookkeeping separately versioned and excluded from backups. Malformed bookkeeping rebuilds without duplicate reminders; I/O failures preserve it.
-- Keep diagnostics local and bounded to 50 allowlisted events with versions and codes. Exclude raw errors, travel records, and coordinates. Sharing requires an explicit action.
+- Keep diagnostics local and bounded to 50 allowlisted events with versions and codes. Catalog failures use a generic `catalog` event. Never log raw errors, searches, travel records, coordinates, device names, or unique identifiers.
+- All support emails use one consent and draft flow. Error and bug reports include app/build version, device make/model, and iOS version; only error reports read the log. Feature requests include only writing prompts. Consent explains what is shared, including the sender's name and email address. Native email/device modules load only when needed after consent. No report files are created and nothing sends automatically.
 
 ## Currency metadata
 
@@ -255,6 +256,7 @@ Record the device, iOS version, candidate build, and results. Use disposable dat
 | Saved data | Populate the candidate with countries, regions, cities, home, mixed lists, and nondefault preferences. Relaunch twice, then export, reset, import, and verify every value. |
 | Documents | Round-trip the v1 fixtures and city lists; reject malformed, inconsistent, and unknown-place backups without altering saved data. |
 | Storage failures | Failed/interrupted writes, invalid imports, future/corrupt documents, unavailable or near-full storage. Data survives; recovery, export, and retry work. |
+| Support emails | On a physical iPhone, test error reports and both Settings → Support actions: consent/cancel, leave the screen during consent, configure or remove the Apple Mail account, verify each draft's included details, then cancel/save/send. Error reports include the sanitized log, bug reports include basic app/device details only, and feature requests include no diagnostics. Rebuild after adding the native Device and MailComposer modules. |
 | Startup and reset | Render failure before providers mount; native reset before JavaScript starts; cancel reset; deletion failure/retry. Successful reset returns to Welcome, clears data/reminders/diagnostics, and turns the switch off. |
 | Interactions | Maps, gestures, status/home, mixed lists, sharing, restore/reset. Leave and return during pickers, confirmations, and location requests; stale actions must not apply. |
 | Arrival reminders | Background delivery, cold-launch notification taps, permission revocation, disabling reminders, battery and thermal behavior |

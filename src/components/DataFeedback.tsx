@@ -4,6 +4,7 @@ import { appData } from '../data/app-data';
 import { useAppData } from '../data/AppData';
 import { theme } from '../theme';
 import { t, language } from '../localization';
+import { ReportErrorButton } from '../support/ReportErrorButton';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Surface } from './Surface';
@@ -37,6 +38,7 @@ export function DataFeedback() {
         disabled={busy}
         onPress={retry}
       />
+      <ReportErrorButton disabled={busy} />
     </Surface>
   );
 }
