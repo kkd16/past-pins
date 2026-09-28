@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { join } from 'node:path';
 
-test.each(['mail', 'device', 'feature'])('support email module loading: %s', async (scenario) => {
+test.each(['device', 'feature'])('support email module loading: %s', async (scenario) => {
   const child = Bun.spawn([
     process.execPath, '--preload', join(import.meta.dir, 'setup.ts'),
     join(import.meta.dir, 'helpers/support-email-loading.ts'), scenario,

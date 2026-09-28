@@ -1,5 +1,5 @@
 import * as Application from 'expo-application';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 
 import { t } from '../localization';
 import website from '../localization/locales/en/website.json';
@@ -21,14 +21,6 @@ export async function composeSupportEmail(kind: SupportEmailKind, isCurrent: () 
       ],
     ));
     if (!consent || !isCurrent()) return;
-    const MailComposer = await import('expo-mail-composer');
-    if (!isCurrent()) return;
-    const available = await MailComposer.isAvailableAsync();
-    if (!isCurrent()) return;
-    if (!available) {
-      Alert.alert(t('support.emailUnavailable'), t('support.emailSetup'));
-      return;
-    }
     let body = t(`support.${kind}.body`);
     if (kind !== 'feature') {
       const Device = await import('expo-device');
@@ -47,11 +39,9 @@ export async function composeSupportEmail(kind: SupportEmailKind, isCurrent: () 
       body += `\n\n${JSON.stringify(report, null, 2)}`;
     }
     if (!isCurrent()) return;
-    await MailComposer.composeAsync({
-      recipients: [website.shared.contact],
-      subject: t(`support.${kind}.subject`),
-      body,
-    });
+    const subject = encodeURIComponent(t(`support.${kind}.subject`));
+    const message = encodeURIComponent(body.replace(/\r?\n/g, '\r\n'));
+    await Linking.openURL(`mailto:${website.shared.contact}?subject=${subject}&body=${message}`);
   } catch {
     if (isCurrent()) Alert.alert(t('support.emailFailed'), t('support.emailRetry'));
   } finally {

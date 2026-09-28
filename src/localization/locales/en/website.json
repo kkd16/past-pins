@@ -77,7 +77,7 @@
     "heading": "PastPins support",
     "emailLink": "Email support",
     "intro": "For help, feedback, accessibility issues, or privacy requests, email Kyle Deliyannides.",
-    "emailHelp": "Use Settings → Support to report a bug or request a feature. Bug reports include basic app/device details; feature requests include only your message. Report an error on an error screen or in Settings → Your saved data → More options also includes the technical log. Each asks for consent, then opens an Apple Mail draft for you to review and send. An account must be set up in Apple Mail. Remove private information from screenshots. A travel backup is usually not needed.",
+    "emailHelp": "Use Settings → Support to report a bug or request a feature. Bug reports include basic app/device details; feature requests include only your message. Report an error on an error screen or in Settings → Your saved data → More options also includes the technical log. Each asks for consent, then opens a draft in your default email app for you to review and send. An email app must be installed and set up. Remove private information from screenshots. A travel backup is usually not needed.",
     "availabilityTitle": "Availability",
     "availabilityText": "PastPins is available on the App Store for iPhone. iPad is not supported.",
     "backupTitle": "How do I keep a backup?",

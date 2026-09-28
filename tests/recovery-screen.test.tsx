@@ -9,7 +9,7 @@ import { createAppDataStore } from '../src/data/store';
 import { t } from '../src/localization';
 import { arrivalDatabase, arrivalStorage } from './native-location';
 import { backupFile, documentPicker, sharing } from './native-sharing';
-import { mailComposer, native } from './setup';
+import { native } from './setup';
 
 mock.module('react-native-safe-area-context', () => ({
   SafeAreaProvider: 'SafeAreaProvider',
@@ -30,8 +30,7 @@ beforeEach(async () => {
   await arrivalStorage.load();
   native.Alert.alert.mockReset();
   native.AccessibilityInfo.announceForAccessibilityWithOptions.mockClear();
-  mailComposer.isAvailableAsync.mockReset().mockResolvedValue(true);
-  mailComposer.composeAsync.mockReset().mockResolvedValue({ status: 'cancelled' });
+  native.Linking.openURL.mockReset().mockResolvedValue(undefined);
   backupFile.text.mockReset().mockResolvedValue(encodeDocument(defaultAppData()));
   backupFile.write.mockClear();
   sharing.shareAsync.mockClear();
@@ -60,10 +59,10 @@ test.each(['confirm', 'cancel', 'leave'] as const)('reporting from recovery resp
   await press(t('recovery.moreOptions'));
   await press(t('support.error.label'));
   expect(native.Alert.alert.mock.calls[0][0]).toBe(t('support.error.title'));
-  expect(mailComposer.composeAsync).not.toHaveBeenCalled();
+  expect(native.Linking.openURL).not.toHaveBeenCalled();
   if (action === 'leave') await act(async () => root.render(<RecoveryScreen store={store} focused={false} />));
   await answer(action !== 'cancel');
-  expect(mailComposer.composeAsync).toHaveBeenCalledTimes(action === 'confirm' ? 1 : 0);
+  expect(native.Linking.openURL).toHaveBeenCalledTimes(action === 'confirm' ? 1 : 0);
   expect(sharing.shareAsync).not.toHaveBeenCalled();
   expect(backupFile.write).not.toHaveBeenCalled();
 });
@@ -191,6 +190,7 @@ test('the Router boundary gates the shared store and retries independently of th
 test('a crash before app initialization still loads the cold store and enables recovery actions', async () => {
   const { appData } = await import('../src/data/app-data');
   const { RecoveryBoundary } = await import('../src/recovery/RecoveryBoundary');
+  await import('../src/location/arrival-notifications');
   const cold = createAppDataStore(arrivalStorage, { confirmStatusChange: async () => true });
   const snapshot = spyOn(appData, 'getSnapshot').mockImplementation(cold.getSnapshot);
   const subscribe = spyOn(appData, 'subscribe').mockImplementation(cold.subscribe);

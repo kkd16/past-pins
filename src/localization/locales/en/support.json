@@ -20,10 +20,8 @@
     "subject": "PastPins feature request",
     "body": "What would you like PastPins to do?\n\n\nHow would it help you?\n\n"
   },
-  "consent": "%{details}\n\nOpens an email draft to the app owner. You choose whether to send it. Your sender name and email address will be included.",
+  "consent": "%{details}\n\nOpens a draft in your default email app, addressed to the app owner. You choose whether to send it. Your sender name and email address will be included.",
   "createEmail": "Create email draft",
-  "emailUnavailable": "Mail is unavailable",
-  "emailSetup": "Make sure an email account is set up in Apple Mail and sending is allowed on this iPhone, then try again.",
-  "emailFailed": "Email couldn’t be completed",
-  "emailRetry": "Please try creating the email again."
+  "emailFailed": "Unable to open email",
+  "emailRetry": "Make sure an email app is installed and set up, then try again."
 }

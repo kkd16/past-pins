@@ -10,7 +10,7 @@ import { formatNumber, t } from '../src/localization';
 import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import { arrivalDatabase, arrivalStorage } from './native-location';
 import { backupFile } from './native-sharing';
-import { mailComposer, native, navigation } from './setup';
+import { native, navigation } from './setup';
 
 const { appData } = await import('../src/data/app-data');
 let toast = createToastStore();
@@ -45,8 +45,7 @@ beforeEach(async () => {
   toast = createToastStore();
   navigation.focused = true;
   native.Alert.alert.mockReset();
-  mailComposer.isAvailableAsync.mockReset().mockResolvedValue(true);
-  mailComposer.composeAsync.mockReset().mockResolvedValue({ status: 'cancelled' });
+  native.Linking.openURL.mockReset().mockResolvedValue(undefined);
   backupFile.text.mockReset();
   root = createRoot({ isStrictMode: true });
   await act(async () => root.render(<SettingsScreen onOpen={() => {}} />));
@@ -79,9 +78,9 @@ test.each(['bug', 'feature'] as const)('Settings %s email requires consent and l
   await press(t(`support.${kind === 'bug' ? 'feature' : 'bug'}.label`));
   expect(native.Alert.alert).toHaveBeenCalledTimes(1);
   expect(native.Alert.alert.mock.calls[0][0]).toBe(t(`support.${kind}.title`));
-  expect(mailComposer.composeAsync).not.toHaveBeenCalled();
+  expect(native.Linking.openURL).not.toHaveBeenCalled();
   await answer(true);
-  expect(mailComposer.composeAsync.mock.calls[0][0].subject).toBe(t(`support.${kind}.subject`));
+  expect(new URL(native.Linking.openURL.mock.calls[0][0]).searchParams.get('subject')).toBe(t(`support.${kind}.subject`));
   expect(await arrivalStorage.readRaw()).toBe(before);
 });
 
@@ -90,7 +89,7 @@ test.each(['bug', 'feature'] as const)('leaving Settings cancels the pending %s 
   navigation.focused = false;
   await act(async () => root.render(<SettingsScreen onOpen={() => {}} />));
   await answer(true);
-  expect(mailComposer.composeAsync).not.toHaveBeenCalled();
+  expect(native.Linking.openURL).not.toHaveBeenCalled();
 });
 
 test('backup preview shows simple totals and keeps data intact until confirmed', async () => {
