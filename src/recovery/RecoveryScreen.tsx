@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
-import { Screen } from '../components/Screen';
 import type { AppData } from '../data/model';
 import type { createAppDataStore } from '../data/store';
 import { confirmDestructiveAction } from '../feedback/confirmDestructiveAction';
@@ -31,11 +31,12 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
   const snapshot = useSyncExternalStore(store?.subscribe ?? noSubscribe, store?.getSnapshot ?? noSnapshot);
   const [checkpoints, setCheckpoints] = useState<{ items: Checkpoint[]; error: unknown }>({ items: [], error: null });
   const [working, setWorking] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const running = useRef(false);
   const session = useRef<{ focused: boolean } | null>(null);
   const disabled = store === undefined || working || !!snapshot?.busy || snapshot?.status === 'loading';
-  const failure = error ?? snapshot?.loadError;
+  const loadError = snapshot?.loadError;
 
   const refreshCheckpoints = useCallback(async (current: () => boolean) => {
     try {
@@ -119,63 +120,69 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
   }
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={styles.content}>
-        <AppText variant="title" accessibilityRole="header">
-          {t(error ? 'recovery.crashTitle' : 'recovery.title')}
-        </AppText>
-        <AppText>{error ? t('recovery.crashMessage') : t('recovery.description')}</AppText>
-        {!!failure && <AppText>{recoveryMessage(failure)}</AppText>}
-        {!!message && <AppText>{message}</AppText>}
-        {(onRetry || snapshot?.status === 'load-error') && (
-          <Button label={t('recovery.retry')} disabled={disabled} onPress={() => void run('load', async () => {
-            if (store?.getSnapshot().status === 'load-error') await store.load();
-            await onRetry?.();
-          })} />
-        )}
-        <View style={styles.group}>
-          <Button label={t('recovery.savedFile')} disabled={disabled} onPress={() => void run('export', async (current) => {
-            const text = await appStorage.readRaw();
-            if (!current()) return;
-            if (text === null) { setMessage(t('recovery.noSavedFile')); return; }
-            await shareDataFile(text, 'Recovery');
-          })} />
-          <AppText variant="caption">{t('recovery.savedFileDescription')}</AppText>
-          <Button label={t('settings.restoreBackup')} disabled={disabled} onPress={() => void run('restore', importBackup)} />
-        </View>
-        <View style={styles.group}>
-          <AppText variant="label" accessibilityRole="header">{t('recovery.checkpoints')}</AppText>
-          <AppText variant="caption">{t('recovery.checkpointDescription')}</AppText>
-          {checkpoints.error ? <AppText>{recoveryMessage(checkpoints.error)}</AppText> : !checkpoints.items.length && <AppText>{t('recovery.noCheckpoints')}</AppText>}
-          {checkpoints.items.map((copy) => <Button key={copy.id}
-            label={t('recovery.checkpoint', { date: formatDate(copy.createdAt) })}
-            disabled={disabled}
-            onPress={() => void run('restore', (current) => restoreCheckpoint(copy, current))}
-          />)}
-        </View>
-        <View style={styles.group}>
-          <Button label={t('recovery.diagnostics')} disabled={disabled} onPress={() => void run('export', async (current) => {
-            const text = await diagnostics.export();
-            if (current()) await shareDataFile(text, 'Diagnostics');
-          })} />
-          <AppText variant="caption">{t('recovery.diagnosticsDescription')}</AppText>
-        </View>
-        <Button label={t('settings.resetApp')} variant="quiet" disabled={disabled} onPress={() => void run('reset', resetApp)} />
-        <View style={styles.group}>
-          <AppText variant="label" accessibilityRole="header">{t('recovery.nativeTitle')}</AppText>
-          <AppText>{t('recovery.nativeInstructions')}</AppText>
-          {Constants.executionEnvironment === ExecutionEnvironment.StoreClient
-            ? <AppText>{t('recovery.nativeUnavailable')}</AppText>
-            : <Button label={t('recovery.openSettings')} variant="quiet" onPress={() => {
-              void Linking.openSettings().catch(() => Alert.alert(t('settings.couldNotFinish'), t('common.unknownError')));
-            }} />}
-        </View>
-      </ScrollView>
-    </Screen>
+    <SafeAreaProvider style={styles.safe}>
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <AppText variant="title" accessibilityRole="header">
+            {t(loadError ? 'recovery.loadTitle' : error ? 'recovery.crashTitle' : 'recovery.title')}
+          </AppText>
+          <AppText>{loadError ? recoveryMessage(loadError) : t(error ? 'recovery.crashMessage' : 'recovery.description')}</AppText>
+          {!!message && <AppText>{message}</AppText>}
+          {(onRetry || snapshot?.status === 'load-error') && (
+            <Button label={t('recovery.retry')} disabled={disabled} onPress={() => void run('load', async () => {
+              if (store?.getSnapshot().status === 'load-error') await store.load();
+              await onRetry?.();
+            })} />
+          )}
+          <Button label={t('settings.restoreBackup')} variant="quiet" disabled={disabled} onPress={() => void run('restore', importBackup)} />
+          <Button label={t(showOptions ? 'recovery.fewerOptions' : 'recovery.moreOptions')} variant="quiet"
+            accessibilityState={{ expanded: showOptions }} onPress={() => setShowOptions(!showOptions)} />
+          {showOptions && <View style={styles.options}>
+            <View style={styles.group}>
+              <Button label={t('recovery.savedFile')} variant="quiet" disabled={disabled} onPress={() => void run('export', async (current) => {
+                const text = await appStorage.readRaw();
+                if (!current()) return;
+                if (text === null) { setMessage(t('recovery.noSavedFile')); return; }
+                await shareDataFile(text, 'Recovery');
+              })} />
+              <AppText variant="caption">{t('recovery.savedFileDescription')}</AppText>
+            </View>
+            <View style={styles.group}>
+              <AppText variant="label" accessibilityRole="header">{t('recovery.checkpoints')}</AppText>
+              {checkpoints.error ? <AppText>{recoveryMessage(checkpoints.error)}</AppText> : !checkpoints.items.length && <AppText>{t('recovery.noCheckpoints')}</AppText>}
+              {checkpoints.items.map((copy) => <Button key={copy.id}
+                label={t('recovery.checkpoint', { date: formatDate(copy.createdAt) })}
+                variant="quiet" disabled={disabled}
+                onPress={() => void run('restore', (current) => restoreCheckpoint(copy, current))}
+              />)}
+            </View>
+            <View style={styles.group}>
+              <Button label={t('recovery.diagnostics')} variant="quiet" disabled={disabled} onPress={() => void run('export', async (current) => {
+                const text = await diagnostics.export();
+                if (current()) await shareDataFile(text, 'Diagnostics');
+              })} />
+              <AppText variant="caption">{t('recovery.diagnosticsDescription')}</AppText>
+            </View>
+            <Button label={t('settings.resetApp')} variant="quiet" disabled={disabled} onPress={() => void run('reset', resetApp)} />
+            <View style={styles.group}>
+              <AppText variant="label" accessibilityRole="header">{t('recovery.nativeTitle')}</AppText>
+              <AppText>{t('recovery.nativeInstructions')}</AppText>
+              {Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+                ? <AppText>{t('recovery.nativeUnavailable')}</AppText>
+                : <Button label={t('recovery.openSettings')} variant="quiet" onPress={() => {
+                  void Linking.openSettings().catch(() => Alert.alert(t('settings.couldNotFinish'), t('common.unknownError')));
+                }} />}
+            </View>
+          </View>}
+        </ScrollView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: theme.space.lg, paddingVertical: theme.space.lg },
+  safe: { flex: 1, backgroundColor: theme.color.background },
+  content: { gap: theme.space.lg, padding: theme.space.lg, paddingTop: theme.space.xl },
   group: { gap: theme.space.sm },
+  options: { gap: theme.space.xl },
 });

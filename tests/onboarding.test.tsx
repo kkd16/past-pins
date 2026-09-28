@@ -22,6 +22,10 @@ mock.module('../src/components/Button', () => ({ Button: 'Button' }));
 mock.module('../src/components/Checkmark', () => ({ Checkmark: 'Checkmark' }));
 mock.module('../src/components/Icon', () => ({ Icon: 'Icon' }));
 mock.module('../src/components/Screen', () => ({ Screen: 'Screen' }));
+mock.module('react-native-safe-area-context', () => ({
+  SafeAreaProvider: 'SafeAreaProvider',
+  SafeAreaView: 'SafeAreaView',
+}));
 mock.module('../src/components/DataFeedback', () => ({ DataFeedback: 'DataFeedback' }));
 mock.module('../src/stamps/CountryStamp', () => ({ CountryStamp: 'CountryStamp' }));
 mock.module('../src/motion/ReducedMotion', () => ({ useReducedMotion: () => motion.reduced }));
@@ -483,8 +487,9 @@ test.each(['loading', 'load-error'] as const)('startup during %s does not mistak
       expect(root.container.queryAll((node) => node.type === 'DataFeedback')).toHaveLength(1);
     } else {
       expect(routes()).toEqual([]);
-      expect(button(t('recovery.savedFile'))).toBeDefined();
-      expect(button(t('settings.resetApp'))).toBeDefined();
+      expect(button(t('recovery.retry'))).toBeDefined();
+      expect(button(t('settings.restoreBackup'))).toBeDefined();
+      expect(button(t('recovery.moreOptions'))).toBeDefined();
     }
   } finally {
     await act(async () => root.render(<></>));

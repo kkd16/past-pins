@@ -11,7 +11,10 @@ import { arrivalDatabase, arrivalStorage } from './native-location';
 import { backupFile, documentPicker, sharing } from './native-sharing';
 import { native } from './setup';
 
-mock.module('../src/components/Screen', () => ({ Screen: 'Screen' }));
+mock.module('react-native-safe-area-context', () => ({
+  SafeAreaProvider: 'SafeAreaProvider',
+  SafeAreaView: 'SafeAreaView',
+}));
 mock.module('../src/components/AppText', () => ({ AppText: 'Text' }));
 mock.module('../src/components/Button', () => ({ Button: 'Button' }));
 const { RecoveryScreen } = await import('../src/recovery/RecoveryScreen');
@@ -52,6 +55,7 @@ async function answer(yes: boolean) {
 }
 
 test('recovery actions wait for initialization and enable when only raw storage is available', async () => {
+  await press(t('recovery.moreOptions'));
   await act(async () => root.render(<RecoveryScreen store={undefined} />));
   expect(button(t('settings.resetApp')).props.disabled).toBe(true);
   await press(t('settings.resetApp'));
@@ -80,6 +84,7 @@ test('repeated presses share one confirmation and a cancelled action can be retr
 });
 
 test('works without app providers and exports unreadable original bytes', async () => {
+  await press(t('recovery.moreOptions'));
   arrivalDatabase.set('app-data', '{ unreadable private saved file');
   await act(async () => root.render(<RecoveryScreen store={null} error={new Error('sensitive raw crash payload')} />));
   await press(t('recovery.savedFile'));
@@ -130,6 +135,7 @@ test('failed restore preserves data, reports a safe message, and allows retry', 
 });
 
 test('confirmed recovery-copy restore replaces data and saves the displaced copy', async () => {
+  await press(t('recovery.moreOptions'));
   await act(async () => store.restore(defaultAppData()));
   const [copy] = await arrivalStorage.listCheckpoints();
   await press(t('recovery.checkpoint', { date: formatDate(copy.createdAt) }));
@@ -151,6 +157,7 @@ test('a failed checkpoint refresh does not report an already committed import as
 });
 
 test('full reset is confirmed, recovers from failure, and retries the app only after success', async () => {
+  await press(t('recovery.moreOptions'));
   const retry = mock(async () => {});
   await act(async () => root.render(<RecoveryScreen store={store} onRetry={retry} />));
   const before = await arrivalStorage.readRaw();
@@ -196,10 +203,41 @@ test('a crash before app initialization still loads the cold store and enables r
     await act(async () => root.render(<RecoveryBoundary error={new Error('failed before app initialization')} retry={async () => {}} />));
     expect(load).toHaveBeenCalled();
     expect(cold.getSnapshot()).toMatchObject({ status: 'ready', recovery: true });
+    await press(t('recovery.moreOptions'));
     expect(button(t('settings.resetApp')).props.disabled).toBe(false);
     expect(button(t('recovery.savedFile')).props.disabled).toBe(false);
   } finally {
     await act(async () => root.render(<></>));
     snapshot.mockRestore(); subscribe.mockRestore(); load.mockRestore(); enter.mockRestore(); leave.mockRestore();
   }
+});
+
+test('failed reads show a short explanation and keep extra tools behind more options', async () => {
+  const failed = createAppDataStore(arrivalStorage, { confirmStatusChange: async () => true });
+  const loading = spyOn(arrivalStorage, 'load').mockRejectedValueOnce(new DataError('invalid-document'));
+  try { await failed.load(); } finally { loading.mockRestore(); }
+  await act(async () => root.render(<RecoveryScreen store={failed} />));
+  expect(root.container.queryAll((node) => node.props.children === t('recovery.errors.invalid-document'))).toHaveLength(1);
+  const buttons = () => root.container.queryAll((node) => node.type === 'Button').map((node) => node.props.label);
+  expect(buttons()).toEqual([t('recovery.retry'), t('settings.restoreBackup'), t('recovery.moreOptions')]);
+  expect(button(t('recovery.moreOptions')).props.accessibilityState).toEqual({ expanded: false });
+  await press(t('recovery.moreOptions'));
+  expect(buttons()).toContain(t('recovery.savedFile'));
+  expect(buttons()).toContain(t('recovery.diagnostics'));
+  expect(buttons()).toContain(t('settings.resetApp'));
+  expect(button(t('recovery.fewerOptions')).props.accessibilityState).toEqual({ expanded: true });
+  await press(t('recovery.fewerOptions'));
+  expect(buttons()).not.toContain(t('settings.resetApp'));
+});
+
+test.each([undefined, new Error('render failed')])('a newer saved format keeps update guidance visible with crash %p', async (error) => {
+  const loading = spyOn(arrivalStorage, 'load').mockRejectedValueOnce(new DataError('unsupported-version'));
+  try {
+    const failed = createAppDataStore(arrivalStorage, { confirmStatusChange: async () => true });
+    await failed.load();
+    await act(async () => root.render(<RecoveryScreen store={failed} error={error} />));
+    expect(root.container.queryAll((node) => node.props.children === t('recovery.errors.unsupported-version'))).toHaveLength(1);
+    expect(root.container.queryAll((node) => node.props.children === t('recovery.loadTitle'))).toHaveLength(1);
+    expect(root.container.queryAll((node) => node.props.children === t('recovery.crashMessage'))).toHaveLength(0);
+  } finally { loading.mockRestore(); }
 });
