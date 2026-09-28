@@ -5,7 +5,7 @@ Small, focused improvements are welcome.
 ## Make a change
 
 1. Read the [project rules](AGENTS.md) and follow the [development setup](development.md#run-locally).
-2. Keep the change focused on iPhone. Preserve released data and backups; follow the [data upgrade guide](development.md#data-upgrades) when needed.
+2. Keep the change focused on iPhone. Preserve released data and backups; follow the [data format guide](development.md#data-format) when needed.
 3. Add regression coverage for data or asynchronous failures where practical.
 4. Run `bun run verify` after your final edit. Fix failures before pushing.
 

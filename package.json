@@ -64,11 +64,11 @@
     "licenses:check": "bun scripts/generate-licenses.ts --check",
     "dev": "expo start --go --tunnel",
     "test:coverage": "bun run test --coverage",
-    "check": "bun run lint && bun run typecheck && bun run test:coverage && bun run globe:check && bun run subdivisions:check && bun run currencies:check && bun run licenses:check && bun run website:build",
+    "check": "bun run lint && bun run typecheck && bun run test:coverage && bun run globe:check && bun run subdivisions:check && bun run cities:check && bun run currencies:check && bun run licenses:check && bun run website:build",
     "check:all": "bun run verify",
     "doctor": "bunx expo-doctor",
     "export:ios": "expo export --platform ios",
-    "generate": "bun run globe:generate && bun run subdivisions:generate && bun run currencies:generate && bun run licenses:generate",
+    "generate": "bun run globe:generate && bun run subdivisions:generate && bun run cities:generate && bun run currencies:generate && bun run licenses:generate",
     "deps:update": "bun update && bunx expo install --fix --bun && bun run generate && bun run verify",
     "reset": "rm -rf node_modules .expo && bun install --frozen-lockfile",
     "subdivisions:generate": "bun scripts/generate-subdivisions.ts",
@@ -79,7 +79,10 @@
     "website:build": "bun website/build.ts",
     "currencies:generate": "bun scripts/generate-currencies.ts",
     "currencies:refresh": "bun scripts/generate-currencies.ts --refresh",
-    "currencies:check": "bun scripts/generate-currencies.ts --check"
+    "currencies:check": "bun scripts/generate-currencies.ts --check",
+    "cities:generate": "bun scripts/generate-cities.ts",
+    "cities:refresh": "bun scripts/generate-cities.ts --refresh",
+    "cities:check": "bun scripts/generate-cities.ts --check"
   },
   "private": true,
   "overrides": {

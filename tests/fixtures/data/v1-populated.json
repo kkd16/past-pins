@@ -6,12 +6,14 @@
     "places": {
       "ca": "lived",
       "fr": "visited",
-      "jp": "wishlist"
-    },
-    "subdivisions": {
+      "jp": "wishlist",
       "ne:1159307647": "visited",
       "ne:1159307651": "lived",
-      "ne:1159307653": "wishlist"
+      "ne:1159307653": "wishlist",
+      "ae": "visited",
+      "ch": "lived",
+      "city:6167865": "visited",
+      "ne:1159309687": "visited"
     },
     "lists": [
       {

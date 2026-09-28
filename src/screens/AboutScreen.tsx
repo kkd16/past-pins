@@ -100,6 +100,14 @@ export function AboutScreen() {
           label={t('settings.mapLicense')}
         />
       </View>
+      <InfoSection title={t('places.cityData')}>
+        {t('places.cityAttribution')}
+      </InfoSection>
+      <View style={styles.details}>
+        <AppText variant="caption" tone="muted">{t('places.cityCoverage')}</AppText>
+        <AboutLink href="https://www.geonames.org/" label={t('places.citySource')} />
+        <AboutLink href="https://creativecommons.org/licenses/by/4.0/" label={t('places.cityLicense')} />
+      </View>
       <InfoSection title={t('subdivisions.dataTitle')}>
         {t('subdivisions.attribution')}
       </InfoSection>

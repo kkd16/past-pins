@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { CityCatalogLoader } from '../cities/CityCatalogLoader';
 import { AppDataEffects } from '../data/AppData';
 import { AppToastHost } from '../feedback/AppToastHost';
 import { ToastProvider } from '../feedback/ToastProvider';
@@ -22,6 +23,7 @@ export default function AppShell() {
         <ToastProvider>
           <AppDataEffects />
           <StatusBar style={theme.appearance.statusBarStyle} />
+          <CityCatalogLoader />
           <AppNavigator />
           <AppToastHost />
           <CountryArrivalNotifications />

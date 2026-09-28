@@ -1,20 +1,24 @@
 import { countries, countryById } from '../countries/catalog';
 import { normalizeSearch } from '../countries/search';
-import {
-  getPlaceStatus as getCountryStatus,
-  getSubdivisionStatus,
-  type AppData,
-} from '../data/model';
-import { compareNames, t } from '../localization';
-import { subdivisions } from '../subdivisions/catalog';
+import { getCities, searchCities } from '../cities/database';
+import { getCityParents, isCityId } from '../cities/index';
+import { getSearchPage } from '../cities/query';
+import type { City, CitySearchOptions } from '../cities/types';
+import { t } from '../localization';
+import { subdivisionById, subdivisions } from '../subdivisions/catalog';
 
 export type Place = {
   id: string;
   name: string;
   countryId: string;
   countryName: string;
-  kind: 'country' | 'region';
-};
+} & (
+  | { kind: 'country' | 'region' }
+  | { kind: 'city'; regionId?: string; regionName?: string; coordinates: [number, number] }
+);
+
+export type PlaceScope = 'all' | Place['kind'];
+export type PlaceSearchOptions = CitySearchOptions & { scope?: PlaceScope };
 
 const countryIndex = countries.map((country) => ({
   place: {
@@ -26,7 +30,6 @@ const countryIndex = countries.map((country) => ({
   },
   term: normalizeSearch(`${country.name} ${country.nativeName} ${country.id}`),
 }));
-
 const regionIndex = subdivisions.map((region) => {
   const country = countryById.get(region.countryId)!;
   return {
@@ -42,55 +45,88 @@ const regionIndex = subdivisions.map((region) => {
     ),
   };
 });
-
 const allEntries = [...countryIndex, ...regionIndex];
+const staticIndexes = { all: allEntries, country: countryIndex, region: regionIndex, city: [] };
 const entryById = new Map(allEntries.map((entry) => [entry.place.id, entry]));
 
-export function getPlace(id: string): Place | undefined {
+function cityPlace(city: City): Place {
+  return {
+    id: city.id,
+    name: city.name,
+    kind: 'city',
+    countryId: city.countryId,
+    countryName: countryById.get(city.countryId)!.name,
+    regionId: city.regionId,
+    regionName: city.regionId
+      ? subdivisionById.get(city.regionId)?.name
+      : city.adminName,
+    coordinates: [city.longitude, city.latitude],
+  };
+}
+
+export function getStaticPlace(id: string) {
   return entryById.get(id)?.place;
 }
 
+export function getPlaceReference(id: string) {
+  const place = entryById.get(id)?.place;
+  if (place) return { id, kind: place.kind, countryId: place.countryId, regionId: undefined };
+  const parents = getCityParents(id);
+  return parents ? { id, kind: 'city' as const, ...parents } : undefined;
+}
+
+export async function getPlaces(ids: readonly string[]): Promise<Place[]> {
+  const cityIds = ids.filter(isCityId);
+  const cities = cityIds.length ? (await getCities(cityIds)).map(cityPlace) : [];
+  const cityById = new Map(cities.map((place) => [place.id, place]));
+  return ids.flatMap((id) => {
+    const place = entryById.get(id)?.place ?? cityById.get(id);
+    return place ? [place] : [];
+  });
+}
+
+export function getPlaceSubtitle(place: Place): string {
+  if (place.kind === 'country') return countryById.get(place.id)!.continent.name;
+  return place.kind === 'city' && place.regionName
+    ? t('places.cityContext', { region: place.regionName, country: place.countryName })
+    : place.countryName;
+}
+
 export function formatPlaceName(place: Place): string {
-  return place.kind === 'region'
-    ? t('lists.regionName', { name: place.name, country: place.countryName })
-    : place.name;
-}
-
-export function searchPlaces(
-  query: string,
-  scope: 'all' | Place['kind'] | ReadonlySet<string>,
-  countryId?: string,
-) {
-  const entries =
-    typeof scope === 'string'
-      ? scope === 'all'
-        ? allEntries
-        : scope === 'country'
-          ? countryIndex
-          : regionIndex
-      : [...scope]
-          .map((id) => entryById.get(id))
-          .filter((entry) => entry !== undefined);
-  const terms = normalizeSearch(query).split(/\s+/u);
-  const matches = entries
-    .filter(
-      ({ place, term }) =>
-        (!countryId || place.countryId === countryId) &&
-        terms.every((part) => term.includes(part)),
-    )
-    .map(({ place }) => place);
-  return typeof scope === 'string'
-    ? matches
-    : matches.sort(
-        (a, b) =>
-          (a.kind === b.kind ? 0 : a.kind === 'country' ? -1 : 1) ||
-          compareNames(a.name, b.name) ||
-          a.id.localeCompare(b.id, 'en'),
-      );
-}
-
-export function getPlaceStatus(data: AppData, place: Place) {
   return place.kind === 'country'
-    ? getCountryStatus(data, place.id)
-    : getSubdivisionStatus(data, place.id);
+    ? place.name
+    : t('lists.regionName', { name: place.name, country: getPlaceSubtitle(place) });
+}
+
+export function searchStaticPlaces({
+  query, scope = 'all', countryId, countryIds, regionId, ids, excludedIds,
+}: PlaceSearchOptions) {
+  const terms = normalizeSearch(query).split(/\s+/u);
+  const included = ids && new Set(ids);
+  const excluded = new Set(excludedIds);
+  return staticIndexes[scope].filter(({ place, term }) =>
+    (!countryId || place.countryId === countryId) &&
+    (!countryIds || countryIds.includes(place.countryId)) &&
+    (!regionId || place.id === regionId) &&
+    (!included || included.has(place.id)) &&
+    !excluded.has(place.id) &&
+    terms.every((part) => term.includes(part)),
+  ).map(({ place }) => place);
+}
+
+export function searchNeedsCities({ scope = 'all', ids }: PlaceSearchOptions) {
+  return (scope === 'all' || scope === 'city') && (!ids || ids.some(isCityId));
+}
+
+export async function searchPlacesPage(options: PlaceSearchOptions): Promise<Place[]> {
+  const { offset, limit } = getSearchPage(options);
+  const staticMatches = searchStaticPlaces(options);
+  const page = staticMatches.slice(offset, offset + limit);
+  if (page.length === limit || !searchNeedsCities(options)) return page;
+  const cities = await searchCities({
+    ...options,
+    offset: Math.max(0, offset - staticMatches.length),
+    limit: limit - page.length,
+  });
+  return [...page, ...cities.map(cityPlace)];
 }

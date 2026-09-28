@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Stack } from 'expo-router';
 import { ActionSheetIOS, FlatList, StyleSheet, View } from 'react-native';
 
@@ -7,20 +6,17 @@ import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
 import { Icon } from '../components/Icon';
-import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
-import { getStatusPresentation } from '../countries/status';
 import { showStatusPicker } from '../countries/StatusPicker';
 import { appData as app } from '../data/app-data';
 import { useAppData } from '../data/AppData';
 import { ListMap } from '../lists/ListMap';
 import { getListStatistics } from '../lists/places';
-import {
-  formatPlaceName,
-  getPlace,
-  getPlaceStatus,
-  type Place,
-} from '../places/catalog';
+import { formatPlaceName, type Place } from '../places/catalog';
+import { PlaceRow } from '../places/PlaceRow';
+import { getPlaceStatus } from '../data/model';
+import { usePlaces } from '../places/usePlaces';
+import { PlaceFeedback } from '../places/PlaceFeedback';
 import { promptListName } from '../lists/prompt';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { formatNumber, t } from '../localization';
@@ -80,19 +76,12 @@ export function ListDetailsScreen({
     const isCurrent = guard();
     showStatusPicker(formatPlaceName(place), (status) => {
       if (!isCurrent()) return;
-      if (place.kind === 'country')
-        void app.setStatus([place.id], status, { preserveLived: false, isCurrent });
-      else
-        void app.setSubdivisionStatus([place.id], status, {
-          preserveLived: false,
-        });
+      void app.setStatus([place.id], status, { preserveLived: false, isCurrent });
     });
   }
 
-  const places = useMemo(
-    () => list?.placeIds.map((placeId) => getPlace(placeId)!) ?? [],
-    [list?.placeIds],
-  );
+  const result = usePlaces(list?.placeIds ?? []);
+  const places = result.places;
   const stats = list
     ? getListStatistics(list, data)
     : { visited: 0, total: 0 };
@@ -122,6 +111,7 @@ export function ListDetailsScreen({
         ListHeaderComponent={
           <View style={styles.header}>
             <DataFeedback />
+            <PlaceFeedback loading={result.loading} error={result.error} onRetry={result.retry} />
             {list && (
               <>
                 <AppText variant="title" accessibilityRole="header">
@@ -148,7 +138,7 @@ export function ListDetailsScreen({
           </View>
         }
         ListEmptyComponent={
-          dataStatus === 'ready' ? (
+          dataStatus === 'ready' && !result.loading && !result.error ? (
             <View style={styles.empty}>
               <AppText variant="heading">
                 {t(list ? 'lists.emptyListTitle' : 'lists.unavailable')}
@@ -165,48 +155,17 @@ export function ListDetailsScreen({
           ) : null
         }
         renderItem={({ item }) => {
-          const presentation = getStatusPresentation(
-            getPlaceStatus(data, item),
-          );
-          const name = formatPlaceName(item);
           const regions =
             item.kind === 'country' ? getCountrySubdivisions(item.id) : [];
           return (
             <View style={styles.card}>
-              <View style={styles.row}>
-                <AppPressable
-                  style={styles.place}
-                  accessibilityLabel={t('lists.placeStatus', {
-                    name,
-                    status: presentation.label,
-                  })}
-                  accessibilityHint={t('lists.openPlace')}
-                  onPress={() => onOpenPlace(item)}
-                >
-                  <View style={styles.grow}>
-                    <AppText>{item.name}</AppText>
-                    {item.kind === 'region' && (
-                      <AppText variant="caption" tone="muted">
-                        {item.countryName}
-                      </AppText>
-                    )}
-                    <AppText
-                      variant="caption"
-                      style={{ color: presentation.color }}
-                    >
-                      {presentation.label}
-                    </AppText>
-                  </View>
-                  <Icon name="chevronRight" />
-                </AppPressable>
-                <IconButton
-                  name={presentation.icon}
-                  color={presentation.color}
-                  accessibilityLabel={t('lists.changePlaceStatus', { name })}
-                  disabled={disabled}
-                  onPress={() => changeStatus(item)}
-                />
-              </View>
+              <PlaceRow
+                place={item}
+                status={getPlaceStatus(data, item.id)}
+                disabled={disabled}
+                onPress={onOpenPlace}
+                onChangeStatus={changeStatus}
+              />
               {regions.length > 0 && (
                 <AppPressable
                   style={styles.regions}
@@ -248,11 +207,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.color.surface,
     borderRadius: theme.radius.sm,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingEnd: theme.space.sm,
-  },
   regions: {
     minHeight: theme.size.touch,
     flexDirection: 'row',
@@ -262,13 +216,6 @@ const styles = StyleSheet.create({
     paddingVertical: theme.space.sm,
     borderTopWidth: theme.stroke.subtle,
     borderTopColor: theme.color.border,
-  },
-  place: {
-    flex: 1,
-    padding: theme.space.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.md,
   },
   grow: { flex: 1, gap: theme.space.xs },
   separator: { height: theme.space.sm },

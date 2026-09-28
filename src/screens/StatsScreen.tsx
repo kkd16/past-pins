@@ -24,6 +24,7 @@ import { theme } from '../theme';
 import { t, formatNumber, formatPercent } from '../localization';
 import { getSubdivisionStatistics } from '../subdivisions/tracking';
 import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
+import { getPlaceStatistics } from '../places/statistics';
 import { StampCollectionLink } from '../stamps/StampCollectionLink';
 
 function StatusTotals({
@@ -33,51 +34,63 @@ function StatusTotals({
   loading,
   onPress,
 }: {
-  stats: { wishlist: number; lived: number; remaining: number };
-  kind: 'countries' | 'regions';
   largeText: boolean;
   loading: boolean;
   onPress: (scope: CountryScope) => void;
-}) {
+} & (
+  | { kind: 'countries' | 'regions'; stats: { wishlist: number; lived: number; remaining: number } }
+  | { kind: 'cities'; stats: { wishlist: number; lived: number; visited: number } }
+)) {
   const tiles = kind === 'countries' && !largeText;
+  const wishlist = {
+    scope: 'wishlist' as const,
+    label: t('countries.status.wishlist'),
+    count: stats.wishlist,
+    color: theme.color.wishlist,
+    backgroundColor: theme.color.surfaceWarm,
+  };
+  const lived = {
+    scope: 'lived' as const,
+    label: t('countries.status.lived'),
+    count: stats.lived,
+    color: theme.color.lived,
+    backgroundColor: theme.color.surfaceCool,
+  };
+  const items = kind === 'cities' ? [
+    {
+      scope: 'visited' as const,
+      label: t('places.citiesVisited'),
+      count: stats.visited,
+      color: theme.color.visited,
+      backgroundColor: theme.color.visitedSurface,
+    },
+    lived,
+    wishlist,
+  ] : [
+    wishlist,
+    lived,
+    {
+      scope: 'not-visited' as const,
+      label: t('countries.stats.remaining'),
+      count: stats.remaining,
+      color: theme.color.textMuted,
+      backgroundColor: theme.color.surface,
+    },
+  ];
   return (
     <View style={tiles ? styles.totalTiles : styles.totals}>
-      {[
-        {
-          scope: 'wishlist' as const,
-          label: t('countries.status.wishlist'),
-          count: stats.wishlist,
-          color: theme.color.wishlist,
-          backgroundColor: theme.color.surfaceWarm,
-        },
-        {
-          scope: 'lived' as const,
-          label: t('countries.status.lived'),
-          count: stats.lived,
-          color: theme.color.lived,
-          backgroundColor: theme.color.surfaceCool,
-        },
-        {
-          scope: 'not-visited' as const,
-          label: t('countries.stats.remaining'),
-          count: stats.remaining,
-          color: theme.color.textMuted,
-          backgroundColor: theme.color.surface,
-        },
-      ].map(({ scope, label, count, color, backgroundColor }, index) => {
+      {items.map(({ scope, label, count, color, backgroundColor }, index) => {
         const value = loading ? '—' : formatNumber(count);
         return (
           <AppPressable
             key={scope}
             accessibilityLabel={t('places.statisticLabel', {
-              kind: t(
-                kind === 'regions' ? 'places.regions' : 'places.countries',
-              ),
-              label,
+              kind: t(`places.${kind}`),
+              label: scope === 'visited' ? t('countries.status.visited') : label,
               value,
             })}
             accessibilityHint={t(
-              kind === 'regions'
+              kind === 'cities' ? 'places.matchingCities' : kind === 'regions'
                 ? 'places.matchingRegions'
                 : 'countries.stats.matchingHint',
             )}
@@ -120,6 +133,7 @@ export function StatsScreen({
   onOpenCountries,
   onOpenCountry,
   onOpenRegions,
+  onOpenCities,
   onOpenStamps,
   onShare,
 }: {
@@ -128,6 +142,7 @@ export function StatsScreen({
   onOpenCountries: (scope: CountryScope, continent?: string) => void;
   onOpenCountry: (id: string) => void;
   onOpenRegions: (scope: CountryScope) => void;
+  onOpenCities: (scope: CountryScope) => void;
   onOpenStamps: () => void;
   onShare: () => void;
 }) {
@@ -135,7 +150,6 @@ export function StatsScreen({
   const largeText = fontScale > theme.accessibility.largeTextScale;
   const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
   const places = useAppData((snapshot) => snapshot.data.places);
-  const subdivisions = useAppData((snapshot) => snapshot.data.subdivisions);
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
   const stats = useMemo(
@@ -143,9 +157,10 @@ export function StatsScreen({
     [places],
   );
   const regionStats = useMemo(
-    () => getSubdivisionStatistics(subdivisions),
-    [subdivisions],
+    () => getSubdivisionStatistics(places),
+    [places],
   );
+  const cityStats = useMemo(() => getPlaceStatistics(places, 'city'), [places]);
   const home = homeCountryId
     ? countryById.get(homeCountryId)
     : undefined;
@@ -251,6 +266,13 @@ export function StatsScreen({
           largeText={largeText}
           loading={loading}
           onPress={onOpenRegions}
+        />
+        <StatusTotals
+          stats={cityStats}
+          kind="cities"
+          largeText={largeText}
+          loading={loading}
+          onPress={onOpenCities}
         />
         <StampCollectionLink onPress={onOpenStamps} />
         <Surface style={styles.home}>

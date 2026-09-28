@@ -5,7 +5,7 @@ import type { Country } from '../src/countries/types';
 import { defaultAppData, type AppData } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
 import { selectStampCountries } from '../src/stamps/collection';
-import { subdivisionIds } from '../src/subdivisions/catalog';
+import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 
 const ids = (members: readonly Country[]) => members.map(({ id }) => id);
 const places: AppData['places'] = {
@@ -64,7 +64,7 @@ describe('stamp collection', () => {
     expect(selectStampCountries(complete, '', 'remaining')).toEqual([]);
   });
 
-  test('existing visits, edits, Undo, home, restore and clear derive stamps from country statuses', async () => {
+  test('existing visits, edits, home, restore and clear derive stamps from country statuses', async () => {
     const saved: AppData = { ...defaultAppData(), places: { fr: 'visited' } };
     const store = createAppDataStore(
       {
@@ -75,7 +75,7 @@ describe('stamp collection', () => {
         async clear() {},
       },
       {
-        async confirmHomeChange() {
+        async confirmStatusChange() {
           return true;
         },
       },
@@ -90,10 +90,11 @@ describe('stamp collection', () => {
     expect(collected()).toEqual(['fr', 'jp']);
     await store.setStatus(['jp'], 'wishlist');
     expect(collected()).toEqual(['fr']);
-    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
+    await store.setStatus(['jp'], 'visited');
     expect(collected()).toEqual(['fr', 'jp']);
-    await store.setSubdivisionStatus([[...subdivisionIds][0]], 'visited');
-    expect(collected()).toEqual(['fr', 'jp']);
+    const region = getCountrySubdivisions('ca')[0];
+    await store.setStatus([region.id], 'visited');
+    expect(collected()).toEqual(['ca', 'fr', 'jp']);
     store.setHome('ca');
     expect(collected()).toEqual(['ca', 'fr', 'jp']);
     await store.restore({ ...defaultAppData(), places: { de: 'lived' } });

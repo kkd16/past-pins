@@ -29,3 +29,11 @@ test('Expo Go explicitly bypasses the unavailable native reset module', () => {
   assertStartupResetComplete();
   expect(requireNativeModule).not.toHaveBeenCalled();
 });
+
+test('a failed cold reset keeps access blocked until native ownership cleanup completes', () => {
+  nativeModule.getStartupResetStatus.mockReturnValue('failed');
+  expect(() => assertStartupResetComplete()).toThrow('reset-failed');
+  expect(() => assertStartupResetComplete()).toThrow('reset-failed');
+  nativeModule.getStartupResetStatus.mockReturnValue('completed');
+  expect(() => assertStartupResetComplete()).not.toThrow();
+});

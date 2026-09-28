@@ -20,7 +20,7 @@ mock.module('../src/components/Surface', () => ({ Surface: 'Surface' }));
 mock.module('../src/data/AppData', () => ({
   useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => select({
     data: defaultAppData(), status: 'ready', busy: false,
-    saveError: false, resetVersion: 0, pendingUndo: null,
+    saveError: false, resetVersion: 0,
   }),
 }));
 mock.module('../src/countries/StatusPicker', () => ({

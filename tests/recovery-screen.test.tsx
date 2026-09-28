@@ -21,7 +21,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 beforeEach(async () => {
   await arrivalStorage.clear();
-  store = createAppDataStore(arrivalStorage, { confirmHomeChange: async () => true });
+  store = createAppDataStore(arrivalStorage, { confirmStatusChange: async () => true });
   await store.load();
   await store.setStatus(['ca'], 'visited');
   await arrivalStorage.load();
@@ -186,7 +186,7 @@ test('the Router boundary gates the shared store and retries independently of th
 test('a crash before app initialization still loads the cold store and enables recovery actions', async () => {
   const { appData } = await import('../src/data/app-data');
   const { RecoveryBoundary } = await import('../src/recovery/RecoveryBoundary');
-  const cold = createAppDataStore(arrivalStorage, { confirmHomeChange: async () => true });
+  const cold = createAppDataStore(arrivalStorage, { confirmStatusChange: async () => true });
   const snapshot = spyOn(appData, 'getSnapshot').mockImplementation(cold.getSnapshot);
   const subscribe = spyOn(appData, 'subscribe').mockImplementation(cold.subscribe);
   const load = spyOn(appData, 'load').mockImplementation(cold.load);

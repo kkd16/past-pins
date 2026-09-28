@@ -12,11 +12,14 @@
   "emptyTitle": "Start a list",
   "emptyHint": "Group places for a trip or goal.",
   "emptyListTitle": "No places yet",
-  "emptyListHint": "Add countries or regions.",
+  "emptyListHint": "Add places for your trip.",
   "addPlaces": "Add places",
   "editPlaces": "Edit places",
   "independent": "Your travel statuses stay the same.",
-  "count": { "one": "%{amount} place", "other": "%{amount} places" },
+  "count": {
+    "one": "%{amount} place",
+    "other": "%{amount} places"
+  },
   "selectedCount": {
     "one": "%{amount} place selected",
     "other": "%{amount} places selected"
@@ -30,7 +33,7 @@
   "searchLists": "Search lists",
   "noListsFound": "No matching lists",
   "noListsFoundHint": "Try another list name.",
-  "searchPlaces": "Search countries or regions",
+  "searchPlaces": "Search places",
   "allPlaces": "All places",
   "exploreRegions": {
     "one": "Explore %{amount} region",
@@ -38,7 +41,7 @@
   },
   "exploreCountryRegions": "Explore regions in %{country}",
   "selected": "Selected",
-  "noSelectedPlaces": "Choose countries or regions to add.",
+  "noSelectedPlaces": "Choose places to add.",
   "noPlacesFound": "No places found",
   "noPlacesFoundHint": "Try another name or country.",
   "unavailable": "This list is no longer available.",
@@ -50,5 +53,8 @@
   "membershipEmpty": "Create a list to save this place.",
   "mapCountries": "Countries in this list",
   "mapCountryRegions": "Regions in this list · %{country}",
-  "mapRegions": "Countries containing regions in this list"
+  "mapRegions": "Countries containing regions in this list",
+  "mapCities": "Cities in this list",
+  "explorePlaces": "Explore places",
+  "exploreCountryPlaces": "Explore places in %{country}"
 }

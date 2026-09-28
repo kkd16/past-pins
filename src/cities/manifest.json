@@ -1,0 +1,68 @@
+{
+  "inputs": {
+    "source": "fc9627650df378627a53b4b34fe214253e834b98821a8f815ebcb12561a8de06",
+    "countries": "0d0e156850aff3bbda8988ec1c35cb032e55312955a7ad7f16ec3ac7e5eb398d",
+    "subdivisions": "01e445ff748c9d0df8d6f701d8e2ad7c6a6620b45cbaab3ec5a7b4d5dad3e7b2",
+    "bun": "1.4.2",
+    "geometry": "3.1.1",
+    "generator": "cfcda4787679e0c7011c65f0288bcf8eab7309d72725b76b6ecb1f716148c814"
+  },
+  "outputs": {
+    "parents.json": "f1d04029c6260a16bc8772bec36816463dbc1c707e3e1b311fe0a18e52efca51",
+    "catalog.db": "2b08b7a13088531e745750ae79d01a96fde3c5bd074665c13cc9f20df5fc0be6"
+  },
+  "source": {
+    "name": "GeoNames",
+    "dataset": "cities500",
+    "snapshotDate": "2026-09-27",
+    "license": "CC BY 4.0",
+    "homepage": "https://www.geonames.org/",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "documentation": "https://download.geonames.org/export/dump/readme.txt",
+    "snapshots": [
+      {
+        "file": "cities500.txt.gz",
+        "url": "https://download.geonames.org/export/dump/cities500.zip",
+        "zipEntry": "cities500.txt",
+        "sha256": "37c10f25d7244c634f2df157b34849fff9c6f3036b238984c0c6a86bb4cacc47",
+        "contentSha256": "6bd72bdaef96d469150533f48e7661fb5145acd9775161b9e4f1c54a44d9a975",
+        "downloadSha256": "a99f1423b13c52d51e281d27fa924c2b11f05a57a96467ff7b8ea437e0b21b38"
+      },
+      {
+        "file": "admin1CodesASCII.txt.gz",
+        "url": "https://download.geonames.org/export/dump/admin1CodesASCII.txt",
+        "zipEntry": null,
+        "sha256": "f932d7496b6142b1e8a612ccc62aea541f069f670b8a7b7ce4218e192883059a",
+        "contentSha256": "1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a",
+        "downloadSha256": "1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a"
+      },
+      {
+        "file": "admin2Codes.txt.gz",
+        "url": "https://download.geonames.org/export/dump/admin2Codes.txt",
+        "zipEntry": null,
+        "sha256": "5ad097038aa36d171ed368e5fa3736f0c84f9737342db530638c9a0b3d28e649",
+        "contentSha256": "63a82be925b8704abae683a89e32f40b22f618a93efc4e676e912873f8a3be20",
+        "downloadSha256": "63a82be925b8704abae683a89e32f40b22f618a93efc4e676e912873f8a3be20"
+      },
+      {
+        "file": "subdivisions.geojson.gz",
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_admin_1_states_provinces.geojson",
+        "zipEntry": null,
+        "sha256": "8b6cacad99f189e28a4b7b8d939830f47e0fbd45a25903dc0f5ce65828c423e8",
+        "contentSha256": "22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5",
+        "downloadSha256": "22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5"
+      }
+    ]
+  },
+  "cities": 225211,
+  "countries": 246,
+  "excluded": {
+    "feature": 10668,
+    "country": 0
+  },
+  "linked": {
+    "administrativeId": 213697,
+    "geometry": 9523,
+    "countryOnly": 1991
+  }
+}

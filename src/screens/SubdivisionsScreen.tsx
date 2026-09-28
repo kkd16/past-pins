@@ -38,6 +38,8 @@ import {
   getCountrySubdivisionTerminology,
   getSubdivisionKindLabel,
 } from '../subdivisions/terminology';
+import { router } from 'expo-router';
+import { citiesHref } from '../places/navigation';
 import { theme } from '../theme';
 
 const emptySelection: ReadonlySet<string> = new Set();
@@ -57,8 +59,8 @@ export function SubdivisionsScreen({
   initialScope?: CountryScope;
   onSaveToLists: (id: string) => void;
 }) {
-  const { setSubdivisionStatus } = appData;
-  const subdivisions = useAppData((snapshot) => snapshot.data.subdivisions);
+  const { setStatus } = appData;
+  const subdivisions = useAppData((snapshot) => snapshot.data.places);
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
   const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
@@ -110,8 +112,8 @@ export function SubdivisionsScreen({
     amount: formatNumber(selectedIds.size),
   };
   const editScope = useMemo(
-    () => ({ filterKey, selectedIds }),
-    [filterKey, selectedIds],
+    () => ({ filterKey, selectedIds, selectedId, view }),
+    [filterKey, selectedIds, selectedId, view],
   );
   const guard = useActionGuard(editScope);
   const stats = useMemo(
@@ -128,10 +130,10 @@ export function SubdivisionsScreen({
       if (region)
         showStatusPicker(region.name, (status) => {
           if (!isCurrent()) return;
-          void setSubdivisionStatus([id], status, { preserveLived: false });
+          void setStatus([id], status, { preserveLived: false, isCurrent });
         });
     },
-    [guard, setSubdivisionStatus],
+    [guard, setStatus],
   );
 
   const pressRow = useCallback(
@@ -233,14 +235,17 @@ export function SubdivisionsScreen({
                   status={subdivisions[selectedRegion.id] ?? 'unvisited'}
                   disabled={disabled}
                   onChangeStatus={(status) => {
-                    void setSubdivisionStatus([selectedRegion.id], status, {
+                    void setStatus([selectedRegion.id], status, {
                       preserveLived: false,
+                      isCurrent: guard(),
                     });
                   }}
                   onSaveToLists={() => onSaveToLists(selectedRegion.id)}
                   onDismiss={() => setSelectedId(null)}
                   autofocus={screenReader && view === 'map'}
                 >
+                  <Button label={t('places.cities')} variant="quiet"
+                    onPress={() => router.navigate(citiesHref(countryId, selectedRegion.id))} />
                   <Button
                     label={t('subdivisions.countryDetails', {
                       country: country.name,
@@ -320,6 +325,8 @@ export function SubdivisionsScreen({
                       )}
                     </View>
                   )}
+                  <Button label={t('places.cities')} variant="quiet"
+                    onPress={() => router.navigate(citiesHref(countryId))} />
                   <Button
                     label={t('subdivisions.countryDetails', {
                       country: country.name,
@@ -362,9 +369,6 @@ export function SubdivisionsScreen({
               }
               ListFooterComponent={
                 <View style={styles.coverage}>
-                  <AppText variant="caption" tone="muted">
-                    {t('subdivisions.independentTracking', terminology)}
-                  </AppText>
                   <AppText variant="caption" tone="muted">
                     {t('subdivisions.coverageNote')}
                   </AppText>
@@ -417,7 +421,7 @@ export function SubdivisionsScreen({
                         t('subdivisions.selectedCount', selectionCount),
                         (status) => {
                           if (!isCurrent()) return;
-                          void setSubdivisionStatus([...selectedIds], status).then(
+                          void setStatus([...selectedIds], status, { isCurrent }).then(
                             (changed) => {
                               if (changed) setSelection(null);
                             },

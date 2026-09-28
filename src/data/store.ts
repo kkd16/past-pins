@@ -1,7 +1,6 @@
 import { t } from '../localization';
 import { UserFacingError } from './errors';
 import { countryIds } from '../countries/catalog';
-import { subdivisionIds } from '../subdivisions/catalog';
 import { dataError, type DataError } from './data-error';
 import type { AppStorage, SaveOptions } from '../storage/snapshot-storage';
 import {
@@ -12,14 +11,21 @@ import {
 import {
   changeHome,
   changePlaceStatus,
-  changeSubdivisionStatus,
   defaultAppData,
   defaultPreferences,
   type AppData,
   type PlaceStatus,
+  isVisited,
   type Preferences,
-  type TravelData,
+  type TravelList,
 } from './model';
+import { isPlaceId } from './place-hierarchy';
+
+export type StatusChangeConfirmation = {
+  descendants: number;
+  homeCountryId: string | null;
+  status: PlaceStatus;
+};
 
 export type DataSnapshot = {
   data: AppData;
@@ -29,13 +35,12 @@ export type DataSnapshot = {
   recovery?: boolean;
   busy: boolean;
   resetVersion: number;
-  pendingUndo: { id: number; label: string } | null;
 };
 
 export function createAppDataStore(
   storage: AppStorage,
   effects: {
-    confirmHomeChange: (id: string) => Promise<boolean>;
+    confirmStatusChange: (change: StatusChangeConfirmation) => Promise<boolean>;
     feedback?: (enabled: boolean) => void;
     report?: (operation: 'load' | 'save' | 'reset' | 'restore', error: DataError) => void;
   },
@@ -46,11 +51,8 @@ export function createAppDataStore(
     saveError: false,
     busy: false,
     resetVersion: 0,
-    pendingUndo: null,
   };
   const listeners = new Set<() => void>();
-  let undoTravel: TravelData | null = null;
-  let undoSequence = 0;
   let revision = 0;
   let loading: Promise<void> | null = null;
   let lastWrite = Promise.resolve();
@@ -80,15 +82,9 @@ export function createAppDataStore(
     );
   }
 
-  function changeTravel(data: AppData, label: string) {
+  function changeTravel(data: AppData) {
     if (data === snapshot.data) return;
-    undoTravel = {
-      places: snapshot.data.places,
-      subdivisions: snapshot.data.subdivisions,
-      lists: snapshot.data.lists,
-      homeCountryId: snapshot.data.homeCountryId,
-    };
-    publish({ data, pendingUndo: { id: ++undoSequence, label } });
+    publish({ data });
     persist(data);
     effects.feedback?.(data.preferences.haptics);
   }
@@ -122,11 +118,9 @@ export function createAppDataStore(
       if (reset) await storage.clear();
       else await storage.save(data, options);
       ++revision;
-      undoTravel = null;
       publish({
         data,
         status: 'ready',
-        pendingUndo: null,
         saveError: false,
         loadError: undefined,
         resetVersion: snapshot.resetVersion + (reset ? 1 : 0),
@@ -139,25 +133,15 @@ export function createAppDataStore(
     }
   }
 
-  function setListPlaces(id: string, placeIds: readonly string[]): boolean {
+  function updateList(id: string, update: (list: TravelList) => TravelList): boolean {
     if (!editable()) return false;
     const list = snapshot.data.lists.find((list) => list.id === id);
     if (!list) return false;
-    const members = validateListPlaces(placeIds);
-    if (
-      members.length === list.placeIds.length &&
-      members.every((member, index) => member === list.placeIds[index])
-    )
-      return true;
-    changeTravel(
-      {
-        ...snapshot.data,
-        lists: snapshot.data.lists.map((item) =>
-          item.id === id ? { ...item, placeIds: members } : item,
-        ),
-      },
-      t('common.listUpdated'),
-    );
+    const next = update(list);
+    if (next !== list) changeTravel({
+      ...snapshot.data,
+      lists: snapshot.data.lists.map((item) => item === list ? next : item),
+    });
     return true;
   }
 
@@ -189,48 +173,35 @@ export function createAppDataStore(
     ): Promise<boolean> {
       const isCurrent = options?.isCurrent ?? (() => true);
       if (!editable() || !isCurrent()) return false;
-      if (ids.some((id) => !countryIds.has(id)))
-        throw new UserFacingError(t('common.errors.unknownCountry'));
+      if (ids.some((id) => !isPlaceId(id)))
+        throw new UserFacingError(t('common.errors.unknownPlace'));
       const next = changePlaceStatus(
         snapshot.data,
         ids,
         status,
         options?.preserveLived ?? true,
       );
-      if (snapshot.data.homeCountryId && !next.homeCountryId) {
+      if (next === snapshot.data) return true;
+      const targets = new Set(ids);
+      const descendants = Object.entries(snapshot.data.places).filter(
+        ([id, current]) => !targets.has(id) && isVisited(current) &&
+          current !== next.places[id] &&
+          (current === 'lived' || !isVisited(next.places[id])),
+      ).length;
+      const homeCountryId = snapshot.data.homeCountryId && !next.homeCountryId
+        ? snapshot.data.homeCountryId
+        : null;
+      if (descendants || homeCountryId) {
         publish({ busy: true });
         try {
-          if (!(await effects.confirmHomeChange(snapshot.data.homeCountryId)))
+          if (!(await effects.confirmStatusChange({ descendants, homeCountryId, status })))
             return false;
         } finally {
           publish({ busy: false });
         }
         if (!editable() || !isCurrent()) return false;
       }
-      const count = [...new Set(ids)].filter(
-        (id) => next.places[id] !== snapshot.data.places[id],
-      ).length;
-      changeTravel(next, t('common.placesUpdated', { count }));
-      return true;
-    },
-    async setSubdivisionStatus(
-      ids: readonly string[],
-      status: PlaceStatus,
-      options?: { preserveLived?: boolean },
-    ): Promise<boolean> {
-      if (!editable()) return false;
-      if (ids.some((id) => !subdivisionIds.has(id)))
-        throw new UserFacingError(t('common.errors.unknownSubdivision'));
-      const next = changeSubdivisionStatus(
-        snapshot.data,
-        ids,
-        status,
-        options?.preserveLived ?? true,
-      );
-      const count = [...new Set(ids)].filter(
-        (id) => next.subdivisions[id] !== snapshot.data.subdivisions[id],
-      ).length;
-      changeTravel(next, t('common.subdivisionsUpdated', { count }));
+      changeTravel(next);
       return true;
     },
     createList(name: string, placeIds: readonly string[] = []): string | null {
@@ -249,54 +220,44 @@ export function createAppDataStore(
             { id, name: listName, placeIds: members },
           ],
         },
-        t('common.listCreated'),
       );
       return id;
     },
     renameList(id: string, name: string): boolean {
-      if (!editable()) return false;
-      const list = snapshot.data.lists.find((list) => list.id === id);
-      if (!list) return false;
-      const nextName = validateListName(name);
-      if (list.name === nextName) return true;
-      changeTravel(
-        {
-          ...snapshot.data,
-          lists: snapshot.data.lists.map((item) =>
-            item.id === id ? { ...item, name: nextName } : item,
-          ),
-        },
-        t('common.listRenamed'),
-      );
-      return true;
+      return updateList(id, (list) => {
+        const nextName = validateListName(name);
+        return list.name === nextName ? list : { ...list, name: nextName };
+      });
     },
-    setListPlaces,
+    setListPlaces(id: string, placeIds: readonly string[]): boolean {
+      return updateList(id, (list) => {
+        const members = validateListPlaces(placeIds);
+        return members.length === list.placeIds.length &&
+          members.every((member, index) => member === list.placeIds[index])
+          ? list
+          : { ...list, placeIds: members };
+      });
+    },
     toggleListPlace(id: string, placeId: string): boolean {
-      if (!editable()) return false;
-      const list = snapshot.data.lists.find((list) => list.id === id);
-      if (!list) return false;
-      return setListPlaces(
-        id,
-        list.placeIds.includes(placeId)
+      return updateList(id, (list) => ({
+        ...list,
+        placeIds: validateListPlaces(list.placeIds.includes(placeId)
           ? list.placeIds.filter((member) => member !== placeId)
-          : [...list.placeIds, placeId],
-      );
+          : [...list.placeIds, placeId]),
+      }));
     },
     deleteList(id: string): boolean {
       if (!editable()) return false;
       const lists = snapshot.data.lists.filter((list) => list.id !== id);
       if (lists.length === snapshot.data.lists.length) return false;
-      changeTravel({ ...snapshot.data, lists }, t('common.listDeleted'));
+      changeTravel({ ...snapshot.data, lists });
       return true;
     },
     setHome(id: string | null) {
       if (!editable()) return;
       if (id !== null && !countryIds.has(id))
         throw new UserFacingError(t('common.errors.unknownCountry'));
-      changeTravel(
-        changeHome(snapshot.data, id),
-        id ? t('common.homeUpdated') : t('common.homeCleared'),
-      );
+      changeTravel(changeHome(snapshot.data, id));
     },
     updatePreferences(patch: Partial<Preferences>) {
       if (!editable()) return;
@@ -314,21 +275,6 @@ export function createAppDataStore(
       publish({ data });
       persist(data);
     },
-    undo(id: number): boolean {
-      if (!editable() || !undoTravel || snapshot.pendingUndo?.id !== id)
-        return false;
-      const data = { ...snapshot.data, ...undoTravel };
-      undoTravel = null;
-      publish({ data, pendingUndo: null });
-      persist(data);
-      effects.feedback?.(data.preferences.haptics);
-      return true;
-    },
-    discardUndo(id: number) {
-      if (snapshot.pendingUndo?.id !== id) return;
-      undoTravel = null;
-      publish({ pendingUndo: null });
-    },
     retry() {
       if (snapshot.status === 'load-error') void load();
       else if (editable()) persist(snapshot.data);
@@ -345,7 +291,6 @@ export function createAppDataStore(
       await replace({
         ...snapshot.data,
         places: {},
-        subdivisions: {},
         lists: [],
         homeCountryId: null,
       }, { checkpoints: 'discard' });

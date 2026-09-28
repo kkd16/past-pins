@@ -2,7 +2,7 @@
 
 [← PastPins](README.md)
 
-[Run locally](#run-locally) · [Code](#code) · [Data upgrades](#data-upgrades) · [Currency metadata](#currency-metadata) · [Geography](#geography) · [Website](#website) · [Release an update](#release-an-update)
+[Run locally](#run-locally) · [Code](#code) · [Data format](#data-format) · [Currency metadata](#currency-metadata) · [Geography](#geography) · [Website](#website) · [Release an update](#release-an-update)
 
 ## Run locally
 
@@ -75,9 +75,9 @@ Typecheck generates Router types on a fresh checkout. `bun run` lists all script
 ### App behavior
 
 - Lived counts as Visited. Setting home marks that country Lived.
-- Country and region statuses are independent. Lists store catalog IDs.
+- Countries, regions, and cities share one status map. Child visits promote source-linked parents; lists store catalog IDs.
 - Stamps and statistics derive from travel data.
-- Cameras, filters, selections, and Undo last only for the session.
+- Cameras, filters, and selections last only for the session.
 - Background checks update reminder metadata; travel changes require confirmation.
 
 ### State and rendering
@@ -85,7 +85,7 @@ Typecheck generates Router types on a fresh checkout. `bun run` lists all script
 - UI and background tasks share `appData`. Read with `useAppData(snapshot => snapshot.data.places)`; call actions on `appData`.
 - Select primitives or existing immutable references. Derive arrays and objects with ordinary functions or `useMemo`.
 - `AppDataEffects` loads the store and announces errors without rerendering travel views for save feedback.
-- `useActionGuard` returns `guard`. Capture `const isCurrent = guard()` before asynchronous work, recheck it before applying results, and pass it to `setStatus` for pending home-change confirmations.
+- `useActionGuard` returns `guard`. Capture `const isCurrent = guard()` before asynchronous work, recheck it before applying results, and pass it to `setStatus` for pending status-change confirmations.
 - `index.js` registers the arrival task before Router. App imports stay deferred behind the root recovery boundary.
 - Inactive maps stop rendering. Flat maps, stamps, and picking use `src/atlas/metadata.json`; the globe loads vertex buffers from `src/globe/world.json` when its GL context is created.
 
@@ -93,21 +93,15 @@ Typecheck generates Router types on a fresh checkout. `bun run` lists all script
 
 Use typed `t` and shared formatters for UI text in `src/localization/locales/<language>/`. Follow the [localization and accessibility rules](AGENTS.md#localization-and-accessibility) when changing UI or adding a language, then run the [iPhone checks](#on-an-iphone).
 
-## Data upgrades
+## Data format
 
-The released v1 saved-file and backup format is `{ app: "past-pins", schemaVersion: 1, data }`. Preserve every format distributed through TestFlight or the App Store. Saved documents and imported backups use the same strict decoder.
+The app is unreleased. The v1 saved-file and backup format is `{ app: "past-pins", schemaVersion: 1, data }`, with one `places` status map for countries, regions, and cities. There are no older formats or migrations. Current fixtures describe the v1 format and may be updated before release.
 
-The [model](src/data/model.ts) defines defaults, [validation](src/data/validation.ts) checks catalogs, and [document.ts](src/data/document.ts) encodes and decodes documents.
+The [model](src/data/model.ts) defines defaults and status transitions, [validation](src/data/validation.ts) checks catalog IDs and hierarchy, and [document.ts](src/data/document.ts) provides the strict decoder shared by storage and imports.
 
-App and schema versions are independent. When stored fields, defaults, validation rules, or IDs need conversion:
+Visited and lived places promote their source-linked ancestors. Removing a child leaves parent history intact. Lowering a parent clears or downgrades contained visits after a single confirmation that also covers clearing the current home. Wishlists and list membership remain independent. Every change publishes and saves one complete snapshot.
 
-1. Keep released fixtures in `tests/fixtures/data/` unchanged, including `v1-empty.json` and `v1-populated.json`.
-2. Increment the schema version, add new fixtures, and add a pure forward migration through the shared decoder.
-3. Preserve travel statuses, home, list membership, and preferences. Audit geographic ID changes before updating catalogs.
-4. Test every released schema’s path to the new format, including old backup imports, repeated loads, failed saves, interrupted writes, and stale asynchronous actions.
-5. Run the [upgrade checks on an iPhone](#on-an-iphone).
-
-Preserve unknown, future, and corrupt documents for explicit recovery. Never silently reset data or discard unknown IDs to make a load succeed.
+Preserve unknown, future, and corrupt documents for explicit recovery. Never silently reset data or discard unknown IDs to make a load succeed. Once a format ships through TestFlight or the App Store, preserve its data contract and fixtures; app and schema versions are independent.
 
 ### Persistence and recovery
 
@@ -128,7 +122,7 @@ Tests cover SQLite rollback and process interruption. Native recovery changes re
 | Action | Effect |
 | --- | --- |
 | Settings → Data and recovery | Raw saved-file export, backup import, copy restore, diagnostics, confirmed full reset |
-| Clear travel | Removes countries, regions, lists, home, and recovery copies; keeps preferences and reminder history |
+| Clear travel | Removes countries, regions, cities, lists, home, and recovery copies; keeps preferences and reminder history |
 | Reset preferences | Keeps travel and copies; disables arrival reminders |
 | Full reset | Clears app data, reminder history, diagnostics, temporary backups, and session state; returns to Welcome |
 | iPhone Settings → Apps → PastPins → Reset on Next Launch | After force-quitting and reopening, deletes owned files before React Native starts |
@@ -158,18 +152,29 @@ World assets derive from `@rembish/iso-topojson`. Regional assets use the immuta
 
 | Command | Effect |
 | --- | --- |
-| `bun run generate` | Rebuild maps, currency funds, and license notices |
+| `bun run generate` | Rebuild geographic catalogs, maps, currency funds, and license notices |
 | `bun run subdivisions:refresh` | Redownload and verify the same pinned source, then regenerate |
 | `bun run subdivisions:check` | Verify generated hashes offline |
+| `bun run cities:generate` | Rebuild the offline city database and parent index from saved source snapshots |
+| `bun run cities:refresh` | Download current GeoNames snapshots, verify the pinned boundaries, and regenerate |
+| `bun run cities:check` | Verify source snapshots, generator inputs, and generated hashes offline |
 
 Do not hand-edit generated JSON or patch individual countries. To update the source:
 
 1. Review its license and boundary policy; record the immutable commit, checksum, and date.
-2. Audit removed/reassigned IDs and list references. Add any required [migration](#data-upgrades).
+2. Audit removed/reassigned IDs and list references. Review the [data contract](#data-format).
 3. Regenerate and compare outputs. Check coverage, tiny islands, and antimeridian countries.
 4. Refresh attribution and run `bun run verify`.
 
 Regional IDs are `ne:<ne_id>`; names and display codes are not identities. Natural Earth has variable administrative levels, older boundaries, and partial coverage. Its [de facto boundary policy](https://www.naturalearthdata.com/about/disputed-boundaries-policy/) may differ from the ISO world map. Keep these limitations in About and preserve [attribution](README.md#credits).
+
+The city database is public, read-only reference data. Backups store only city IDs and statuses, never a duplicate catalog. In-app resets retain its cache because it contains no user data; catalog retry deletes the cached file and imports the bundled asset again. Native Reset on Next Launch removes the directory registered as `catalogDirectory` in `owned-files.json` before React Native starts. A new iPhone build and physical cold-launch/reset check are required to validate this native ownership and catalog retry.
+
+Cities and towns come from GeoNames cities500 and are bundled for offline use. Source URLs, dates, licenses, and checksums are recorded in [cities-source.json](scripts/data/cities-source.json); compressed snapshots live in `scripts/data/cities/`. Review refreshed sources and generated assets together. IDs are `city:<geonameid>`. The catalog excludes neighborhoods, historical or abandoned settlements, and other non-settlement feature types. Search uses the bundled SQLite catalog; a compact parent index validates IDs and links statuses without loading every city into React state.
+
+Source refresh downloads and validates every snapshot and builds the database before replacing saved sources or generated assets. Download and validation failures preserve the existing snapshot set. City search keeps Unicode combining marks within words and uses the source's alternative names. Browsing uses SQLite indexes and bounded pages.
+
+Region links use source GeoNames administrative IDs and unique same-country containment in the pinned Natural Earth boundaries. Cities without a reliable region link still track their country. Never add hand-authored city records, aliases, parent links, or geographic overrides.
 
 ## Website
 
@@ -198,7 +203,7 @@ Use the existing EAS project, Apple team, and App Store Connect record for `io.g
 ### Prepare the version
 
 1. Set the next `expo.version` in `app.json`. Match `package.json` with `bun pm pkg set version=1.0.1`, replacing the example version as needed.
-2. Complete any [data upgrades](#data-upgrades) and regression coverage.
+2. Review the [data contract](#data-format) and complete regression coverage.
 3. Run `bun run licenses:generate` and review [source and license obligations](#source-and-license-obligations).
 4. Run `bun run verify`, then commit the candidate. Rerun verification after any edit, merge, or rebase.
 
@@ -249,11 +254,11 @@ Record the device, iOS version, candidate build, and results. Use disposable dat
 | Check | Verify |
 | --- | --- |
 | Fresh install | Welcome; skip, accept, or deny permissions; browse without location; edit offline; relaunch; export/import and cancel |
-| Upgrade | Populate the released app with countries, regions, home, mixed lists, and nondefault preferences. Export a backup, install the candidate over it, verify every value, and relaunch twice. |
-| Older versions | Upgrade across skipped versions and import backups from every released schema. |
+| Saved data | Populate the candidate with countries, regions, cities, home, mixed lists, and nondefault preferences. Relaunch twice, then export, reset, import, and verify every value. |
+| Documents | Round-trip the v1 fixtures and city lists; reject malformed, inconsistent, and unknown-place backups without altering saved data. |
 | Storage failures | Failed/interrupted writes, invalid imports, future/corrupt documents, corrupt recovery history, unavailable or near-full storage. Data survives; recovery, export, and retry work. |
 | Startup and reset | Render failure before providers mount; native reset before JavaScript starts; cancel reset; deletion failure/retry. Successful reset returns to Welcome, clears data/reminders/diagnostics, and turns the switch off. |
-| Interactions | Maps, gestures, status/home/Undo, mixed lists, sharing, restore/reset. Leave and return during pickers, confirmations, and location requests; stale actions must not apply. |
+| Interactions | Maps, gestures, status/home, mixed lists, sharing, restore/reset. Leave and return during pickers, confirmations, and location requests; stale actions must not apply. |
 | Arrival reminders | Background delivery, cold-launch notification taps, permission revocation, disabling reminders, battery and thermal behavior |
 | Accessibility | Small iPhone, largest Dynamic Type, VoiceOver order/actions and announcements, long translations, supported locale/RTL behavior, Reduce Motion, native sheets/pickers |
 | Network and images | Location lookup and external links on IPv6-only networks; exported image fidelity |

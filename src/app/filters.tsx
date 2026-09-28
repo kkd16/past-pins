@@ -12,14 +12,16 @@ export default function CountryFiltersRoute() {
     scope?: string;
     query?: string;
     mode?: string;
+    countryId?: string;
+    regionId?: string;
   }>();
   return (
     <CountryFiltersScreen
       initialFilters={readCountryFilters(params)}
-      showGrouping={params.mode !== 'regions'}
+      showGrouping={params.mode !== 'regions' && params.mode !== 'cities'}
       onCancel={() => router.back()}
       onApply={(filters) => {
-        if (params.mode !== 'regions')
+        if (params.mode !== 'regions' && params.mode !== 'cities')
           updatePreferences({ countryGrouping: filters.grouping });
         router.dismissTo({
           pathname: '/countries',
@@ -27,7 +29,9 @@ export default function CountryFiltersRoute() {
             continent: filters.continent,
             scope: params.scope,
             query: params.query,
-            mode: params.mode === 'regions' ? 'regions' : 'countries',
+            mode: params.mode === 'cities' ? 'cities' : params.mode === 'regions' ? 'regions' : 'countries',
+            countryId: params.countryId,
+            regionId: params.regionId,
           },
         });
       }}

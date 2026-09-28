@@ -14,7 +14,7 @@ let busy = false;
 
 mock.module('../src/data/AppData', () => ({
   useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => select({
-    data, status, busy, saveError: false, resetVersion: 0, pendingUndo: null,
+    data, status, busy, saveError: false, resetVersion: 0,
   }),
 }));
 mock.module('../src/components/AppPressable', () => ({ AppPressable: 'Pressable' }));
@@ -93,11 +93,13 @@ test.each(['loading', 'load-error'] as const)(
     const list = element('FlatList');
     expect(list.props.data.map(({ id }: { id: string }) => id)).toEqual(['ca']);
     const result = list.props.renderItem({ item: list.props.data[0] });
-    expect(result.props.disabled).toBe(false);
-    expect(result.props.accessibilityLabel).toBe(
+    await act(async () => root.render(result));
+    const row = element('Pressable');
+    expect(row.props.disabled).toBe(false);
+    expect(row.props.accessibilityLabel).toBe(
       t('countries.countryStatus', { name: 'Canada', status: t('countries.status.visited') }),
     );
-    await act(async () => result.props.onPress());
+    await act(async () => row.props.onPress());
     expect(onSelect).toHaveBeenCalledWith('ca');
   },
 );

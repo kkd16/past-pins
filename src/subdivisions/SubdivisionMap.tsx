@@ -22,7 +22,7 @@ import {
 
 type SubdivisionMapProps = {
   countryId: string;
-  statuses: AppData['subdivisions'];
+  statuses: AppData['places'];
   selectedId: string | null;
   onSelect: (id: string) => void;
   disabled?: boolean;

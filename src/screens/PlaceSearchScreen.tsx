@@ -1,23 +1,18 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 
-import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { DataFeedback } from '../components/DataFeedback';
-import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SearchField } from '../components/SearchField';
-import { countryById } from '../countries/catalog';
-import { getStatusPresentation } from '../countries/status';
-import {
-  formatPlaceName,
-  getPlaceStatus,
-  searchPlaces,
-  type Place,
-} from '../places/catalog';
+import type { Place } from '../places/catalog';
+import { PlaceRow } from '../places/PlaceRow';
+import { getPlaceStatus } from '../data/model';
 import { useAppData } from '../data/AppData';
+import { usePlaceSearch } from '../places/usePlaceSearch';
+import { PlaceSearchFooter } from '../places/PlaceFeedback';
 import { theme } from '../theme';
 import { t } from '../localization';
 
@@ -41,10 +36,7 @@ export function PlaceSearchScreen({
   const busy = useAppData((snapshot) => snapshot.busy);
   const ready = status === 'ready';
   const disabled = busy || !ready;
-  const matches = useMemo(
-    () => searchPlaces(query, countriesOnly ? 'country' : 'all'),
-    [query, countriesOnly],
-  );
+  const results = usePlaceSearch({ query, scope: countriesOnly ? 'country' : 'all' });
   const searchLabel = t(
     countriesOnly ? 'countries.search' : 'places.searchAll',
   );
@@ -77,7 +69,7 @@ export function PlaceSearchScreen({
       </View>
       <FlatList
         ref={list}
-        data={ready ? matches : []}
+        data={ready ? results.places : []}
         extraData={{ data, disabled }}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="never"
@@ -99,7 +91,7 @@ export function PlaceSearchScreen({
           )
         }
         ListEmptyComponent={
-          ready ? (
+          ready && !results.loading && !results.error ? (
             <View style={styles.empty}>
               <AppText tone="muted">
                 {t(
@@ -114,40 +106,20 @@ export function PlaceSearchScreen({
             </View>
           ) : null
         }
-        renderItem={({ item }) => {
-          const presentation = getStatusPresentation(
-            getPlaceStatus(data, item),
-            data.homeCountryId === item.id,
-          );
-          return (
-            <AppPressable
-              onPress={() => {
-                Keyboard.dismiss();
-                onSelect(item.id);
-              }}
-              disabled={disabled}
-              accessibilityLabel={t('countries.countryStatus', {
-                name: formatPlaceName(item),
-                status: presentation.label,
-              })}
-              style={styles.row}
-            >
-              <View style={styles.name}>
-                <AppText>{item.name}</AppText>
-                <AppText variant="caption" tone="muted">
-                  {t('countries.countrySubtitle', {
-                    continent:
-                      item.kind === 'region'
-                        ? item.countryName
-                        : countryById.get(item.id)!.continent.name,
-                    status: presentation.label,
-                  })}
-                </AppText>
-              </View>
-              <Icon name={presentation.icon} color={presentation.color} />
-            </AppPressable>
-          );
-        }}
+        onEndReached={results.loadMore}
+        ListFooterComponent={<PlaceSearchFooter {...results} />}
+        renderItem={({ item }) => (
+          <PlaceRow
+            place={item}
+            status={getPlaceStatus(data, item.id)}
+            home={data.homeCountryId === item.id}
+            disabled={disabled}
+            onPress={(place) => {
+              Keyboard.dismiss();
+              onSelect(place.id);
+            }}
+          />
+        )}
       />
     </Screen>
   );
@@ -156,13 +128,5 @@ export function PlaceSearchScreen({
 const styles = StyleSheet.create({
   header: { gap: theme.space.md },
   list: { paddingVertical: theme.space.md },
-  row: {
-    minHeight: theme.size.row,
-    paddingVertical: theme.space.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.md,
-  },
-  name: { flex: 1, gap: theme.space.xs },
   empty: { padding: theme.space.xl, alignItems: 'center', gap: theme.space.sm },
 });

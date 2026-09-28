@@ -18,7 +18,7 @@
   "servicesDisabled": "Turn on Location Services in iOS Settings, then try again.",
   "permissionDenied": "Allow location access for PastPins in iOS Settings.",
   "visitTitle": "Mark %{country} as visited?",
-  "visitMessage": "You can undo this later.",
+  "visitMessage": "Add this country to your visited places?",
   "notNow": "Not now",
   "markVisited": "Mark visited"
 }

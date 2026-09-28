@@ -13,6 +13,7 @@ import { createRoot, type Root } from 'test-renderer';
 import { countryById } from '../src/countries/catalog';
 import { defaultAppData } from '../src/data/model';
 import { t } from '../src/localization';
+import { getCountrySubdivisionTerminology } from '../src/subdivisions/terminology';
 import { navigation } from './setup';
 import './native-location';
 
@@ -66,7 +67,7 @@ mock.module('../src/data/AppData', () => ({
     data: defaultAppData(),
     status: appStatus,
     busy: false,
-    saveError: false, resetVersion: 0, pendingUndo: null,
+    saveError: false, resetVersion: 0,
   }),
 }));
 mock.module('../src/motion/ReducedMotion', () => ({
@@ -242,10 +243,19 @@ test.each(['map', 'list'])('country actions work from the %s card', async (entry
     element('Button', t('sharing.stampAction')).props.onPress();
     element('CountryStamp').parent?.props.onPress();
     const regions = root.container.queryAll((node) =>
-      node.type === 'Pressable' && node.props.accessibilityValue !== undefined,
+      node.type === 'Pressable' && node.props.accessibilityLabel === t('subdivisions.countryTitle', {
+        ...getCountrySubdivisionTerminology(country.id),
+        country: country.name,
+      }),
     );
     expect(regions).toHaveLength(1);
     regions[0].props.onPress();
+    const cities = root.container.queryAll((node) =>
+      node.type === 'Pressable' && node.props.accessibilityLabel === t('places.citiesIn', { place: country.name }),
+    );
+    expect(cities).toHaveLength(1);
+    expect(cities[0].props.accessibilityValue).toEqual({ text: t('places.cityCount', { count: 0, amount: '0' }) });
+    cities[0].props.onPress();
     element('Button', t('countries.details.showMap')).props.onPress();
     header.props.onDismiss();
   });
@@ -255,6 +265,13 @@ test.each(['map', 'list'])('country actions work from the %s card', async (entry
     isCurrent: expect.any(Function),
   });
   expect(setHome).toHaveBeenCalledWith(props.id);
+  expect(router.navigate).toHaveBeenCalledWith({
+    pathname: '/countries',
+    params: {
+      mode: 'cities', scope: 'all', continent: 'all', query: '',
+      intent: expect.any(String), countryId: props.id, regionId: undefined,
+    },
+  });
   expect(router.push.mock.calls).toEqual([
     [{ pathname: '/lists/add', params: { placeId: props.id } }],
     [{ pathname: '/share', params: { kind: 'stamp', id: props.id } }],

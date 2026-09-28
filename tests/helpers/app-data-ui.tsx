@@ -39,7 +39,7 @@ async function settle() {
 }
 
 async function subscriptions() {
-  const renders = { data: 0, places: 0, undo: 0, actions: 0, busy: 0 };
+  const renders = { data: 0, places: 0, actions: 0, busy: 0 };
   const values: Record<string, unknown> = {};
   function Data() {
     values.data = useAppData((snapshot) => snapshot.data);
@@ -49,11 +49,6 @@ async function subscriptions() {
   function Places() {
     values.places = useAppData((snapshot) => snapshot.data.places);
     renders.places++;
-    return null;
-  }
-  function Undo() {
-    values.undo = useAppData((snapshot) => snapshot.pendingUndo);
-    renders.undo++;
     return null;
   }
   function Actions() {
@@ -67,24 +62,15 @@ async function subscriptions() {
     return null;
   }
   await act(async () => root.render(
-    <><AppDataEffects /><Data /><Places /><Undo /><Actions /><Busy /></>,
+    <><AppDataEffects /><Data /><Places /><Actions /><Busy /></>,
   ));
   const actions = renders.actions;
   await act(async () => { await appData.setStatus(['ca'], 'visited'); await settle(); });
   assert.deepEqual(values.places, { ca: 'visited' });
-  assert.ok(values.undo);
-  const beforeExpiry = { ...renders };
-  const data = values.data;
-  await act(async () => appData.discardUndo(appData.getSnapshot().pendingUndo!.id));
-  assert.equal(renders.data, beforeExpiry.data, 'Undo expiry must not rerender data consumers');
-  assert.equal(renders.places, beforeExpiry.places);
-  assert.equal(values.data, data);
-  assert.ok(renders.undo > beforeExpiry.undo);
-  assert.equal(values.undo, null);
-
+  const beforePreferences = { ...renders };
   await act(async () => { appData.updatePreferences({ haptics: false }); await settle(); });
-  assert.equal(renders.places, beforeExpiry.places, 'Preferences must not rerender place consumers');
-  assert.ok(renders.data > beforeExpiry.data);
+  assert.equal(renders.places, beforePreferences.places, 'Preferences must not rerender place consumers');
+  assert.ok(renders.data > beforePreferences.data);
   await act(async () => { appData.setHome('ca'); await settle(); });
   const beforePrompt = { ...renders };
   let changing: Promise<boolean>;
@@ -191,7 +177,7 @@ async function confirmation(transition: string, details: boolean) {
     assert.deepEqual(await arrivalStorage.load(), appData.getSnapshot().data);
     assert.equal(onEndSelection.mock.calls.length, details ? 0 : 1);
   } else {
-    assert.deepEqual(appData.getSnapshot(), before, 'A stale native confirmation must preserve data and Undo');
+    assert.deepEqual(appData.getSnapshot(), before, 'A stale native confirmation must preserve data');
     assert.equal(await arrivalStorage.readRaw(), saved, 'No stale action may reach persistence');
     assert.equal(onEndSelection.mock.calls.length, 0);
   }

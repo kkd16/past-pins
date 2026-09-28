@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { countries } from '../src/countries/catalog';
 import { defaultAppData } from '../src/data/model';
 import { getListRegionPreview } from '../src/lists/map-preview';
+import { getStaticPlace, type Place } from '../src/places/catalog';
 import {
   defaultShareOptions,
   getShareContent,
@@ -74,10 +75,10 @@ describe('shared card content', () => {
     const data = example();
     const [visitedRegion, wishlistRegion, unmarkedRegion] =
       getCountrySubdivisions('ca');
-    data.subdivisions = {
+    Object.assign(data.places, {
       [visitedRegion.id]: 'lived',
       [wishlistRegion.id]: 'wishlist',
-    };
+    });
     data.lists = [
       {
         id: 'trip',
@@ -96,6 +97,7 @@ describe('shared card content', () => {
       data,
       { kind: 'list', id: 'trip' },
       defaultShareOptions,
+      data.lists[0].placeIds.flatMap((id) => getStaticPlace(id) ?? []),
     )!;
     if (content.kind !== 'list') throw new Error('Expected a list card');
     expect(content.name).toBe('Next adventure');
@@ -114,6 +116,7 @@ describe('shared card content', () => {
         ...defaultShareOptions,
         includeWishlist: true,
       },
+      data.lists[0].placeIds.flatMap((id) => getStaticPlace(id) ?? []),
     )!;
     if (included.kind !== 'list') throw new Error('Expected a list card');
     expect(included.places).toHaveLength(5);
@@ -126,7 +129,7 @@ describe('shared card content', () => {
     const regions = getCountrySubdivisions('ca');
     const ontario = regions.find(({ code }) => code === 'CA-ON')!;
     const quebec = regions.find(({ code }) => code === 'CA-QC')!;
-    data.subdivisions = { [ontario.id]: 'visited', [quebec.id]: 'wishlist' };
+    Object.assign(data.places, { [ontario.id]: 'visited', [quebec.id]: 'wishlist' });
     data.lists = [
       { id: 'regions', name: 'Canada', placeIds: [ontario.id, quebec.id] },
     ];
@@ -134,12 +137,49 @@ describe('shared card content', () => {
       data,
       { kind: 'list', id: 'regions' },
       defaultShareOptions,
+      data.lists[0].placeIds.map((id) => getStaticPlace(id)!),
     )!;
     if (content.kind !== 'list') throw new Error('Expected a list card');
     expect([...getListRegionPreview(content.places)!.ids]).toEqual([
       ontario.id,
     ]);
     expect(content.visited).toBe(1);
+  });
+
+  test('loaded cities appear only in member list maps and obey wishlist privacy', () => {
+    const data = example();
+    const city: Place = {
+      id: 'city:6167865',
+      name: 'Toronto',
+      kind: 'city',
+      countryId: 'ca',
+      countryName: 'Canada',
+      regionName: 'Ontario',
+      coordinates: [-79.3832, 43.6532],
+    };
+    data.places[city.id] = 'lived';
+    data.lists = [{ id: 'cities', name: 'Cities', placeIds: [city.id] }];
+    const content = getShareContent(
+      data,
+      { kind: 'list', id: 'cities' },
+      defaultShareOptions,
+      [getStaticPlace('ca')!, city],
+    )!;
+    if (content.kind !== 'list') throw new Error('Expected a list card');
+    expect(content.places).toEqual([city]);
+    expect(content.visited).toBe(1);
+    expect(getShareMapLabel(content)).toBe(
+      'Places on this map: Toronto, Ontario, Canada.',
+    );
+    const world = getShareContent(data, { kind: 'world' }, defaultShareOptions)!;
+    if (world.kind !== 'world') throw new Error('Expected a world card');
+    expect(world.places).not.toHaveProperty(city.id);
+    expect(world.stats.visited).toBe(3);
+    data.places[city.id] = 'wishlist';
+    expect(getShareContent(data, { kind: 'list', id: 'cities' }, defaultShareOptions, [city]))
+      .toMatchObject({ places: [], visited: 0 });
+    expect(getShareContent(data, { kind: 'list', id: 'cities' }, { ...defaultShareOptions, includeWishlist: true }, [city]))
+      .toMatchObject({ places: [city], visited: 0 });
   });
 
   test('stamp exports include only their country and collection state', () => {
@@ -170,7 +210,7 @@ describe('shared card content', () => {
     const data = defaultAppData();
     data.lists = [{ id: 'empty', name: 'Empty', placeIds: [] }];
     expect(
-      getShareContent(data, { kind: 'list', id: 'empty' }, defaultShareOptions),
+      getShareContent(data, { kind: 'list', id: 'empty' }, defaultShareOptions, [getStaticPlace('jp')!]),
     ).toEqual({
       kind: 'list',
       name: 'Empty',
@@ -180,7 +220,7 @@ describe('shared card content', () => {
     data.places.jp = 'wishlist';
     data.lists[0].placeIds = ['jp'];
     expect(
-      getShareContent(data, { kind: 'list', id: 'empty' }, defaultShareOptions),
+      getShareContent(data, { kind: 'list', id: 'empty' }, defaultShareOptions, [getStaticPlace('jp')!]),
     ).toMatchObject({ places: [] });
     data.lists = [];
     expect(

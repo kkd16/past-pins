@@ -32,5 +32,5 @@
     "storage-write": "Your changes could not be saved. Check the available storage on your iPhone and try again.",
     "reset-failed": "The reset could not finish. To reset before the app opens, use Reset on Next Launch in iPhone Settings, close PastPins from the app switcher, then reopen it. If you are testing the app, make sure your development build is up to date."
   },
-  "importSummary": "Countries: %{countries}\nRegions: %{regions}\nLists: %{lists}\n\nReplaces all data and settings. Your current saved file is kept as a recovery copy."
+  "importSummary": "Countries: %{countries}\nRegions: %{regions}\nCities: %{cities}\nLists: %{lists}\n\nReplaces all data and settings. Your current saved file is kept as a recovery copy."
 }

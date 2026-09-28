@@ -1,10 +1,8 @@
-type ToastOptions = {
+export type ToastSnapshot = {
+  id: number;
   message: string;
-  action?: { label: string; onPress: () => void | boolean };
-  onDismiss?: () => void;
+  visible: boolean;
 };
-
-export type ToastSnapshot = ToastOptions & { id: number; visible: boolean };
 
 export function createToastStore() {
   let snapshot: ToastSnapshot | null = null;
@@ -16,13 +14,6 @@ export function createToastStore() {
     listeners.forEach((listener) => listener());
   }
 
-  function dismissToast(id: number) {
-    if (snapshot?.id !== id || !snapshot.visible) return;
-    const toast = snapshot;
-    publish({ ...toast, visible: false });
-    toast.onDismiss?.();
-  }
-
   return {
     getSnapshot: () => snapshot,
     subscribe(listener: () => void) {
@@ -31,20 +22,15 @@ export function createToastStore() {
         listeners.delete(listener);
       };
     },
-    showToast(options: ToastOptions) {
-      const previous = snapshot;
-      const id = ++sequence;
-      publish({ ...options, id, visible: true });
-      if (previous?.visible) previous.onDismiss?.();
-      return () => dismissToast(id);
+    showToast({ message }: { message: string }) {
+      publish({ message, id: ++sequence, visible: true });
     },
-    dismissToast,
+    dismissToast(id: number) {
+      if (snapshot?.id === id && snapshot.visible)
+        publish({ ...snapshot, visible: false });
+    },
     removeToast(id: number) {
       if (snapshot?.id === id && !snapshot.visible) publish(null);
-    },
-    pressAction(id: number) {
-      if (snapshot?.id !== id || !snapshot.visible || !snapshot.action) return;
-      if (snapshot.action.onPress() !== false) dismissToast(id);
     },
   };
 }

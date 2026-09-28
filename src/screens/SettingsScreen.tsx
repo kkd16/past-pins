@@ -16,6 +16,7 @@ import { ArrivalAlertsSetting } from '../location/ArrivalAlertsSetting';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
+import { getPlaceStatistics } from '../places/statistics';
 import { theme } from '../theme';
 
 type DataAction = 'export' | 'restore' | 'clear' | 'reset' | 'resetApp';
@@ -101,8 +102,9 @@ export function SettingsScreen({
       await confirmDestructiveAction(
         t('settings.replaceTitle'),
         t('settings.replaceSummary', {
-          countries: formatNumber(Object.keys(backup.places).length),
-          regions: formatNumber(Object.keys(backup.subdivisions).length),
+          countries: formatNumber(getPlaceStatistics(backup.places, 'country').saved),
+          regions: formatNumber(getPlaceStatistics(backup.places, 'region').saved),
+          cities: formatNumber(getPlaceStatistics(backup.places, 'city').saved),
           lists: formatNumber(backup.lists.length),
           home,
         }),

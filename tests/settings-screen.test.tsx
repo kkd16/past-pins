@@ -7,7 +7,7 @@ import { encodeDocument } from '../src/data/document';
 import { defaultAppData, defaultPreferences } from '../src/data/model';
 import { createToastStore } from '../src/feedback/store';
 import { formatNumber, t } from '../src/localization';
-import { subdivisionIds } from '../src/subdivisions/catalog';
+import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import { arrivalStorage } from './native-location';
 import { backupFile } from './native-sharing';
 import { native, navigation } from './setup';
@@ -72,11 +72,11 @@ async function answer(confirmed: boolean) {
 }
 
 test('backup preview shows simple totals and keeps data intact until confirmed', async () => {
-  const [firstRegion, secondRegion] = [...subdivisionIds];
+  const firstRegion = getCountrySubdivisions('ca').find(({ code }) => code === 'CA-ON')!.id;
+  const secondRegion = getCountrySubdivisions('ca').find(({ code }) => code === 'CA-QC')!.id;
   const backup = {
     ...defaultAppData(),
-    places: { ca: 'lived', fr: 'visited', jp: 'wishlist' } as const,
-    subdivisions: { [firstRegion]: 'visited', [secondRegion]: 'wishlist' } as const,
+    places: { ca: 'lived', fr: 'visited', jp: 'wishlist', [firstRegion]: 'visited', [secondRegion]: 'wishlist', 'city:6167865': 'visited' } as const,
     lists: [{ id: 'trip', name: 'Trip', placeIds: ['ca', 'jp'] }],
     homeCountryId: 'ca',
   };
@@ -86,7 +86,7 @@ test('backup preview shows simple totals and keeps data intact until confirmed',
   expect(native.Alert.alert.mock.calls.at(-1)!.slice(0, 2)).toEqual([
     t('settings.replaceTitle'),
     t('settings.replaceSummary', {
-      countries: formatNumber(3), regions: formatNumber(2), lists: formatNumber(1), home: 'Canada',
+      countries: formatNumber(3), regions: formatNumber(2), cities: formatNumber(1), lists: formatNumber(1), home: 'Canada',
     }),
   ]);
   expect(appData.getSnapshot().data).toBe(before);
@@ -117,7 +117,7 @@ test.each(resets)('confirming %s applies only the selected reset', async (name, 
   await answer(true);
   const saved = await arrivalStorage.load();
   if (name === 'clear') {
-    expect(saved).toEqual({ ...before, places: {}, subdivisions: {}, lists: [], homeCountryId: null });
+    expect(saved).toEqual({ ...before, places: {}, lists: [], homeCountryId: null });
     expect(toast.getSnapshot()?.message).toBe(t('settings.travelCleared'));
   } else if (name === 'preferences') {
     expect(saved).toEqual({ ...before, preferences: defaultPreferences });

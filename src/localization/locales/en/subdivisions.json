@@ -3,7 +3,6 @@
   "explore": "Explore %{plural}",
   "countryTitle": "%{title} in %{country}",
   "countryDetails": "View %{country} details",
-  "independentTracking": "Track %{plural} separately from countries.",
   "viewLabel": "Map or list",
   "mapView": "Map",
   "listView": "List",

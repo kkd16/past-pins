@@ -1,21 +1,21 @@
 import { matchesCountryScope, type CountryScope } from '../countries/filters';
 import { isVisited, type AppData } from '../data/model';
-import { searchPlaces } from '../places/catalog';
+import { searchStaticPlaces } from '../places/catalog';
 import { getCountrySubdivisions, subdivisionById, subdivisions } from './catalog';
 
 export function selectSubdivisions(
   countryId: string,
   query: string,
   scope: CountryScope,
-  statuses: AppData['subdivisions'],
+  statuses: AppData['places'],
 ) {
-  return searchPlaces(query, 'region', countryId)
+  return searchStaticPlaces({ query, scope: 'region', countryId })
     .filter((region) => matchesCountryScope(statuses[region.id], scope))
     .map(({ id }) => subdivisionById.get(id)!);
 }
 
 export function getSubdivisionStatistics(
-  statuses: AppData['subdivisions'],
+  statuses: AppData['places'],
   countryId?: string,
 ) {
   const regions =

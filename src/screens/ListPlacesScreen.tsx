@@ -1,12 +1,9 @@
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { Stack } from 'expo-router';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   FlatList,
-  I18nManager,
   Keyboard,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -14,7 +11,7 @@ import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Checkmark } from '../components/Checkmark';
-import { ChoiceRow } from '../components/ChoiceRow';
+import { ChoiceControl } from '../components/ChoiceControl';
 import { DataFeedback } from '../components/DataFeedback';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
@@ -23,10 +20,11 @@ import { countryById } from '../countries/catalog';
 import { appData } from '../data/app-data';
 import { useAppData } from '../data/AppData';
 import type { TravelList } from '../data/model';
-import { formatNumber, language, t } from '../localization';
-import { searchPlaces, type Place } from '../places/catalog';
-import { getCountrySubdivisions } from '../subdivisions/catalog';
-import { getCountrySubdivisionTerminology } from '../subdivisions/terminology';
+import { formatNumber, t } from '../localization';
+import { getPlaceSubtitle, type Place } from '../places/catalog';
+import { usePlaceSearch } from '../places/usePlaceSearch';
+import { PlaceSearchFooter } from '../places/PlaceFeedback';
+import { PlaceKindControl, type PlacesMode } from '../places/PlaceKindControl';
 import { theme } from '../theme';
 
 type Props = {
@@ -75,12 +73,12 @@ function ListPlacesEditor({
   const { setListPlaces } = appData;
   const busy = useAppData((snapshot) => snapshot.busy);
   const status = useAppData((snapshot) => snapshot.status);
-  const { fontScale } = useWindowDimensions();
   const [originalPlaces] = useState(list.placeIds);
   const [selected, setSelected] = useState(() => new Set(originalPlaces));
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<'all' | 'selected'>('all');
   const [countryId, setCountryId] = useState<string>();
+  const [mode, setMode] = useState<PlacesMode>('countries');
   const results = useRef<FlatList<Place>>(null);
   const exited = useRef(false);
   const stale = list.placeIds !== originalPlaces;
@@ -92,12 +90,14 @@ function ListPlacesEditor({
     { value: 'all', label: t('lists.allPlaces') },
     { value: 'selected', label: t('lists.selected') },
   ] as const;
-  const searchScope =
-    scope === 'selected' ? selected : countryId ? 'region' : 'all';
-  const matches = useMemo(
-    () => searchPlaces(query, searchScope, countryId),
-    [query, searchScope, countryId],
-  );
+  const found = usePlaceSearch({
+    query, countryId,
+    scope: scope === 'selected' ? 'all' : mode === 'cities' ? 'city' : mode === 'regions' ? 'region' : 'country',
+    ids: scope === 'selected' ? [...selected] : undefined,
+  });
+  useLayoutEffect(() => {
+    results.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [query, scope, countryId, mode]);
 
   const toggle = useCallback((placeId: string) => {
     setSelected((current) => {
@@ -111,15 +111,14 @@ function ListPlacesEditor({
   function changeScope(value: typeof scope) {
     setScope(value);
     setCountryId(undefined);
-    results.current?.scrollToOffset({ offset: 0, animated: false });
   }
 
   const browseCountry = useCallback((nextCountryId?: string) => {
     setCountryId(nextCountryId);
+    setMode(nextCountryId ? 'cities' : 'countries');
     setQuery('');
     setScope('all');
     Keyboard.dismiss();
-    results.current?.scrollToOffset({ offset: 0, animated: false });
   }, []);
 
   function cancel() {
@@ -162,7 +161,7 @@ function ListPlacesEditor({
       />
       <FlatList
         ref={results}
-        data={matches}
+        data={found.places}
         extraData={selected}
         keyExtractor={(place) => place.id}
         contentInsetAdjustmentBehavior="never"
@@ -199,53 +198,29 @@ function ListPlacesEditor({
                   onPress={() => browseCountry()}
                 />
                 <AppText variant="heading" accessibilityRole="header">
-                  {t('subdivisions.countryTitle', {
-                    ...getCountrySubdivisionTerminology(countryId),
-                    country: countryById.get(countryId)!.name,
-                  })}
+                  {countryById.get(countryId)!.name}
                 </AppText>
               </View>
             )}
+            {scope === 'all' && <PlaceKindControl value={mode} onChange={(next) => {
+              setMode(next);
+              if (next === 'countries') setCountryId(undefined);
+            }} />}
             <SearchField
               value={query}
-              onChangeText={(value) => {
-                setQuery(value);
-                results.current?.scrollToOffset({ offset: 0, animated: false });
-              }}
+              onChangeText={setQuery}
               placeholder={t('lists.searchPlaces')}
               accessibilityLabel={t('lists.searchPlaces')}
             />
-            {I18nManager.isRTL ||
-            fontScale > theme.accessibility.largeTextScale ? (
-              <View accessibilityRole="radiogroup">
-                {scopes.map(({ value, label }) => (
-                  <ChoiceRow
-                    key={value}
-                    label={label}
-                    selected={scope === value}
-                    onPress={() => changeScope(value)}
-                  />
-                ))}
-              </View>
-            ) : (
-              <SegmentedControl
-                values={scopes.map(({ label }) => label)}
-                selectedIndex={scopes.findIndex(({ value }) => scope === value)}
-                accessibilityLanguage={language}
-                appearance={theme.appearance.colorScheme}
-                tintColor={theme.color.accent}
-                backgroundColor={theme.color.surface}
-                fontStyle={{ color: theme.color.textMuted }}
-                activeFontStyle={{ color: theme.color.onAccent }}
-                onChange={({ nativeEvent }) =>
-                  changeScope(scopes[nativeEvent.selectedSegmentIndex].value)
-                }
-                style={styles.segments}
-              />
-            )}
+            <ChoiceControl
+              value={scope}
+              options={scopes}
+              accessibilityLabel={t('countries.placesToShow')}
+              onChange={changeScope}
+            />
           </View>
         }
-        ListEmptyComponent={
+        ListEmptyComponent={!found.loading && !found.error ?
           <View style={styles.empty}>
             {scope === 'selected' && selected.size === 0 ? (
               <AppText tone="muted">{t('lists.noSelectedPlaces')}</AppText>
@@ -255,8 +230,10 @@ function ListPlacesEditor({
                 <AppText tone="muted">{t('lists.noPlacesFoundHint')}</AppText>
               </>
             )}
-          </View>
+          </View> : null
         }
+        onEndReached={found.loadMore}
+        ListFooterComponent={<PlaceSearchFooter {...found} />}
         renderItem={({ item }) => (
           <PlaceRow
             place={item}
@@ -284,8 +261,6 @@ const PlaceRow = memo(function PlaceRow({
   onToggle: (id: string) => void;
   onBrowseCountry: (id: string) => void;
 }) {
-  const regions =
-    place.kind === 'country' ? getCountrySubdivisions(place.id) : [];
   return (
     <View style={[styles.card, selected && styles.selectedRow]}>
       <AppPressable
@@ -297,27 +272,24 @@ const PlaceRow = memo(function PlaceRow({
       >
         <View style={styles.name}>
           <AppText>{place.name}</AppText>
-          {place.kind === 'region' && (
+          {place.kind !== 'country' && (
             <AppText variant="caption" tone="muted">
-              {place.countryName}
+              {getPlaceSubtitle(place)}
             </AppText>
           )}
         </View>
         <Checkmark checked={selected} />
       </AppPressable>
-      {regions.length > 0 && (
+      {place.kind === 'country' && (
         <AppPressable
           style={styles.regions}
-          accessibilityLabel={t('lists.exploreCountryRegions', {
+          accessibilityLabel={t('lists.exploreCountryPlaces', {
             country: place.name,
           })}
           onPress={() => onBrowseCountry(place.id)}
         >
           <AppText tone="accent" variant="caption" style={styles.name}>
-            {t('lists.exploreRegions', {
-              count: regions.length,
-              amount: formatNumber(regions.length),
-            })}
+            {t('lists.explorePlaces')}
           </AppText>
           <Icon name="chevronRight" color={theme.color.accent} />
         </AppPressable>
@@ -335,7 +307,6 @@ const styles = StyleSheet.create({
   header: { gap: theme.space.md, paddingBottom: theme.space.lg },
   summary: { gap: theme.space.xs },
   breadcrumb: { alignItems: 'flex-start', gap: theme.space.xs },
-  segments: { height: theme.size.touch },
   card: { borderRadius: theme.radius.sm, backgroundColor: theme.color.surface },
   row: {
     minHeight: theme.size.row,

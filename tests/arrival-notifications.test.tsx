@@ -280,7 +280,7 @@ test('startup handles a cached tap once and navigates without changing the count
   expect(appData.getSnapshot().data.places.ca).toBeUndefined();
 });
 
-test('confirmation uses the existing save and Undo flow; cancel never edits', async () => {
+test('confirmation uses the shared save flow and repeat renders do not prompt again', async () => {
   await makeArrival();
   await act(async () => root.render(<Confirmation />));
   expect(native.Alert.alert).toHaveBeenCalledTimes(1);
@@ -289,8 +289,7 @@ test('confirmation uses the existing save and Undo flow; cancel never edits', as
   expect(buttons[0]).toMatchObject({ text: t('location.notNow'), style: 'cancel' });
   await act(async () => buttons[1].onPress?.());
   expect(appData.getSnapshot().data.places.ca).toBe('visited');
-  appData.undo(appData.getSnapshot().pendingUndo!.id);
-  expect(appData.getSnapshot().data.places.ca).toBeUndefined();
+  expect((await arrivalStorage.load()).places.ca).toBe('visited');
   await act(async () => root.render(<Confirmation />));
   expect(native.Alert.alert).toHaveBeenCalledTimes(1);
 });

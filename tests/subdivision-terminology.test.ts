@@ -115,7 +115,6 @@ describe('source-derived subdivision terminology', () => {
       for (const key of [
         'explore',
         'countryTitle',
-        'independentTracking',
         'browseList',
         'visitedSummary',
         'visited',

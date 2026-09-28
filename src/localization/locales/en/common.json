@@ -15,9 +15,7 @@
   "apply": "Apply",
   "retry": "Try again",
   "search": "Search",
-  "undo": "Undo",
   "dismissNotification": "Dismiss notification",
-  "toastAnnouncement": "%{message}. %{action} available.",
   "unknownError": "Try again.",
   "none": "None",
   "unknown": "Unknown",
@@ -25,25 +23,20 @@
   "clearHomeTitle": "Clear current home?",
   "clearHomeMessage": "%{country} will no longer be your home.",
   "updatePlace": "Update place",
-  "placesUpdated": {
-    "one": "Place updated",
-    "other": "Places updated"
-  },
-  "subdivisionsUpdated": {
-    "one": "Region updated",
-    "other": "Regions updated"
-  },
-  "homeUpdated": "Home updated",
-  "homeCleared": "Home cleared",
-  "listCreated": "List created",
-  "listRenamed": "List renamed",
-  "listUpdated": "List updated",
-  "listDeleted": "List deleted",
   "errors": {
     "invalidListName": "Use 1–%{count} characters on one line.",
-    "unknownListPlace": "The list contains an unknown country or region.",
+    "unknownListPlace": "The list contains an unknown place.",
     "dataNotReady": "Data is not ready. Try again shortly.",
     "unknownCountry": "Unknown country.",
-    "unknownSubdivision": "Unknown region."
+    "unknownPlace": "Unknown place."
+  },
+  "statusChangeTitle": "Update places?",
+  "clearDescendantVisits": {
+    "one": "This also clears the visit to %{amount} place inside.",
+    "other": "This also clears visits to %{amount} places inside."
+  },
+  "downgradeDescendantVisits": {
+    "one": "This also changes %{amount} place inside from lived to visited.",
+    "other": "This also changes %{amount} places inside from lived to visited."
   }
 }

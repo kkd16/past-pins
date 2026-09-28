@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { AppPressable } from '../components/AppPressable';
 import { AppText } from '../components/AppText';
 import { Icon } from '../components/Icon';
+import { countries } from '../countries/catalog';
 import { isVisited, type AppData } from '../data/model';
 import { formatNumber, t } from '../localization';
 import { theme } from '../theme';
@@ -14,7 +15,7 @@ export function MapSummary({
   places: AppData['places'];
   onOpenCountries: () => void;
 }) {
-  const visited = Object.values(places).filter(isVisited).length;
+  const visited = countries.filter(({ id }) => isVisited(places[id])).length;
   const label = t('atlas.visitedCount', {
     count: visited,
     total: formatNumber(visited),

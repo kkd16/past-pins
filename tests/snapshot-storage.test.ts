@@ -3,7 +3,7 @@ import { Database } from 'bun:sqlite';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { defaultAppData, type AppData } from '../src/data/model';
-import { subdivisionIds } from '../src/subdivisions/catalog';
+import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import {
   createSnapshotStorage,
   type KeyValueStorage,
@@ -93,11 +93,12 @@ describe('atomic snapshot storage', () => {
     const data = defaultAppData();
     data.places.ca = 'lived';
     data.homeCountryId = 'ca';
-    data.subdivisions[[...subdivisionIds][0]] = 'visited';
+    const region = getCountrySubdivisions('ca')[0].id;
+    data.places[region] = 'visited';
     data.lists.push({
       id: 'list-one',
       name: 'Next trip',
-      placeIds: ['ca', [...subdivisionIds][0]],
+      placeIds: ['ca', region],
     });
     data.preferences.mapView = 'map';
     await storage.save(data);
@@ -109,7 +110,7 @@ describe('atomic snapshot storage', () => {
 
   test('rejects documents missing required data without resetting them', async () => {
     const { storage, keyValue } = fixture();
-    const incomplete: Omit<AppData, 'subdivisions' | 'lists'> = {
+    const incomplete: Omit<AppData, 'lists'> = {
       onboardingCompleted: false,
       places: { ca: 'lived', fr: 'wishlist' },
       homeCountryId: 'ca',
@@ -141,8 +142,8 @@ describe('atomic snapshot storage', () => {
       { ...data, extra: true },
       { ...data, preferences: {} },
       { ...data, places: { ca: 'visited' } },
-      { ...data, subdivisions: null },
-      { ...data, subdivisions: { unknown: 'visited' } },
+      { ...data, places: null },
+      { ...data, places: { unknown: 'visited' } },
       { ...data, lists: null },
     ]) {
       const original = JSON.stringify({ app: 'past-pins', schemaVersion: 1, data: invalid });

@@ -8,6 +8,7 @@ private enum StartupRecovery {
 
   struct OwnedFiles: Decodable {
     let databaseName: String
+    let catalogDirectory: String
     let diagnosticsFile: String
     let resetPreference: String
   }
@@ -22,7 +23,7 @@ private enum StartupRecovery {
       }
       let files = try JSONDecoder().decode(OwnedFiles.self, from: Data(contentsOf: resource))
       guard files.resetPreference == preference,
-        [files.databaseName, files.diagnosticsFile].allSatisfy({
+        [files.databaseName, files.diagnosticsFile, files.catalogDirectory].allSatisfy({
           !$0.isEmpty && !$0.contains("/") && !$0.contains("..")
         }) else { return }
       let manager = FileManager.default
@@ -33,6 +34,7 @@ private enum StartupRecovery {
       }
       try removeIfPresent(documents.appendingPathComponent(files.diagnosticsFile))
       try removeIfPresent(cache.appendingPathComponent("DocumentPicker"))
+      try removeIfPresent(cache.appendingPathComponent(files.catalogDirectory))
       let cachedFiles: [URL]
       do { cachedFiles = try manager.contentsOfDirectory(at: cache, includingPropertiesForKeys: nil) }
       catch let error as CocoaError where error.code == .fileReadNoSuchFile { cachedFiles = [] }

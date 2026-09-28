@@ -1,9 +1,9 @@
 import { countryIds } from '../countries/catalog';
-import { subdivisionIds } from '../subdivisions/catalog';
 import { t } from '../localization';
 import { UserFacingError } from './errors';
-import { defaultPreferences, MAX_LIST_NAME_LENGTH, type AppData, type TravelList } from './model';
+import { defaultPreferences, isVisited, MAX_LIST_NAME_LENGTH, type AppData, type TravelList } from './model';
 import { DataError } from './data-error';
+import { getParentPlaceIds, isPlaceId } from './place-hierarchy';
 
 export function validateListName(value: string): string {
   const name = value.trim();
@@ -23,10 +23,6 @@ export function validateListPlaces(ids: readonly string[]): string[] {
 function isListName(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 &&
     value === value.trim() && value.length <= MAX_LIST_NAME_LENGTH && !/[\r\n]/.test(value);
-}
-
-function isPlaceId(value: unknown): value is string {
-  return typeof value === 'string' && (countryIds.has(value) || subdivisionIds.has(value));
 }
 
 function object(value: unknown): value is Record<string, unknown> {
@@ -62,11 +58,11 @@ function validateLists(value: unknown): TravelList[] {
   });
 }
 
-function validateStatuses(value: unknown, acceptedIds: ReadonlySet<string>): AppData['places'] {
+function validateStatuses(value: unknown): AppData['places'] {
   if (!object(value)) throw new DataError('invalid-document');
   const statuses: AppData['places'] = {};
   for (const [id, status] of Object.entries(value)) {
-    if (!acceptedIds.has(id) || (status !== 'wishlist' && status !== 'visited' && status !== 'lived'))
+    if (!isPlaceId(id) || (status !== 'wishlist' && status !== 'visited' && status !== 'lived'))
       throw new DataError('invalid-document');
     statuses[id] = status;
   }
@@ -79,7 +75,6 @@ export function validateAppData(value: unknown): AppData {
     !exactKeys(value, [
       'onboardingCompleted',
       'places',
-      'subdivisions',
       'lists',
       'homeCountryId',
       'preferences',
@@ -88,13 +83,18 @@ export function validateAppData(value: unknown): AppData {
   ) {
     throw new DataError('invalid-document');
   }
-  const places = validateStatuses(value.places, countryIds);
-  const subdivisions = validateStatuses(value.subdivisions, subdivisionIds);
+  const places = validateStatuses(value.places);
+  for (const [id, status] of Object.entries(places)) {
+    if (!isVisited(status)) continue;
+    if (getParentPlaceIds(id).some((parent) =>
+      status === 'lived' ? places[parent] !== 'lived' : !isVisited(places[parent]),
+    )) throw new DataError('invalid-document');
+  }
   const homeCountryId = value.homeCountryId;
   const lists = validateLists(value.lists);
   if (
     homeCountryId !== null &&
-    (typeof homeCountryId !== 'string' || places[homeCountryId] !== 'lived')
+    (typeof homeCountryId !== 'string' || !countryIds.has(homeCountryId) || places[homeCountryId] !== 'lived')
   ) {
     throw new DataError('invalid-document');
   }
@@ -114,7 +114,6 @@ export function validateAppData(value: unknown): AppData {
   return {
     onboardingCompleted: value.onboardingCompleted,
     places,
-    subdivisions,
     lists,
     homeCountryId,
     preferences: {

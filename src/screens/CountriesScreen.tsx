@@ -61,7 +61,6 @@ export function CountriesScreen({
 }) {
   const { setStatus } = appData;
   const places = useAppData((snapshot) => snapshot.data.places);
-  const subdivisions = useAppData((snapshot) => snapshot.data.subdivisions);
   const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
@@ -70,8 +69,8 @@ export function CountriesScreen({
   const guard = useActionGuard(resetVersion);
   const { continent, grouping } = filters;
   const regionProgress = useMemo(
-    () => getCountryRegionProgress(subdivisions),
-    [subdivisions],
+    () => getCountryRegionProgress(places),
+    [places],
   );
   const sections = useMemo(
     () =>

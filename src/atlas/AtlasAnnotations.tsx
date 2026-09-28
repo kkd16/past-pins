@@ -59,10 +59,9 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
   const visibleLabels = useRef<string[]>([]);
   const { fontScale } = useWindowDimensions();
   const bounds = { width, height, top: topInset, bottom: bottomInset };
-  const country = selectedId ? countryById.get(selectedId) : null;
-  const anchor =
-    selectedAnchor ??
-    (selectedId ? countryAnchors.get(selectedId)?.anchor : null);
+  const anchor = selectedId
+    ? selectedAnchor ?? countryAnchors.get(selectedId)?.anchor
+    : null;
   const homeAnchor =
     homeCountryId && homeCountryId !== selectedId
       ? countryAnchors.get(homeCountryId)?.anchor
@@ -174,7 +173,7 @@ export const AtlasAnnotations = memo(function AtlasAnnotations({
           </AppText>
         </View>
       ))}
-      {country && (
+      {selectedId && anchor && (
         <View
           ref={pinRef}
           pointerEvents="none"

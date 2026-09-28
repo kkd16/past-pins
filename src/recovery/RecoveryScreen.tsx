@@ -12,6 +12,7 @@ import { formatDate, formatNumber, t } from '../localization';
 import { pickBackup, shareDataFile } from '../settings/backup-files';
 import { appStorage } from '../storage/app-storage';
 import type { Checkpoint } from '../storage/snapshot-storage';
+import { getPlaceStatistics } from '../places/statistics';
 import { theme } from '../theme';
 import { diagnostics } from './diagnostics-file';
 import type { DiagnosticOperation } from './diagnostics';
@@ -89,8 +90,9 @@ export function RecoveryScreen({ store, error, onRetry, focused = true }: {
     const data = await pickBackup();
     if (!data || !current()) return;
     const confirmed = await confirmDestructiveAction(t('settings.replaceTitle'), t('recovery.importSummary', {
-      countries: formatNumber(Object.keys(data.places).length),
-      regions: formatNumber(Object.keys(data.subdivisions).length),
+      countries: formatNumber(getPlaceStatistics(data.places, 'country').saved),
+      regions: formatNumber(getPlaceStatistics(data.places, 'region').saved),
+      cities: formatNumber(getPlaceStatistics(data.places, 'city').saved),
       lists: formatNumber(data.lists.length),
     }), t('settings.replaceData'), current);
     if (confirmed) await restore(data);

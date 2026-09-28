@@ -18,5 +18,6 @@
   "errorTitle": "Couldn’t share image",
   "errorMessage": "Try sharing again.",
   "sharingUnavailable": "Sharing is unavailable on this device.",
-  "mapCredit": "Map adapted from iso-topojson · CC BY 4.0\ngithub.com/rembish/iso-topojson/blob/master/LICENSE"
+  "mapCredit": "Map adapted from iso-topojson · CC BY 4.0\ngithub.com/rembish/iso-topojson/blob/master/LICENSE",
+  "cityCredit": "City locations from GeoNames · CC BY 4.0\ngeonames.org"
 }

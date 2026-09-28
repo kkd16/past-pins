@@ -7,13 +7,13 @@ import {
 } from '../src/data/model';
 import { createAppDataStore } from '../src/data/store';
 import { t } from '../src/localization';
-import { subdivisionIds } from '../src/subdivisions/catalog';
+import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 import {
   createSnapshotStorage,
   type AppStorage,
 } from '../src/storage/snapshot-storage';
 
-const [regionOne, regionTwo, regionThree] = [...subdivisionIds];
+const [regionOne, regionTwo] = getCountrySubdivisions('ca').map(({ id }) => id);
 
 function fixture() {
   const values = new Map<string, string>();
@@ -42,7 +42,7 @@ function fixture() {
     },
   });
   const store = createAppDataStore(storage, {
-    async confirmHomeChange() {
+    async confirmStatusChange() {
       confirmations++;
       return confirm;
     },
@@ -88,7 +88,7 @@ describe('app data owner', () => {
       busy: false,
       data: { onboardingCompleted: true, preferences: { countryArrivalAlerts: true } },
     });
-    const reopened = createAppDataStore(f.storage, { confirmHomeChange: async () => true });
+    const reopened = createAppDataStore(f.storage, { confirmStatusChange: async () => true });
     await reopened.load();
     expect(reopened.getSnapshot().data.onboardingCompleted).toBe(true);
     await f.store.completeOnboarding(false);
@@ -116,7 +116,6 @@ describe('app data owner', () => {
     await f.store.load();
     await f.store.completeOnboarding(false);
     await f.store.setStatus(['ca'], 'visited');
-    f.store.undo(f.store.getSnapshot().pendingUndo!.id);
     expect(f.store.getSnapshot().data.onboardingCompleted).toBe(true);
     await f.store.resetPreferences();
     await f.store.clearTravel();
@@ -141,7 +140,7 @@ describe('app data owner', () => {
     expect(f.writes()).toBe(writes);
   });
 
-  test('complete reset waits for writes, blocks edits, clears Undo and starts fresh', async () => {
+  test('complete reset waits for writes, blocks edits, and starts fresh', async () => {
     const f = fixture();
     await f.store.load();
     const gate = Promise.withResolvers<void>();
@@ -152,13 +151,12 @@ describe('app data owner', () => {
     };
     f.store.setHome('ca');
     const listId = f.store.createList('Next trip', ['ca', regionOne])!;
-    await f.store.setSubdivisionStatus([regionOne], 'visited');
+    await f.store.setStatus([regionOne], 'visited');
     f.store.updatePreferences({ mapView: 'map', haptics: false });
-    const undo = f.store.getSnapshot().pendingUndo!;
     const resetting = f.store.resetApp();
     expect(f.store.getSnapshot().busy).toBe(true);
     expect(await f.store.setStatus(['fr'], 'visited')).toBe(false);
-    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(
+    expect(await f.store.setStatus([regionTwo], 'visited')).toBe(
       false,
     );
     expect(f.store.createList('Blocked')).toBeNull();
@@ -174,17 +172,15 @@ describe('app data owner', () => {
       status: 'ready',
       busy: false,
       saveError: false,
-      pendingUndo: null,
       resetVersion: 1,
     });
-    expect(f.store.undo(undo.id)).toBe(false);
     expect(await f.storage.load()).toEqual(defaultAppData());
     f.store.setHome('jp');
     await settle(f.storage);
     expect((await f.storage.load()).homeCountryId).toBe('jp');
   });
 
-  test('failed reset retains live data and Undo, and can be retried', async () => {
+  test('failed reset retains live data, and can be retried', async () => {
     const f = fixture();
     await f.store.load();
     f.store.setHome('ca');
@@ -228,7 +224,7 @@ describe('app data owner', () => {
         async save() {},
       },
       {
-        async confirmHomeChange() {
+        async confirmStatusChange() {
           return true;
         },
       },
@@ -237,7 +233,7 @@ describe('app data owner', () => {
     const second = store.load();
     expect(loads).toBe(1);
     expect(await store.setStatus(['ca'], 'visited')).toBe(false);
-    expect(await store.setSubdivisionStatus([regionOne], 'visited')).toBe(
+    expect(await store.setStatus([regionOne], 'visited')).toBe(
       false,
     );
     expect(store.createList('Blocked')).toBeNull();
@@ -257,7 +253,7 @@ describe('app data owner', () => {
     const { store, storage } = fixture();
     await store.load();
     store.setHome('ca');
-    await store.setSubdivisionStatus([regionOne], 'lived');
+    await store.setStatus([regionOne], 'lived');
     const original = store.getSnapshot().data;
     const input = ['ca', regionOne, 'ca'];
     const id = store.createList('  Next trip  ', input)!;
@@ -266,7 +262,6 @@ describe('app data owner', () => {
       { id, name: 'Next trip', placeIds: ['ca', regionOne] },
     ]);
     expect(store.getSnapshot().data.places).toBe(original.places);
-    expect(store.getSnapshot().data.subdivisions).toBe(original.subdivisions);
     const secondId = store.createList('Next trip')!;
     expect(secondId).not.toBe(id);
     expect(store.renameList(id, '  Summer  ')).toBe(true);
@@ -278,65 +273,12 @@ describe('app data owner', () => {
       { id: secondId, name: 'Next trip', placeIds: [] },
     ]);
     expect(store.getSnapshot().data.places).toBe(original.places);
-    expect(store.getSnapshot().data.subdivisions).toBe(original.subdivisions);
     expect(store.getSnapshot().data.homeCountryId).toBe('ca');
     await settle(storage);
     expect(await storage.load()).toEqual(store.getSnapshot().data);
   });
 
-  test('every list edit uses shared Undo and leaves preference changes intact', async () => {
-    const { store, storage } = fixture();
-    await store.load();
-    const id = store.createList('Next trip', ['ca'])!;
-    const createdUndo = store.getSnapshot().pendingUndo!;
-    expect(createdUndo.label).toBe('List created');
-    store.updatePreferences({ haptics: false });
-    expect(store.undo(createdUndo.id)).toBe(true);
-    expect(store.getSnapshot().data.lists).toEqual([]);
-    expect(store.getSnapshot().data.preferences.haptics).toBe(false);
-    const nextId = store.createList('Next trip', ['ca'])!;
-    expect(nextId).not.toBe(id);
-    store.renameList(nextId, 'Summer');
-    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
-    expect(store.getSnapshot().data.lists[0].name).toBe('Next trip');
-    store.setListPlaces(nextId, ['fr', regionOne]);
-    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
-    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca']);
-    expect(store.deleteList(nextId)).toBe(true);
-    expect(store.getSnapshot().data.lists).toEqual([]);
-    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
-    expect(store.getSnapshot().data.lists).toEqual([
-      { id: nextId, name: 'Next trip', placeIds: ['ca'] },
-    ]);
-    await store.setStatus(['ca'], 'visited');
-    const statusUndo = store.getSnapshot().pendingUndo!;
-    expect(store.undo(statusUndo.id)).toBe(true);
-    expect(store.getSnapshot().data.lists[0].id).toBe(nextId);
-    expect(store.getSnapshot().data.places).toEqual({});
-    await settle(storage);
-    expect(await storage.load()).toEqual(store.getSnapshot().data);
-  });
-
-  test('membership toggles use the latest list and Undo restores only the last change', async () => {
-    const { store, storage } = fixture();
-    await store.load();
-    const id = store.createList('Next trip', ['ca', regionOne])!;
-    expect(store.toggleListPlace(id, 'fr')).toBe(true);
-    expect(store.toggleListPlace(id, regionOne)).toBe(true);
-    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca', 'fr']);
-    expect(store.toggleListPlace(id, 'fr')).toBe(true);
-    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca']);
-    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
-    expect(store.getSnapshot().data.lists[0].placeIds).toEqual(['ca', 'fr']);
-    const before = store.getSnapshot();
-    expect(() => store.toggleListPlace(id, 'unknown')).toThrow('unknown');
-    expect(store.toggleListPlace('missing', 'unknown')).toBe(false);
-    expect(store.getSnapshot()).toBe(before);
-    await settle(storage);
-    expect(await storage.load()).toEqual(before.data);
-  });
-
-  test('list edits validate atomically and stale actions or no-ops preserve Undo', async () => {
+  test('list edits validate atomically and stale actions or no-ops preserve state', async () => {
     const { store, storage } = fixture();
     await store.load();
     const id = store.createList('Next trip', ['ca', regionOne])!;
@@ -389,182 +331,6 @@ describe('app data owner', () => {
     ]);
   });
 
-  test('region changes persist, preserve country and home data, and undo with preferences intact', async () => {
-    const { store, storage } = fixture();
-    await store.load();
-    store.setHome('ca');
-    await store.setSubdivisionStatus([regionOne], 'lived');
-    const initial = store.getSnapshot().data;
-    await store.setSubdivisionStatus(
-      [regionOne, regionTwo, regionThree],
-      'visited',
-    );
-    expect(store.getSnapshot().data.subdivisions).toEqual({
-      [regionOne]: 'lived',
-      [regionTwo]: 'visited',
-      [regionThree]: 'visited',
-    });
-    expect(store.getSnapshot().data.places).toBe(initial.places);
-    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
-    const undo = store.getSnapshot().pendingUndo!;
-    expect(undo.label).toBe('Regions updated');
-    store.updatePreferences({ haptics: false });
-    expect(store.undo(undo.id)).toBe(true);
-    expect(store.getSnapshot().data.subdivisions).toEqual({
-      [regionOne]: 'lived',
-    });
-    expect(store.getSnapshot().data.places).toBe(initial.places);
-    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
-    expect(store.getSnapshot().data.preferences.haptics).toBe(false);
-    await settle(storage);
-    expect(await storage.load()).toEqual(store.getSnapshot().data);
-  });
-
-  test('region no-ops preserve Undo and labels count changed unique regions', async () => {
-    const { store } = fixture();
-    await store.load();
-    await store.setSubdivisionStatus([regionOne], 'lived');
-    await store.setSubdivisionStatus(
-      [regionOne, regionTwo, regionTwo],
-      'visited',
-    );
-    const undo = store.getSnapshot().pendingUndo!;
-    expect(undo.label).toBe('Region updated');
-    await store.setSubdivisionStatus([regionOne, regionTwo], 'visited');
-    expect(store.getSnapshot().pendingUndo).toBe(undo);
-    await store.setSubdivisionStatus([regionOne], 'visited', {
-      preserveLived: false,
-    });
-    expect(store.getSnapshot().data.subdivisions[regionOne]).toBe('visited');
-    expect(store.undo(undo.id)).toBe(false);
-    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
-    expect(store.getSnapshot().data.subdivisions[regionOne]).toBe('lived');
-  });
-
-  test('country Undo preserves region progress and region IDs are validated atomically', async () => {
-    const { store, storage } = fixture();
-    await store.load();
-    await store.setSubdivisionStatus([regionOne], 'wishlist');
-    await store.setStatus(['ca'], 'visited');
-    expect(store.undo(store.getSnapshot().pendingUndo!.id)).toBe(true);
-    expect(store.getSnapshot().data.places).toEqual({});
-    expect(store.getSnapshot().data.subdivisions).toEqual({
-      [regionOne]: 'wishlist',
-    });
-    await settle(storage);
-    const before = store.getSnapshot();
-    await expect(
-      store.setSubdivisionStatus([regionTwo, 'unknown'], 'visited'),
-    ).rejects.toThrow('Unknown region');
-    expect(store.getSnapshot()).toBe(before);
-    expect(await storage.load()).toEqual(before.data);
-  });
-
-  test('bulk changes create a one-shot Undo that preserves subsequent preference edits', async () => {
-    const { store, storage, feedback } = fixture();
-    await store.load();
-    store.setHome('ca');
-    await store.setStatus(['ca', 'fr', 'jp'], 'visited');
-    expect(store.getSnapshot().data.places).toEqual({
-      ca: 'lived',
-      fr: 'visited',
-      jp: 'visited',
-    });
-    const pendingUndo = store.getSnapshot().pendingUndo!;
-    store.updatePreferences({ mapView: 'map', haptics: false });
-    expect(store.getSnapshot().pendingUndo).toBe(pendingUndo);
-    expect(store.undo(pendingUndo.id)).toBe(true);
-    expect(store.undo(pendingUndo.id)).toBe(false);
-    expect(store.getSnapshot().data.places).toEqual({ ca: 'lived' });
-    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
-    expect(store.getSnapshot().data.preferences.mapView).toBe('map');
-    expect(store.getSnapshot().pendingUndo).toBeNull();
-    expect(feedback).toEqual([true, true, false]);
-    await settle(storage);
-    expect(await storage.load()).toEqual(store.getSnapshot().data);
-  });
-
-  test('bulk Undo counts changed countries and survives no-op updates', async () => {
-    const { store } = fixture();
-    await store.load();
-    store.setHome('ca');
-    await store.setStatus(['fr'], 'visited');
-    await store.setStatus(['ca', 'fr', 'jp', 'jp'], 'visited');
-    const pendingUndo = store.getSnapshot().pendingUndo!;
-    expect(pendingUndo.label).toBe('Place updated');
-    await store.setStatus(['ca', 'fr', 'jp'], 'visited');
-    expect(store.getSnapshot().pendingUndo).toBe(pendingUndo);
-    store.undo(pendingUndo.id);
-    expect(store.getSnapshot().data.places).toEqual({
-      ca: 'lived',
-      fr: 'visited',
-    });
-  });
-
-  test('identical Undo labels have distinct IDs and reject stale actions or dismissal', async () => {
-    const { store } = fixture();
-    await store.load();
-    await store.setStatus(['ca'], 'visited');
-    const first = store.getSnapshot().pendingUndo!;
-    await store.setStatus(['fr'], 'visited');
-    const second = store.getSnapshot().pendingUndo!;
-    expect(second.label).toBe(first.label);
-    expect(second.id).not.toBe(first.id);
-    const current = store.getSnapshot();
-    expect(store.undo(first.id)).toBe(false);
-    store.discardUndo(first.id);
-    expect(store.getSnapshot()).toBe(current);
-    expect(store.undo(second.id)).toBe(true);
-    expect(store.getSnapshot().data.places).toEqual({ ca: 'visited' });
-  });
-
-  test('expiring Undo leaves saved data and feedback untouched', async () => {
-    const f = fixture();
-    await f.store.load();
-    await f.store.setStatus(['ca'], 'visited');
-    await settle(f.storage);
-    const prior = f.store.getSnapshot();
-    const writes = f.writes();
-    f.store.discardUndo(prior.pendingUndo!.id);
-    expect(f.store.getSnapshot()).toEqual({ ...prior, pendingUndo: null });
-    expect(f.store.getSnapshot().data).toBe(prior.data);
-    expect(f.store.undo(prior.pendingUndo!.id)).toBe(false);
-    const expired = f.store.getSnapshot();
-    f.store.discardUndo(prior.pendingUndo!.id);
-    expect(f.store.getSnapshot()).toBe(expired);
-    await settle(f.storage);
-    expect(f.writes()).toBe(writes);
-    expect(f.feedback).toEqual([true]);
-    expect(await f.storage.load()).toEqual(prior.data);
-  });
-
-  test('Undo is blocked while busy but can expire before a new confirmed change', async () => {
-    const confirmation = Promise.withResolvers<boolean>();
-    const f = fixture();
-    const store = createAppDataStore(f.storage, {
-      confirmHomeChange: () => confirmation.promise,
-    });
-    await store.load();
-    store.setHome('ca');
-    const prior = store.getSnapshot();
-    const changing = store.setStatus(['ca'], 'unvisited');
-    expect(store.getSnapshot().busy).toBe(true);
-    expect(store.undo(prior.pendingUndo!.id)).toBe(false);
-    store.discardUndo(prior.pendingUndo!.id);
-    expect(store.getSnapshot()).toEqual({
-      ...prior,
-      busy: true,
-      pendingUndo: null,
-    });
-    confirmation.resolve(true);
-    expect(await changing).toBe(true);
-    const next = store.getSnapshot().pendingUndo!;
-    expect(next.id).not.toBe(prior.pendingUndo!.id);
-    expect(store.undo(prior.pendingUndo!.id)).toBe(false);
-    expect(store.undo(next.id)).toBe(true);
-    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
-  });
-
   test('only notifies subscribers when saves change the error state', async () => {
     const f = fixture();
     await f.store.load();
@@ -610,15 +376,14 @@ describe('app data owner', () => {
       places: { ca: 'visited' },
     });
     expect(f.confirmations()).toBe(2);
-    f.store.undo(f.store.getSnapshot().pendingUndo!.id);
-    expect(f.store.getSnapshot().data.homeCountryId).toBe('ca');
+    expect(f.store.getSnapshot().data.homeCountryId).toBeNull();
   });
 
   test('confirmation locks concurrent writes and default mark-visited skips confirmation', async () => {
     const confirmation = Promise.withResolvers<boolean>();
     const f = fixture();
     const store = createAppDataStore(f.storage, {
-      confirmHomeChange: () => confirmation.promise,
+      confirmStatusChange: () => confirmation.promise,
     });
     await store.load();
     store.setHome('ca');
@@ -634,7 +399,7 @@ describe('app data owner', () => {
     expect(store.getSnapshot().data).toEqual(defaultAppData());
   });
 
-  test('an expired status action cannot prompt or change data, Undo, or persistence', async () => {
+  test('an expired status action cannot prompt or change data, or persistence', async () => {
     const f = fixture();
     await f.store.load();
     f.store.setHome('ca');
@@ -654,7 +419,7 @@ describe('app data owner', () => {
   test('a stale home confirmation releases its lock without writing and a new action can proceed', async () => {
     const f = fixture();
     const confirmation = Promise.withResolvers<boolean>();
-    const store = createAppDataStore(f.storage, { confirmHomeChange: () => confirmation.promise });
+    const store = createAppDataStore(f.storage, { confirmStatusChange: () => confirmation.promise });
     await store.load();
     store.setHome('ca');
     await settle(f.storage);
@@ -675,11 +440,11 @@ describe('app data owner', () => {
     expect(await f.storage.load()).toEqual(defaultAppData());
   });
 
-  test('failed home confirmation releases the write lock without losing data or Undo', async () => {
+  test('failed home confirmation releases the write lock without losing data', async () => {
     const confirmation = Promise.withResolvers<boolean>();
     const f = fixture();
     const store = createAppDataStore(f.storage, {
-      confirmHomeChange: () => confirmation.promise,
+      confirmStatusChange: () => confirmation.promise,
     });
     await store.load();
     store.setHome('ca');
@@ -693,11 +458,10 @@ describe('app data owner', () => {
     expect(store.getSnapshot()).toEqual(before);
     expect(f.writes()).toBe(writes);
     expect(await f.storage.load()).toEqual(before.data);
-    expect(store.undo(before.pendingUndo!.id)).toBe(true);
-    expect(store.getSnapshot().data).toEqual(defaultAppData());
+    expect(store.getSnapshot().data).toEqual(before.data);
   });
 
-  test('restores atomically: publishes only after save; failure preserves live data and Undo', async () => {
+  test('restores atomically: publishes only after save; failure preserves live data', async () => {
     const f = fixture();
     await f.store.load();
     await f.store.setStatus(['ca'], 'visited');
@@ -722,8 +486,6 @@ describe('app data owner', () => {
     f.failWrites(false);
     await f.store.restore(defaultAppData());
     expect(f.store.getSnapshot().data).toEqual(defaultAppData());
-    expect(f.store.getSnapshot().pendingUndo).toBeNull();
-    expect(f.store.undo(prior.pendingUndo!.id)).toBe(false);
   });
 
   test('restore waits for pending writes, gates edits, and cannot be overtaken', async () => {
@@ -739,7 +501,8 @@ describe('app data owner', () => {
     await f.store.setStatus(['ca'], 'visited');
     const replacement = defaultAppData();
     replacement.places.fr = 'wishlist';
-    replacement.subdivisions[regionOne] = 'lived';
+    replacement.places[regionOne] = 'lived';
+    replacement.places.ca = 'lived';
     replacement.lists.push({
       id: 'list-restored',
       name: 'Restored',
@@ -749,12 +512,12 @@ describe('app data owner', () => {
     expect(f.store.getSnapshot().busy).toBe(true);
     expect(f.store.getSnapshot().data.places).toEqual({ ca: 'visited' });
     expect(await f.store.setStatus(['jp'], 'visited')).toBe(false);
-    expect(await f.store.setSubdivisionStatus([regionTwo], 'visited')).toBe(
+    expect(await f.store.setStatus([regionTwo], 'visited')).toBe(
       false,
     );
     gate.resolve();
     await restore;
-    expect(f.store.getSnapshot().data.places).toEqual({ fr: 'wishlist' });
+    expect(f.store.getSnapshot().data.places).toEqual(replacement.places);
     expect(await f.storage.load()).toEqual(replacement);
   });
 
@@ -815,7 +578,7 @@ describe('app data owner', () => {
           save: () => (++writes === 1 ? first.promise : second.promise),
         },
         {
-          async confirmHomeChange() {
+          async confirmStatusChange() {
             return true;
           },
         },
@@ -846,19 +609,19 @@ describe('app data owner', () => {
     await expect(replacement).rejects.toThrow('storage-write');
     expect(f.store.getSnapshot().saveError).toBe(true);
     expect(f.store.getSnapshot().data.places.ca).toBe('visited');
-    expect(f.store.getSnapshot().pendingUndo).not.toBeNull();
   });
 
-  test('clear travel and reset preferences preserve their separate domains and clear Undo', async () => {
+  test('clear travel and reset preferences preserve their separate domains ', async () => {
     const f = fixture();
     await f.store.load();
     f.store.setHome('ca');
-    await f.store.setSubdivisionStatus([regionOne], 'visited');
+    await f.store.setStatus([regionOne], 'visited');
     const listId = f.store.createList('Next trip', ['ca'])!;
     f.store.updatePreferences({ haptics: false });
     await f.store.resetPreferences();
     expect(f.store.getSnapshot().data.homeCountryId).toBe('ca');
-    expect(f.store.getSnapshot().data.subdivisions).toEqual({
+    expect(f.store.getSnapshot().data.places).toEqual({
+      ca: 'lived',
       [regionOne]: 'visited',
     });
     expect(f.store.getSnapshot().data.lists).toEqual([
@@ -867,15 +630,12 @@ describe('app data owner', () => {
     expect(f.store.getSnapshot().data.preferences).toEqual(
       defaultAppData().preferences,
     );
-    expect(f.store.getSnapshot().pendingUndo).toBeNull();
     f.store.updatePreferences({ mapView: 'map' });
     await f.store.clearTravel();
     expect(f.store.getSnapshot().data.places).toEqual({});
-    expect(f.store.getSnapshot().data.subdivisions).toEqual({});
     expect(f.store.getSnapshot().data.lists).toEqual([]);
     expect(f.store.getSnapshot().data.homeCountryId).toBeNull();
     expect(f.store.getSnapshot().data.preferences.mapView).toBe('map');
-    expect(f.store.getSnapshot().pendingUndo).toBeNull();
   });
 
   test('load errors retain storage and support retry', async () => {
@@ -924,7 +684,7 @@ describe('app data owner', () => {
         async clear() {},
         save: () => write.promise,
       },
-      { confirmHomeChange: async () => true },
+      { confirmStatusChange: async () => true },
     );
     await store.load();
     const replacement = defaultAppData();
@@ -975,7 +735,7 @@ test('clearing travel data also removes recovery copies and reset removes every 
 test('recovery blocks edits, including an already-open home confirmation, but permits explicit restore', async () => {
   const f = fixture();
   const confirmation = Promise.withResolvers<boolean>();
-  const store = createAppDataStore(f.storage, { confirmHomeChange: () => confirmation.promise });
+  const store = createAppDataStore(f.storage, { confirmStatusChange: () => confirmation.promise });
   await store.load();
   store.setHome('ca');
   const pending = store.setStatus(['ca'], 'unvisited');
@@ -989,4 +749,82 @@ test('recovery blocks edits, including an already-open home confirmation, but pe
   expect(store.getSnapshot().recovery).toBe(true);
   store.leaveRecovery();
   expect(await store.setStatus(['fr'], 'visited')).toBe(true);
+});
+
+describe('hierarchy edits', () => {
+  test('city changes persist ancestors once and parent clearing combines home and descendants in one confirmation', async () => {
+    const f = fixture();
+    const confirmations: unknown[] = [];
+    const store = createAppDataStore(f.storage, {
+      confirmStatusChange: async (change) => { confirmations.push(change); return true; },
+    });
+    await store.load();
+    store.setHome('ca');
+    await store.setStatus(['city:6167865'], 'lived');
+    const listId = store.createList('Cities', ['city:6167865'])!;
+    await settle(f.storage);
+    const writes = f.writes();
+    expect(await store.setStatus(['ca'], 'wishlist')).toBe(true);
+    await settle(f.storage);
+    expect(confirmations).toEqual([{ descendants: 2, homeCountryId: 'ca', status: 'wishlist' }]);
+    expect(f.writes()).toBe(writes + 1);
+    expect(store.getSnapshot().data.places).toEqual({ ca: 'wishlist' });
+    expect(store.getSnapshot().data.homeCountryId).toBeNull();
+    expect(store.getSnapshot().data.lists).toEqual([{ id: listId, name: 'Cities', placeIds: ['city:6167865'] }]);
+    expect(await f.storage.load()).toEqual(store.getSnapshot().data);
+  });
+
+  test('cancelled or stale descendant confirmation applies no part of a bulk change', async () => {
+    for (const cancelled of [false, true]) {
+      const f = fixture();
+      const gate = Promise.withResolvers<boolean>();
+      const store = createAppDataStore(f.storage, { confirmStatusChange: () => gate.promise });
+      await store.load();
+      await store.setStatus(['city:6167865'], 'lived');
+      await settle(f.storage);
+      const before = store.getSnapshot();
+      const writes = f.writes();
+      let current = true;
+      const changing = store.setStatus(['ca', 'fr'], 'visited', { preserveLived: false, isCurrent: () => current });
+      expect(store.getSnapshot().busy).toBe(true);
+      expect(await store.setStatus(['jp'], 'wishlist')).toBe(false);
+      if (!cancelled) current = false;
+      gate.resolve(!cancelled);
+      expect(await changing).toBe(false);
+      expect(store.getSnapshot()).toEqual(before);
+      await settle(f.storage);
+      expect(f.writes()).toBe(writes);
+    }
+  });
+
+  test('unknown city and region IDs reject an entire change before confirmation or persistence', async () => {
+    const f = fixture();
+    await f.store.load();
+    await f.store.setStatus(['city:6167865'], 'visited');
+    await settle(f.storage);
+    const before = f.store.getSnapshot();
+    const writes = f.writes();
+    for (const unknown of ['city:999999999', 'ne:0', 'unknown']) {
+      await expect(f.store.setStatus(['ca', unknown], 'unvisited')).rejects.toThrow('Unknown place');
+      expect(f.store.getSnapshot()).toBe(before);
+    }
+    expect(f.confirmations()).toBe(0);
+    expect(f.writes()).toBe(writes);
+  });
+
+  test('list edits persist directly and preference changes remain independent', async () => {
+    const f = fixture();
+    await f.store.load();
+    const id = f.store.createList('Cities', ['city:6167865', 'ca'])!;
+    f.store.updatePreferences({ haptics: false });
+    expect(f.store.renameList(id, 'Canada')).toBe(true);
+    expect(f.store.toggleListPlace(id, 'ca')).toBe(true);
+    expect(f.store.getSnapshot().data.lists).toEqual([{ id, name: 'Canada', placeIds: ['city:6167865'] }]);
+    expect(f.store.deleteList(id)).toBe(true);
+    expect(f.store.getSnapshot().data.lists).toEqual([]);
+    expect(f.store.getSnapshot().data.preferences.haptics).toBe(false);
+    await settle(f.storage);
+    expect(await f.storage.load()).toEqual(f.store.getSnapshot().data);
+  });
+
 });

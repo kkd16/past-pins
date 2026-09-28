@@ -6,7 +6,7 @@ import { countryIds } from '../src/countries/catalog';
 import { encodeDocument } from '../src/data/document';
 import { defaultAppData } from '../src/data/model';
 import { t } from '../src/localization';
-import { subdivisionIds } from '../src/subdivisions/catalog';
+import { getCountrySubdivisions, subdivisionIds } from '../src/subdivisions/catalog';
 import { backupFile, sharing } from './native-sharing';
 
 const capture = mock(
@@ -185,7 +185,7 @@ test('backup imports restore every field when an exported file exceeds 1 MB', as
   const data = defaultAppData();
   data.places = { ca: 'lived', fr: 'visited', jp: 'wishlist' };
   data.homeCountryId = 'ca';
-  data.subdivisions = { [[...subdivisionIds][0]]: 'visited' };
+  data.places[getCountrySubdivisions('ca')[0].id] = 'visited';
   data.preferences.haptics = false;
   const placeIds = [...countryIds, ...subdivisionIds];
   data.lists = Array.from({ length: 8 }, (_, index) => ({

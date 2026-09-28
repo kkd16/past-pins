@@ -7,13 +7,13 @@ An offline travel atlas for iPhone. Keep track of where you’ve been, where you
 ## The app
 
 - Explore a globe, a world map, and regional maps.
-- Mark places as Visited, Lived, or Wishlist; organize them into lists.
+- Track countries, regions, and cities as Visited, Lived, or Wishlist; organize them into lists.
 - Share maps and stamps, and export backups of your travel record.
 - Browse and edit offline without an account. Location and arrival reminders are optional.
 
 ## Documentation
 
-- [Development](development.md) — run the app, maintain data compatibility, and release updates.
+- [Development](development.md) — run the app, work with the v1 data model, and release updates.
 - [Contributing](CONTRIBUTING.md) — submit a change and understand contribution terms.
 - [Project rules](AGENTS.md) — scope, implementation, and verification requirements.
 
@@ -26,3 +26,5 @@ An offline travel atlas for iPhone. Keep track of where you’ve been, where you
 World boundaries © Alex Rembish, [iso-topojson](https://github.com/rembish/iso-topojson), under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), based on public-domain [Natural Earth](https://www.naturalearthdata.com/) data. PastPins adapts geometry, projection, labels, and styling.
 
 Regional boundaries come from Natural Earth Admin 1; country facts come from [Countries by Annexare](https://github.com/annexare/Countries). See [Geography](development.md#geography) for coverage and boundary limitations.
+
+City names and locations come from [GeoNames](https://www.geonames.org/) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). PastPins filters its cities500 catalog and derives region links from source data.

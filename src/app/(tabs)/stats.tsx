@@ -10,6 +10,7 @@ export default function StatsRoute() {
       onOpenRegions={(scope) =>
         router.navigate(placesHref('regions', scope))
       }
+      onOpenCities={(scope) => router.navigate(placesHref('cities', scope))}
       onOpenStamps={() => router.push('/stamps')}
       onShare={() => router.push({ pathname: '/share', params: { kind: 'world' } })}
       onChooseHome={() => router.push('/settings/home')}

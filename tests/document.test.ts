@@ -29,9 +29,8 @@ describe('current backup format', () => {
     const data = changeHome(defaultAppData(), 'ca');
     data.onboardingCompleted = true;
     for (const id of countryIds) data.places[id] = 'lived';
-    for (const id of subdivisionIds) data.subdivisions[id] = 'visited';
-    data.places.fr = 'wishlist';
-    data.places.jp = 'visited';
+    for (const id of subdivisionIds) data.places[id] = 'visited';
+    data.places['city:6167865'] = 'visited';
     data.lists = [
       {
         id: 'list-one',
@@ -59,7 +58,7 @@ describe('current backup format', () => {
     const parsed = validateAppData(data);
     parsed.preferences.haptics = false;
     parsed.places.ca = 'wishlist';
-    parsed.subdivisions[[...subdivisionIds][0]] = 'visited';
+    parsed.places[[...subdivisionIds][0]] = 'visited';
     parsed.lists[0].name = 'Changed';
     parsed.lists[0].placeIds.push('fr');
     parsed.lists.push({ id: 'list-two', name: 'New', placeIds: [] });
@@ -87,11 +86,11 @@ describe('current backup format', () => {
     }
   });
 
-  test('requires region data even when the backup version matches', () => {
-    const { subdivisions: _subdivisions, ...data } = defaultAppData();
-    expect(() =>
-      decodeDocument(JSON.stringify({ app: 'past-pins', schemaVersion: 1, data })),
-    ).toThrow();
+  test('requires one unified status map without separate region state', () => {
+    const data = defaultAppData();
+    expect(() => validateAppData({ ...data, subdivisions: {} })).toThrow();
+    const { places: _places, ...missing } = data;
+    expect(() => validateAppData(missing)).toThrow();
   });
 
   test('requires lists in a v1 document', () => {
@@ -154,21 +153,17 @@ describe('current backup format', () => {
       ).toThrow();
   });
 
-  test('rejects unknown regions, invalid statuses, and malformed region records', () => {
-    const id = [...subdivisionIds][0];
-    for (const subdivisions of [
-      { unknown: 'visited' },
-      { ca: 'visited' },
-      { [id]: 'unvisited' },
-      { [id]: null },
-      { [id]: true },
-      [id],
-      null,
-      undefined,
-    ])
-      expect(() =>
-        validateAppData({ ...defaultAppData(), subdivisions }),
-      ).toThrow();
+  test('rejects unknown cities and inconsistent parent status without repairing the document', () => {
+    for (const places of [
+      { 'city:999999999': 'visited' },
+      { 'city:6167865': 'visited' },
+      { 'city:6167865': 'lived', 'ne:1159309687': 'visited', ca: 'lived' },
+      { 'ne:1159309687': 'visited' },
+      { 'ne:1159309687': 'lived', ca: 'visited' },
+    ]) expect(() => validateAppData({ ...defaultAppData(), places })).toThrow();
+    const places = { 'city:6167865': 'visited', 'ne:1159309687': 'visited', ca: 'lived' } as const;
+    expect(validateAppData({ ...defaultAppData(), places }).places).toEqual(places);
+    expect(() => validateAppData({ ...defaultAppData(), places, homeCountryId: 'city:6167865' })).toThrow();
   });
 
   test('requires complete valid preferences without extra fields', () => {

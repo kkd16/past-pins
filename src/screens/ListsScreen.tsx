@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, Keyboard, StyleSheet, View } from 'react-native';
 
 import { AppPressable } from '../components/AppPressable';
@@ -13,7 +13,9 @@ import { normalizeSearch } from '../countries/search';
 import { appData as app } from '../data/app-data';
 import { useAppData } from '../data/AppData';
 import { getListStatistics } from '../lists/places';
-import { formatPlaceName, getPlace } from '../places/catalog';
+import { formatPlaceName } from '../places/catalog';
+import { usePlaces } from '../places/usePlaces';
+import { PlaceFeedback } from '../places/PlaceFeedback';
 import { promptListName } from '../lists/prompt';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { compareNames, formatList, formatNumber, t } from '../localization';
@@ -37,6 +39,10 @@ export function ListsScreen({
     .filter((list) => normalizeSearch(list.name).includes(term))
     .sort((a, b) => compareNames(a.name, b.name));
 
+  const previewIds = useMemo(() => [...new Set(data.lists.flatMap((list) => list.placeIds.slice(0, 3)))], [data.lists]);
+  const previews = usePlaces(previewIds);
+  const previewById = useMemo(() => new Map(previews.places.map((place) => [place.id, place])), [previews.places]);
+
   function create() {
     Keyboard.dismiss();
     promptListName((name) => {
@@ -49,7 +55,7 @@ export function ListsScreen({
     <Screen>
       <FlatList
         data={dataStatus === 'ready' ? matches : []}
-        extraData={data}
+        extraData={{ data, previewById }}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={styles.content}
@@ -69,6 +75,7 @@ export function ListsScreen({
               />
             </ScreenHeader>
             <DataFeedback />
+            <PlaceFeedback loading={previews.loading} error={previews.error} onRetry={previews.retry} />
             {data.lists.length > 0 && (
               <SearchField
                 value={query}
@@ -108,7 +115,7 @@ export function ListsScreen({
           };
           const preview = item.placeIds
             .slice(0, 3)
-            .map((id) => formatPlaceName(getPlace(id)!));
+            .flatMap((id) => { const place = previewById.get(id); return place ? [formatPlaceName(place)] : []; });
           return (
             <AppPressable
               style={styles.card}

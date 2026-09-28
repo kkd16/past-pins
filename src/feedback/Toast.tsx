@@ -4,13 +4,11 @@ import {
   Animated,
   Easing,
   StyleSheet,
-  View,
   useAnimatedValue,
 } from 'react-native';
 
 import { useScreenReaderEnabled } from '../accessibility/useScreenReaderEnabled';
 import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
 import { IconButton } from '../components/IconButton';
 import { t } from '../localization';
 import { useReducedMotion } from '../motion/ReducedMotion';
@@ -19,18 +17,14 @@ import type { ToastSnapshot } from './store';
 
 export function Toast({
   toast,
-  actionDisabled,
   onDismiss,
   onRemove,
-  onAction,
 }: {
   toast: ToastSnapshot;
-  actionDisabled: boolean;
   onDismiss: () => void;
   onRemove: () => void;
-  onAction: () => void;
 }) {
-  const { id, message, action, visible } = toast;
+  const { id, message, visible } = toast;
   const reduced = useReducedMotion();
   const screenReaderEnabled = useScreenReaderEnabled();
   const progress = useAnimatedValue(reduced ? 1 : 0);
@@ -38,9 +32,7 @@ export function Toast({
   const remove = useEffectEvent(onRemove);
   const announce = useEffectEvent(() => {
     AccessibilityInfo.announceForAccessibilityWithOptions(
-      action
-        ? t('common.toastAnnouncement', { message, action: action.label })
-        : message,
+      message,
       { queue: true },
     );
   });
@@ -64,13 +56,13 @@ export function Toast({
   }, [id, visible]);
 
   useEffect(() => {
-    if (!visible || actionDisabled || (screenReaderEnabled && action)) return;
+    if (!visible) return;
     const timeout = setTimeout(
       () => dismiss(),
       screenReaderEnabled ? 15_000 : 6_000,
     );
     return () => clearTimeout(timeout);
-  }, [id, visible, action, actionDisabled, screenReaderEnabled]);
+  }, [id, visible, screenReaderEnabled]);
 
   useEffect(() => {
     if (reduced) {
@@ -97,17 +89,7 @@ export function Toast({
       accessibilityElementsHidden={!visible}
       style={[styles.card, appearance]}
     >
-      <View style={styles.content}>
-        <AppText style={styles.message}>{message}</AppText>
-        {action ? (
-          <Button
-            label={action.label}
-            variant="quiet"
-            disabled={actionDisabled}
-            onPress={onAction}
-          />
-        ) : null}
-      </View>
+      <AppText style={styles.message}>{message}</AppText>
       <IconButton
         name="close"
         accessibilityLabel={t('common.dismissNotification')}
@@ -128,12 +110,5 @@ const styles = StyleSheet.create({
     borderWidth: theme.stroke.subtle,
     borderColor: theme.color.border,
   },
-  content: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: theme.space.xs,
-  },
-  message: { flexGrow: 1, flexShrink: 1, flexBasis: 180 },
+  message: { flex: 1 },
 });

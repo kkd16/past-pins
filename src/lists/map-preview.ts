@@ -1,5 +1,14 @@
+import { projection } from '../atlas/projection';
 import type { Place } from '../places/catalog';
 import { getSubdivisionMap } from '../subdivisions/geography';
+
+export function getListCityMarkers(places: readonly Place[]) {
+  return places.flatMap((place) => {
+    if (place.kind !== 'city') return [];
+    const point = projection(place.coordinates);
+    return point ? [{ id: place.id, point }] : [];
+  });
+}
 
 export function getListRegionPreview(places: readonly Place[]) {
   const firstPlace = places[0];

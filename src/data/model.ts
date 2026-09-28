@@ -1,3 +1,5 @@
+import { getParentPlaceIds } from './place-hierarchy';
+
 export const CURRENT_SCHEMA_VERSION = 1;
 
 export type SavedStatus = 'wishlist' | 'visited' | 'lived';
@@ -23,7 +25,6 @@ export type Preferences = {
 export type AppData = {
   onboardingCompleted: boolean;
   places: Partial<Record<string, SavedStatus>>;
-  subdivisions: Partial<Record<string, SavedStatus>>;
   lists: TravelList[];
   homeCountryId: string | null;
   preferences: Preferences;
@@ -42,60 +43,18 @@ export function defaultAppData(): AppData {
   return {
     onboardingCompleted: false,
     places: {},
-    subdivisions: {},
     lists: [],
     homeCountryId: null,
     preferences: { ...defaultPreferences },
   };
 }
 
-export function isVisited(status: PlaceStatus | undefined): boolean {
+export function isVisited(status: PlaceStatus | undefined): status is 'visited' | 'lived' {
   return status === 'visited' || status === 'lived';
 }
 
 export function getPlaceStatus(data: AppData, id: string): PlaceStatus {
   return data.places[id] ?? 'unvisited';
-}
-
-export function getSubdivisionStatus(data: AppData, id: string): PlaceStatus {
-  return data.subdivisions[id] ?? 'unvisited';
-}
-
-export type TravelData = Pick<
-  AppData,
-  'places' | 'subdivisions' | 'lists' | 'homeCountryId'
->;
-
-function changeStatuses(
-  current: AppData['places'],
-  ids: readonly string[],
-  status: PlaceStatus,
-  preserveLived: boolean,
-): AppData['places'] {
-  let next = current;
-  for (const id of ids) {
-    if (status === 'visited' && preserveLived && next[id] === 'lived') continue;
-    if ((next[id] ?? 'unvisited') === status) continue;
-    if (next === current) next = { ...current };
-    if (status === 'unvisited') delete next[id];
-    else next[id] = status;
-  }
-  return next;
-}
-
-export function changeSubdivisionStatus(
-  data: AppData,
-  ids: readonly string[],
-  status: PlaceStatus,
-  preserveLived = true,
-): AppData {
-  const subdivisions = changeStatuses(
-    data.subdivisions,
-    ids,
-    status,
-    preserveLived,
-  );
-  return subdivisions === data.subdivisions ? data : { ...data, subdivisions };
 }
 
 export function changePlaceStatus(
@@ -104,8 +63,38 @@ export function changePlaceStatus(
   status: PlaceStatus,
   preserveLived = true,
 ): AppData {
-  const places = changeStatuses(data.places, ids, status, preserveLived);
+  let places = data.places;
+  const targets = new Set(ids);
+  function set(id: string, next: PlaceStatus) {
+    if ((places[id] ?? 'unvisited') === next) return;
+    if (places === data.places) places = { ...places };
+    if (next === 'unvisited') delete places[id];
+    else places[id] = next;
+  }
+  for (const id of targets) {
+    if (status === 'visited' && preserveLived && places[id] === 'lived') continue;
+    set(id, status);
+  }
   if (places === data.places) return data;
+  if (status !== 'lived') {
+    for (const [id, current] of Object.entries(places)) {
+      if (!isVisited(current)) continue;
+      const parents = getParentPlaceIds(id);
+      if (!parents.some((parent) =>
+        targets.has(parent) && places[parent] !== 'lived',
+      )) continue;
+      if (status === 'visited') {
+        if (current === 'lived') set(id, 'visited');
+      } else set(id, 'unvisited');
+    }
+  }
+  for (const id of targets) {
+    const current = places[id];
+    if (!isVisited(current)) continue;
+    for (const parent of getParentPlaceIds(id)) {
+      if (current === 'lived' || !isVisited(places[parent])) set(parent, current);
+    }
+  }
   const homeCountryId =
     data.homeCountryId && places[data.homeCountryId] === 'lived'
       ? data.homeCountryId

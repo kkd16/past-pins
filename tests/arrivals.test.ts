@@ -27,7 +27,7 @@ async function fixture() {
   const getItem = mock(async (key: string) => values.get(key) ?? null);
   const setItem = mock(async (key: string, value: string) => { values.set(key, value); });
   const storage = createSnapshotStorage({ getItem, setItem, multiSet: async (entries) => { for (const [key, value] of entries) values.set(key, value); }, clear: async () => { values.clear(); } });
-  const app = createAppDataStore(storage, { confirmHomeChange: async () => true });
+  const app = createAppDataStore(storage, { confirmStatusChange: async () => true });
   await app.load();
   await app.completeOnboarding(true);
   await storage.load();
@@ -183,7 +183,7 @@ describe('country arrivals', () => {
     const f = await fixture();
     const app = createAppDataStore({
       ...f.storage, load: async () => { throw new Error('Corrupt data'); },
-    }, { confirmHomeChange: async () => true });
+    }, { confirmStatusChange: async () => true });
     if (status === 'load-error') await app.load();
     const tracker = createArrivalTracker(f.storage, app.getSnapshot, { send: f.send, remove: f.remove });
     await tracker.process([fix('ca')]);

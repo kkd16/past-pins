@@ -1,12 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useIsFocused } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import {
   Alert,
   AppState,
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -30,6 +29,10 @@ import {
 import { useActionGuard } from '../navigation/useActionGuard';
 import { GlobeCamera } from '../globe/camera';
 import { GlobeViewport } from '../globe/GlobeViewport';
+import { getStaticPlace, getPlaceSubtitle, type Place } from '../places/catalog';
+import { PlaceFeedback } from '../places/PlaceFeedback';
+import { PlaceSelectionCard } from '../places/PlaceSelectionCard';
+import { usePlaces } from '../places/usePlaces';
 import { theme } from '../theme';
 
 export function MapScreen({
@@ -62,7 +65,7 @@ export function MapScreen({
   const [globe] = useState(() => new GlobeCamera());
   const [flat] = useState(() => new FlatCamera());
   const [selection, setSelection] = useState<{
-    id: string;
+    place: Place;
     anchor: readonly number[] | null;
   } | null>(null);
   const [localCommand, setCommand] = useState<AtlasCommand | null>(null);
@@ -72,11 +75,12 @@ export function MapScreen({
   const [bottomHeight, setBottomHeight] = useState(120);
   const [height, setHeight] = useState(0);
   const insets = useSafeAreaInsets();
-  const { fontScale } = useWindowDimensions();
-  const largeText = fontScale > theme.accessibility.largeTextScale;
   const screenReader = useScreenReaderEnabled();
+  const focusIds = useMemo(() => (focus && ready ? [focus] : []), [focus, ready]);
+  const focusPlaces = usePlaces(focusIds);
   async function focusLocation() {
     if (locating) return;
+    if (focus) onFocusConsumed();
     const isCurrentScreen = guard();
     const request = ++sequence.current;
     const isCurrent = () =>
@@ -90,8 +94,8 @@ export function MapScreen({
       setSelection(null);
       setCommand({ type: 'location', point, key: request });
       const country = await getCurrentCountry(point);
-      if (isCurrent() && country)
-        setSelection({ id: country.id, anchor: point });
+      const place = country ? getStaticPlace(country.id) : undefined;
+      if (isCurrent() && place) setSelection({ place, anchor: point });
     } catch (error) {
       if (isCurrent())
         Alert.alert(
@@ -105,26 +109,38 @@ export function MapScreen({
     }
   }
   const incomingFocus = useMemo(
-    () =>
-      focus && ready && countryById.has(focus)
-        ? {
-            type: 'focus' as const,
-            id: focus,
-            key: `navigation:${focusRequest ?? focus}`,
-          }
-        : null,
-    [focus, focusRequest, ready],
+    () => {
+      const place =
+        focus && ready
+          ? focusPlaces.places.find(({ id }) => id === focus)
+          : undefined;
+      if (!place || place.kind === 'region') return null;
+      const key = `navigation:${focusRequest ?? focus}`;
+      const anchor = place.kind === 'city' ? place.coordinates : null;
+      const command: AtlasCommand = anchor
+        ? { type: 'location', point: anchor, key }
+        : { type: 'focus', id: place.id, key };
+      return { place, anchor, command, key };
+    },
+    [focus, focusRequest, ready, focusPlaces.places],
   );
-  const command = incomingFocus ?? localCommand;
-  const selectedId = incomingFocus?.id ?? selection?.id ?? null;
+  const command = incomingFocus?.command ?? localCommand;
+  const focusPending = focusPlaces.loading || focusPlaces.error;
+  const selectedPlace =
+    incomingFocus?.place ?? (focusPending ? null : selection?.place);
+  const selectedId = selectedPlace?.id ?? null;
   const selectedCountry = selectedId ? countryById.get(selectedId) : undefined;
+  const selectedCity = selectedPlace?.kind === 'city' ? selectedPlace : undefined;
 
   const commandApplied = useCallback(
     (key: string | number) => {
-      if (incomingFocus?.key === key) {
+      if (incomingFocus?.command.key === key) {
         ++sequence.current;
         setCommand(null);
-        setSelection({ id: incomingFocus.id, anchor: null });
+        setSelection({
+          place: incomingFocus.place,
+          anchor: incomingFocus.anchor,
+        });
         onFocusConsumed();
       } else setCommand((current) => (current?.key === key ? null : current));
     },
@@ -133,15 +149,23 @@ export function MapScreen({
   const selectCountry = useCallback(
     (id: string | null, anchor?: readonly number[]) => {
       ++sequence.current;
-      setSelection(id ? { id, anchor: anchor ?? null } : null);
+      if (focus) onFocusConsumed();
+      const place = id ? getStaticPlace(id) : undefined;
+      setSelection(place ? { place, anchor: anchor ?? null } : null);
     },
-    [],
+    [focus, onFocusConsumed],
   );
+  function move(type: 'north' | 'reset') {
+    if (focus) onFocusConsumed();
+    setCommand({ type, key: ++sequence.current });
+  }
   const viewport = {
     places,
     homeCountryId,
     selectedId,
-    selectedAnchor: incomingFocus ? null : (selection?.anchor ?? null),
+    selectedAnchor: incomingFocus
+      ? incomingFocus.anchor
+      : selection?.anchor ?? null,
     labels: preferences.countryLabels,
     command,
     topInset: insets.top + topHeight + theme.space.md,
@@ -198,19 +222,23 @@ export function MapScreen({
         >
           <MapToolbar
             mode={mode}
-            largeText={largeText}
             disabled={!ready || busy}
-            onChangeMode={(mapView) => app.updatePreferences({ mapView })}
+            onChangeMode={(mapView) => {
+              if (mapView === mode) return;
+              app.updatePreferences({ mapView });
+              if (selectedCity)
+                setCommand({
+                  type: 'location',
+                  point: selectedCity.coordinates,
+                  key: ++sequence.current,
+                });
+            }}
             onSearch={onSearch}
             onShare={onShare}
             onLocation={focusLocation}
             locating={locating}
-            onNorth={() =>
-              setCommand({ type: 'north', key: ++sequence.current })
-            }
-            onReset={() =>
-              setCommand({ type: 'reset', key: ++sequence.current })
-            }
+            onNorth={() => move('north')}
+            onReset={() => move('reset')}
           />
         </ScrollView>
       </View>
@@ -232,7 +260,34 @@ export function MapScreen({
             contentContainerStyle={styles.footer}
           >
             <DataFeedback />
-            {ready && preferences.mapSummary && (
+            <PlaceFeedback
+              loading={focusPlaces.loading}
+              error={focusPlaces.error}
+              onRetry={focusPlaces.retry}
+            />
+            {ready && selectedCity ? (
+              <PlaceSelectionCard
+                key={`${selectedCity.id}:${resetVersion}`}
+                title={selectedCity.name}
+                subtitle={getPlaceSubtitle(selectedCity)}
+                status={places[selectedCity.id] ?? 'unvisited'}
+                disabled={busy}
+                autofocus={focused && screenReader}
+                onChangeStatus={(status) => {
+                  void app.setStatus([selectedCity.id], status, {
+                    preserveLived: false,
+                    isCurrent: guard(),
+                  });
+                }}
+                onSaveToLists={() =>
+                  router.push({
+                    pathname: '/lists/add',
+                    params: { placeId: selectedCity.id },
+                  })
+                }
+                onDismiss={() => selectCountry(null)}
+              />
+            ) : ready && preferences.mapSummary && (
               <MapSummary
                 places={places}
                 onOpenCountries={onOpenCountries}

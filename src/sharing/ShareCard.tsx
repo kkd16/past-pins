@@ -107,9 +107,16 @@ export function ShareCard({ content }: { content: ShareContent }) {
         </>
       )}
       {showCredit && (
-        <AppText variant="caption" tone="muted" style={styles.credit}>
-          {t('sharing.mapCredit')}
-        </AppText>
+        <View style={styles.credits}>
+          <AppText variant="caption" tone="muted" style={styles.credit}>
+            {t('sharing.mapCredit')}
+          </AppText>
+          {content.kind === 'list' && content.places.some(({ kind }) => kind === 'city') && (
+            <AppText variant="caption" tone="muted" style={styles.credit}>
+              {t('sharing.cityCredit')}
+            </AppText>
+          )}
+        </View>
       )}
     </View>
   );
@@ -134,4 +141,5 @@ const styles = StyleSheet.create({
   swatch: { width: 10, height: 10, borderRadius: 3 },
   stamp: { alignSelf: 'center', width: '100%', maxWidth: 220, aspectRatio: 1 },
   credit: { fontSize: 11 },
+  credits: { gap: theme.space.xs },
 });

@@ -9,7 +9,9 @@ import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { appData as app } from '../data/app-data';
 import { useAppData } from '../data/AppData';
-import { formatPlaceName, getPlace } from '../places/catalog';
+import { formatPlaceName } from '../places/catalog';
+import { usePlaces } from '../places/usePlaces';
+import { PlaceFeedback } from '../places/PlaceFeedback';
 import { promptListName } from '../lists/prompt';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { compareNames, formatNumber, t } from '../localization';
@@ -26,7 +28,8 @@ export function PlaceListsScreen({
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
   const guard = useActionGuard(savedLists);
-  const place = getPlace(placeId);
+  const result = usePlaces([placeId]);
+  const place = result.places[0];
   const disabled = dataStatus !== 'ready' || busy || !place;
   const lists = [...savedLists].sort((a, b) =>
     compareNames(a.name, b.name),
@@ -50,12 +53,13 @@ export function PlaceListsScreen({
         ListHeaderComponent={
           <View style={styles.header}>
             <DataFeedback />
+            <PlaceFeedback loading={result.loading} error={result.error} onRetry={result.retry} />
             <AppText tone="muted">
               {place
                 ? t('lists.membershipHint', {
                     name: formatPlaceName(place),
                   })
-                : t('lists.placeUnavailable')}
+                : result.loading || result.error ? '' : t('lists.placeUnavailable')}
             </AppText>
             <Button
               label={t('lists.newList')}

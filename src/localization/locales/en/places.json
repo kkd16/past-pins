@@ -5,10 +5,29 @@
   "regions": "Regions",
   "regionSubtitle": "Regions worldwide",
   "searchRegions": "Search by region or country",
-  "searchAll": "Search countries or regions",
+  "searchAll": "Search places",
   "searchTitle": "Find a place",
   "noSearchResults": "No matching places",
-  "noSearchResultsHint": "Try a country, state, or province.",
+  "noSearchResultsHint": "Try another name or country.",
   "statisticLabel": "%{kind}, %{label}: %{value}",
-  "matchingRegions": "Open matching regions"
+  "matchingRegions": "Open matching regions",
+  "cities": "Cities",
+  "searchCities": "Search cities or towns",
+  "cityContext": "%{region}, %{country}",
+  "loading": "Loading places…",
+  "loadError": "Places couldn’t be loaded.",
+  "retry": "Try again",
+  "citiesIn": "Cities in %{place}",
+  "citiesVisited": "Cities visited",
+  "cityCount": {
+    "one": "%{amount} city visited",
+    "other": "%{amount} cities visited"
+  },
+  "cityData": "City data",
+  "cityAttribution": "City names and locations from GeoNames, licensed under CC BY 4.0.",
+  "citySource": "GeoNames",
+  "cityLicense": "GeoNames attribution license",
+  "cityCoverage": "Cities and towns from GeoNames cities500. Coverage varies.",
+  "more": "Load more",
+  "matchingCities": "Open matching cities"
 }

@@ -110,6 +110,14 @@ notices.set(`natural-earth-admin-1@${subdivisionSource.version}`, {
   ).text(),
 });
 
+const citySource = await Bun.file(join(root, 'scripts/data/cities-source.json')).json();
+notices.set(`geonames@${citySource.snapshotDate}`, {
+  name: 'GeoNames',
+  version: citySource.snapshotDate,
+  license: citySource.license,
+  text: await Bun.file(join(root, 'licenses/geonames-CC-BY-4.0.md')).text(),
+});
+
 const generated =
   JSON.stringify(
     [...notices.values()].sort(

@@ -14,7 +14,8 @@ import { useAppData } from '../data/AppData';
 import { getPlaceStatus, isVisited } from '../data/model';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { PlaceSelectionContent } from '../places/PlaceSelectionCard';
-import { regionsHref, worldMapHref } from '../places/navigation';
+import { citiesHref, regionsHref, worldMapHref } from '../places/navigation';
+import { getPlaceStatistics } from '../places/statistics';
 import { CountryStamp } from '../stamps/CountryStamp';
 import { theme } from '../theme';
 import { t, formatList, formatNumber, language } from '../localization';
@@ -58,7 +59,12 @@ export function CountryDetailsContent({
   const status = getPlaceStatus(data, id);
   const collected = isVisited(status);
   const home = data.homeCountryId === id;
-  const regionStats = getSubdivisionStatistics(data.subdivisions, id);
+  const cityStats = getPlaceStatistics(data.places, 'city', id);
+  const cityProgress = ready ? t('places.cityCount', {
+    count: cityStats.visited,
+    amount: formatNumber(cityStats.visited),
+  }) : undefined;
+  const regionStats = getSubdivisionStatistics(data.places, id);
   const regionProgress =
     ready
       ? t('subdivisions.visitedSummary', {
@@ -106,6 +112,20 @@ export function CountryDetailsContent({
           autofocus={autofocus}
         >
           <DataFeedback />
+          <AppPressable
+            accessibilityLabel={t('places.citiesIn', { place: country.name })}
+            accessibilityValue={cityProgress ? { text: cityProgress } : undefined}
+            onPress={() => router.navigate(citiesHref(id))}
+            style={styles.regions}
+          >
+            <View style={styles.regionLabel}>
+              <AppText variant="label">{t('places.cities')}</AppText>
+              {cityProgress && <AppText variant="caption" tone="muted">
+                {cityProgress}
+              </AppText>}
+            </View>
+            <Icon name="chevronRight" />
+          </AppPressable>
           {regionStats.total > 0 && (
             <AppPressable
               accessibilityLabel={t('subdivisions.countryTitle', {

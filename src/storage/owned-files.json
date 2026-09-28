@@ -1,5 +1,6 @@
 {
   "databaseName": "past-pins-app.db",
   "diagnosticsFile": "PastPins-diagnostics.json",
-  "resetPreference": "pastPinsResetOnNextLaunch"
+  "resetPreference": "pastPinsResetOnNextLaunch",
+  "catalogDirectory": "past-pins-city-catalog"
 }

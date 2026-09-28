@@ -9,8 +9,9 @@ import {
 } from '../../countries/filters';
 import { useAppData } from '../../data/AppData';
 import { CountriesScreen } from '../../screens/CountriesScreen';
-import { RegionsScreen } from '../../screens/RegionsScreen';
-import { getPlace } from '../../places/catalog';
+import { PlacesListScreen } from '../../screens/PlacesListScreen';
+import { countryById } from '../../countries/catalog';
+import { subdivisionById } from '../../subdivisions/catalog';
 import { countryHref, placeHref, regionsHref } from '../../places/navigation';
 import type { PlacesMode } from '../../places/PlaceKindControl';
 
@@ -21,6 +22,8 @@ export default function CountriesRoute() {
     query?: string;
     intent?: string;
     mode?: string;
+    countryId?: string;
+    regionId?: string;
   }>();
   const grouping = useAppData((snapshot) => snapshot.data.preferences.countryGrouping);
   const requestedQuery =
@@ -46,7 +49,9 @@ export default function CountriesRoute() {
     continent: params.continent,
     grouping,
   });
-  const mode = params.mode === 'regions' ? 'regions' : 'countries';
+  const mode = params.mode === 'cities' ? 'cities' : params.mode === 'regions' ? 'regions' : 'countries';
+  const countryId = typeof params.countryId === 'string' && countryById.has(params.countryId) ? params.countryId : undefined;
+  const regionId = countryId && typeof params.regionId === 'string' && subdivisionById.get(params.regionId)?.countryId === countryId ? params.regionId : undefined;
   const scope = readCountryScope(params.scope);
   const sharedProps = {
     scope,
@@ -57,7 +62,7 @@ export default function CountriesRoute() {
     onScopeChange: (scope: CountryScope) => router.setParams({ scope }),
     onModeChange: (mode: PlacesMode) => {
       Keyboard.dismiss();
-      router.setParams({ mode });
+      router.setParams({ mode, countryId: undefined, regionId: undefined });
     },
     onOpenFilters: () =>
       router.push({
@@ -67,22 +72,24 @@ export default function CountriesRoute() {
           mode,
           scope,
           query: search.value,
+          countryId,
+          regionId,
         },
       }),
     onResetFilters: () => {
       setSearch({ request: requestedQuery, value: '' });
-      router.setParams({ continent: 'all', scope: 'all', query: undefined });
+      router.setParams({ continent: 'all', scope: 'all', query: undefined, countryId: undefined, regionId: undefined });
     },
   };
-  if (mode === 'regions')
+  if (mode !== 'countries')
     return (
-      <RegionsScreen
+      <PlacesListScreen
         {...sharedProps}
+        mode={mode}
+        countryId={countryId}
+        regionId={regionId}
         continent={filters.continent}
-        onSelect={(id) => {
-          const region = getPlace(id);
-          if (region) router.push(placeHref(region, scope));
-        }}
+        onSelect={(place) => router.navigate(placeHref(place, scope))}
       />
     );
   return (

@@ -1,16 +1,41 @@
 import { describe, expect, test } from 'bun:test';
+import { resolveHref } from 'expo-router/build/link/href';
+import { TabRouter } from 'expo-router/build/react-navigation/routers/TabRouter';
 
-import { getPlace } from '../src/places/catalog';
-import { placeHref, placesHref, worldMapHref } from '../src/places/navigation';
+import { getStaticPlace } from '../src/places/catalog';
+import { citiesHref, placeHref, placesHref, worldMapHref } from '../src/places/navigation';
 import { getCountrySubdivisions } from '../src/subdivisions/catalog';
+
+function createPlacesNavigation() {
+  const router = TabRouter({ initialRouteName: 'index' });
+  const options = {
+    routeNames: ['index', 'countries', 'stats'],
+    routeParamList: {},
+    routeGetIdList: {},
+  };
+  let state = router.getInitialState(options);
+  return (href: Parameters<typeof resolveHref>[0]) => {
+    const url = new URL(resolveHref(href), 'https://pastpins.test');
+    const next = router.getStateForAction(state, {
+      type: 'NAVIGATE',
+      payload: {
+        name: url.pathname.slice(1),
+        params: Object.fromEntries(url.searchParams),
+      },
+    }, options);
+    if (next?.stale !== false) throw new Error('Navigation did not produce a complete state.');
+    state = next;
+    return state.routes[state.index].params;
+  };
+}
 
 describe('shared place navigation', () => {
   test('country links open details and region links retain their parent and scope', () => {
-    expect(placeHref(getPlace('ca')!)).toEqual({
+    expect(placeHref(getStaticPlace('ca')!)).toEqual({
       pathname: '/country/[id]',
       params: { id: 'ca' },
     });
-    const region = getPlace(getCountrySubdivisions('ca')[0].id)!;
+    const region = getStaticPlace(getCountrySubdivisions('ca')[0].id)!;
     expect(placeHref(region, 'visited')).toEqual({
       pathname: '/regions/[id]',
       params: { id: 'ca', focus: region.id, scope: 'visited' },
@@ -41,5 +66,34 @@ describe('shared place navigation', () => {
       continent: 'all',
       query: '',
     });
+  });
+
+  test.each(['countries', 'regions', 'cities'] as const)(
+    'opening global %s from statistics clears previous city hierarchy filters',
+    (mode) => {
+      const navigate = createPlacesNavigation();
+      const regionId = getCountrySubdivisions('ca')[0].id;
+      expect(navigate(citiesHref('ca', regionId))).toMatchObject({
+        mode: 'cities', countryId: 'ca', regionId,
+      });
+      navigate('/stats');
+
+      const params = navigate(placesHref(mode, 'visited', 'NA'));
+      expect(params).toMatchObject({ mode, scope: 'visited', continent: 'NA', query: '' });
+      expect(params).not.toHaveProperty('countryId');
+      expect(params).not.toHaveProperty('regionId');
+    },
+  );
+
+  test('opening a country city list clears a previous region and search', () => {
+    const navigate = createPlacesNavigation();
+    const scoped = citiesHref('ca', getCountrySubdivisions('ca')[0].id);
+    navigate({ ...scoped, params: { ...scoped.params, query: 'Toronto', scope: 'visited' } });
+
+    const params = navigate(citiesHref('ca'));
+    expect(params).toMatchObject({
+      mode: 'cities', countryId: 'ca', scope: 'all', continent: 'all', query: '',
+    });
+    expect(params).not.toHaveProperty('regionId');
   });
 });

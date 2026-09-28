@@ -1,7 +1,7 @@
 {
   "couldNotFinish": "Could not finish",
   "replaceTitle": "Replace with this backup?",
-  "replaceSummary": "Countries: %{countries}\nRegions: %{regions}\nLists: %{lists}\nHome: %{home}\n\nReplaces all data and settings. Your current saved file is kept as a recovery copy.",
+  "replaceSummary": "Countries: %{countries}\nRegions: %{regions}\nCities: %{cities}\nLists: %{lists}\nHome: %{home}\n\nReplaces all data and settings. Your current saved file is kept as a recovery copy.",
   "replaceData": "Replace data",
   "globe": "Globe",
   "worldMap": "World map",

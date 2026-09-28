@@ -46,3 +46,18 @@ test('plugin merges the UserDefaults privacy reason without duplicates', () => {
     { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['1C8F.1', 'CA92.1'] },
   ]);
 });
+
+test('the public city catalog cache shares its directory with native cold-reset ownership', async () => {
+  const [native, provider] = await Promise.all([
+    readFile(join(projectRoot, 'modules/past-pins-recovery/ios/PastPinsRecoveryModule.swift'), 'utf8'),
+    readFile(join(projectRoot, 'src/cities/CityCatalogLoader.tsx'), 'utf8'),
+  ]);
+  expect(ownedFiles.catalogDirectory).toMatch(/^[a-z0-9-]+$/u);
+  expect(provider).toContain('new Directory(Paths.cache, ownedFiles.catalogDirectory)');
+  expect(native).toContain('let catalogDirectory: String');
+  expect(native).toContain('[files.databaseName, files.diagnosticsFile, files.catalogDirectory]');
+  const removal = native.indexOf('try removeIfPresent(cache.appendingPathComponent(files.catalogDirectory))');
+  expect(removal).toBeGreaterThan(0);
+  expect(removal).toBeLessThan(native.indexOf('defaults.set(false, forKey: preference)'));
+  expect(removal).toBeLessThan(native.indexOf('status = "completed"'));
+});

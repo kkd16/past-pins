@@ -8,7 +8,7 @@ import { AppText } from '../components/AppText';
 import { t } from '../localization';
 import type { Place } from '../places/catalog';
 import { theme } from '../theme';
-import { getListRegionPreview } from './map-preview';
+import { getListCityMarkers, getListRegionPreview } from './map-preview';
 
 export const ListMap = memo(function ListMap({
   places,
@@ -16,15 +16,16 @@ export const ListMap = memo(function ListMap({
   places: readonly Place[];
 }) {
   const regional = getListRegionPreview(places);
+  const cities = getListCityMarkers(places);
   const countries = new Set<string>();
   const regionCountries = new Set<string>();
-  for (const place of places)
-    (place.kind === 'country' ? countries : regionCountries).add(
-      place.countryId,
-    );
+  for (const place of places) {
+    if (place.kind === 'country') countries.add(place.countryId);
+    else if (place.kind === 'region') regionCountries.add(place.countryId);
+  }
   for (const id of countries) regionCountries.delete(id);
 
-  if (!countries.size && !regionCountries.size) return null;
+  if (!countries.size && !regionCountries.size && !cities.length) return null;
 
   const shapes = regional?.regions ?? flatCountries;
   const selected = regional?.ids ?? countries;
@@ -71,6 +72,17 @@ export const ListMap = memo(function ListMap({
               strokeWidth={regional ? 0.7 : 1}
             />
           ))}
+          {cities.map(({ id, point }) => (
+            <MapMarker
+              key={id}
+              cx={point[0]}
+              cy={point[1]}
+              r={6}
+              fill={theme.color.accent}
+              stroke={theme.globe.ocean}
+              strokeWidth={1}
+            />
+          ))}
         </Svg>
       </View>
       <View style={styles.legend}>
@@ -91,6 +103,14 @@ export const ListMap = memo(function ListMap({
             <View style={styles.swatch} />
             <AppText variant="caption" tone="muted" style={styles.legendText}>
               {t('lists.mapRegions')}
+            </AppText>
+          </View>
+        )}
+        {cities.length > 0 && (
+          <View style={styles.legendItem}>
+            <View style={[styles.swatch, styles.filled, styles.city]} />
+            <AppText variant="caption" tone="muted" style={styles.legendText}>
+              {t('lists.mapCities')}
             </AppText>
           </View>
         )}
@@ -124,5 +144,6 @@ const styles = StyleSheet.create({
     borderColor: theme.color.accent,
   },
   filled: { backgroundColor: theme.color.accent },
+  city: { borderRadius: 6 },
   legendText: { flex: 1 },
 });

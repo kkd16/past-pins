@@ -19,6 +19,8 @@ import { useAppData } from '../data/AppData';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
 import { useActionGuard } from '../navigation/useActionGuard';
+import { PlaceFeedback } from '../places/PlaceFeedback';
+import { usePlaces } from '../places/usePlaces';
 import { ShareCard } from '../sharing/ShareCard';
 import {
   defaultShareOptions,
@@ -45,9 +47,28 @@ export function ShareScreen({
   const card = useRef<View>(null);
   const layoutVersion = useRef(0);
   const ready = dataStatus === 'ready';
+  const placeIds = useMemo(
+    () =>
+      ready && target?.kind === 'list'
+        ? data.lists.find(({ id }) => id === target.id)?.placeIds ?? []
+        : [],
+    [ready, target, data.lists],
+  );
+  const listPlaces = usePlaces(placeIds);
   const content = useMemo(
-    () => (ready ? getShareContent(data, target, options) : null),
-    [ready, data, target, options],
+    () =>
+      ready && !listPlaces.loading && !listPlaces.error
+        ? getShareContent(data, target, options, listPlaces.places)
+        : null,
+    [
+      ready,
+      data,
+      target,
+      options,
+      listPlaces.loading,
+      listPlaces.error,
+      listPlaces.places,
+    ],
   );
   const guard = useActionGuard(content);
   const empty = content?.kind === 'list' && !content.places.length;
@@ -98,6 +119,11 @@ export function ShareScreen({
           <Button label={t('common.done')} variant="quiet" onPress={close} />
         </ScreenHeader>
         <DataFeedback />
+        <PlaceFeedback
+          loading={listPlaces.loading}
+          error={listPlaces.error}
+          onRetry={listPlaces.retry}
+        />
         {content ? (
           <>
             <View
@@ -135,7 +161,7 @@ export function ShareScreen({
               <AppText tone="muted">{t('sharing.emptyList')}</AppText>
             )}
           </>
-        ) : ready ? (
+        ) : ready && !listPlaces.loading && !listPlaces.error ? (
           <AppText tone="muted">{t('sharing.unavailable')}</AppText>
         ) : null}
       </ScrollView>

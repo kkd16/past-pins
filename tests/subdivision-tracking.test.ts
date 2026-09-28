@@ -13,7 +13,7 @@ const quebec = canada.find((region) => region.code === 'CA-QC')!;
 const alberta = canada.find((region) => region.code === 'CA-AB')!;
 
 describe('region browsing and progress', () => {
-  const statuses: AppData['subdivisions'] = {
+  const statuses: AppData['places'] = {
     [ontario.id]: 'visited',
     [quebec.id]: 'lived',
     [alberta.id]: 'wishlist',

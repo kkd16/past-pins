@@ -1,14 +1,9 @@
 import { countries, countryById } from '../countries/catalog';
 import { getTravelStatistics } from '../countries/statistics';
 import type { Country } from '../countries/types';
-import { isVisited, type AppData } from '../data/model';
+import { getPlaceStatus, isVisited, type AppData } from '../data/model';
 import { formatList, t } from '../localization';
-import {
-  formatPlaceName,
-  getPlace,
-  getPlaceStatus,
-  type Place,
-} from '../places/catalog';
+import { formatPlaceName, type Place } from '../places/catalog';
 
 export type ShareTarget =
   | { kind: 'world' }
@@ -55,6 +50,7 @@ export function getShareContent(
   data: AppData,
   target: ShareTarget | null,
   options: ShareOptions,
+  listPlaces: readonly Place[] = [],
 ): ShareContent | null {
   if (!target) return null;
   if (target.kind === 'stamp') {
@@ -70,19 +66,18 @@ export function getShareContent(
   if (target.kind === 'list') {
     const list = data.lists.find(({ id }) => id === target.id);
     if (!list) return null;
-    const places = list.placeIds
-      .map(getPlace)
-      .filter(
-        (place): place is Place =>
-          !!place &&
-          (options.includeWishlist ||
-            getPlaceStatus(data, place) !== 'wishlist'),
-      );
+    const memberIds = new Set(list.placeIds);
+    const places = listPlaces.filter(
+      (place) =>
+        memberIds.has(place.id) &&
+        (options.includeWishlist ||
+          getPlaceStatus(data, place.id) !== 'wishlist'),
+    );
     return {
       kind: 'list',
       name: list.name,
       places,
-      visited: places.filter((place) => isVisited(getPlaceStatus(data, place)))
+      visited: places.filter((place) => isVisited(getPlaceStatus(data, place.id)))
         .length,
     };
   }

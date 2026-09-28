@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
-import { getListRegionPreview } from '../src/lists/map-preview';
-import { getPlace } from '../src/places/catalog';
+import { projection } from '../src/atlas/projection';
+import { getListCityMarkers, getListRegionPreview } from '../src/lists/map-preview';
+import { getStaticPlace, type Place } from '../src/places/catalog';
 import {
   getCountrySubdivisions,
   subdivisionsByCountry,
@@ -9,11 +10,30 @@ import {
 import { getSubdivisionMap } from '../src/subdivisions/geography';
 
 describe('regional list map preview', () => {
+  test('city members use their own points without implying country or region membership', () => {
+    const city: Place = {
+      id: 'city:6167865',
+      name: 'Toronto',
+      countryId: 'ca',
+      countryName: 'Canada',
+      kind: 'city',
+      coordinates: [-79.3832, 43.6532],
+    };
+    const country = getStaticPlace('ca')!;
+    const region = getStaticPlace(getCountrySubdivisions('ca')[0].id)!;
+    expect(getListCityMarkers([country, region, city])).toEqual([
+      { id: city.id, point: projection(city.coordinates!)! },
+    ]);
+    expect(getListCityMarkers([country, region])).toEqual([]);
+    expect(getListRegionPreview([city])).toBeUndefined();
+    expect(getListRegionPreview([region, city])).toBeUndefined();
+  });
+
   test('highlights the actual members and keeps surrounding regions', () => {
     const regions = getCountrySubdivisions('ca');
     const places = regions
       .filter(({ code }) => code === 'CA-ON' || code === 'CA-QC')
-      .map(({ id }) => getPlace(id)!);
+      .map(({ id }) => getStaticPlace(id)!);
     const preview = getListRegionPreview(places)!;
     expect(preview.countryName).toBe('Canada');
     expect(preview.regions).toHaveLength(regions.length);
@@ -31,11 +51,11 @@ describe('regional list map preview', () => {
   });
 
   test('retains the world overview for empty, country, and cross-country lists', () => {
-    const canadian = getPlace(getCountrySubdivisions('ca')[0].id)!;
-    const japanese = getPlace(getCountrySubdivisions('jp')[0].id)!;
+    const canadian = getStaticPlace(getCountrySubdivisions('ca')[0].id)!;
+    const japanese = getStaticPlace(getCountrySubdivisions('jp')[0].id)!;
     expect(getListRegionPreview([])).toBeUndefined();
-    expect(getListRegionPreview([getPlace('ca')!])).toBeUndefined();
-    expect(getListRegionPreview([getPlace('ca')!, canadian])).toBeUndefined();
+    expect(getListRegionPreview([getStaticPlace('ca')!])).toBeUndefined();
+    expect(getListRegionPreview([getStaticPlace('ca')!, canadian])).toBeUndefined();
     expect(getListRegionPreview([canadian, japanese])).toBeUndefined();
   });
 
@@ -43,14 +63,14 @@ describe('regional list map preview', () => {
     const paris = getCountrySubdivisions('fr').find(
       ({ code }) => code === 'FR-75',
     )!;
-    const city = getListRegionPreview([getPlace(paris.id)!])!;
+    const city = getListRegionPreview([getStaticPlace(paris.id)!])!;
     expect(city.viewBox[2]).toBeLessThan(getSubdivisionMap('fr')!.width / 10);
     expect(city.markers.map(({ id }) => id)).toContain(paris.id);
 
     const tokyo = getCountrySubdivisions('jp').find(
       ({ code }) => code === 'JP-13',
     )!;
-    const islands = getListRegionPreview([getPlace(tokyo.id)!])!;
+    const islands = getListRegionPreview([getStaticPlace(tokyo.id)!])!;
     expect(islands.markers.map(({ id }) => id)).toContain(tokyo.id);
   });
 
@@ -58,7 +78,7 @@ describe('regional list map preview', () => {
     let markerCount = 0;
     for (const regions of subdivisionsByCountry.values()) {
       const preview = getListRegionPreview(
-        regions.map(({ id }) => getPlace(id)!),
+        regions.map(({ id }) => getStaticPlace(id)!),
       )!;
       expect(preview.viewBox.every(Number.isFinite)).toBe(true);
       expect(preview.viewBox[2]).toBeGreaterThan(0);
