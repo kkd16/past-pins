@@ -65,10 +65,8 @@ if (values.check) {
     `Subdivision assets verified (${manifest.regions} regions, ${manifest.countries} countries/territories; offline).`,
   );
 } else {
-  const cache = Bun.file(
-    join(tmpdir(), `pastpins-natural-earth-${source.sha256}.geojson`),
-  );
-  if (values.refresh || !(await cache.exists())) {
+  const cache = join(tmpdir(), `pastpins-natural-earth-${source.sha256}.geojson`);
+  if (values.refresh || !(await Bun.file(cache).exists())) {
     console.log(
       `Downloading ${source.name} ${source.release} subdivision source…`,
     );
@@ -80,7 +78,7 @@ if (values.check) {
       throw new Error('Upstream subdivision checksum mismatch.');
     await Bun.write(cache, bytes);
   }
-  const text = await cache.text();
+  const text = await Bun.file(cache).text();
   if (hash(text) !== source.sha256)
     throw new Error('Cached subdivision checksum mismatch; use --refresh.');
   const upstream = JSON.parse(text) as SubdivisionSourceData;
