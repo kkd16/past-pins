@@ -12,7 +12,23 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "io.github.kkd16.pastpins",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "CFBundleLocalizations": [
+          "en"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          }
+        ]
+      }
     },
     "plugins": [
       "expo-router",
@@ -21,7 +37,11 @@
       [
         "expo-localization",
         {
-          "supportedLocales": { "ios": ["en"] }
+          "supportedLocales": {
+            "ios": [
+              "en"
+            ]
+          }
         }
       ]
     ],

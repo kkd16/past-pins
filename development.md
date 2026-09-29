@@ -33,6 +33,7 @@ Use the Bun version in [package.json](package.json), Node.js 22.13+, and an iPho
 - **Native changes**
   - Check the [SDK 57 docs](https://docs.expo.dev/versions/v57.0.0/) and [Expo index](https://docs.expo.dev/llms.txt).
   - Configure through `app.json`, `app.config.ts`, and plugins; never edit generated `ios/` files. Rebuild after native dependency or configuration changes.
+  - `expo-file-system` builds from source on iOS because its 57.0.7 precompiled archive omits its privacy manifest. Keep this autolinking setting until a replacement archive includes the upstream manifest; verify `ExpoFileSystem_privacy.bundle/PrivacyInfo.xcprivacy` in the production IPA after rebuilding.
   - After Worklets, Reanimated, or Babel changes: `bunx expo start --dev-client --clear`.
 
 ## Code
