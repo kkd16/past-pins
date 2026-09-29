@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { countries } from '../src/countries/catalog';
-import { defaultAppData } from '../src/data/model';
+import { changeHome, defaultAppData } from '../src/data/model';
 import { getListRegionPreview } from '../src/lists/map-preview';
 import { getStaticPlace, type Place } from '../src/places/catalog';
 import {
@@ -15,7 +15,7 @@ import { getCountrySubdivisions } from '../src/subdivisions/catalog';
 function example() {
   const data = defaultAppData();
   data.places = { ca: 'lived', de: 'lived', fr: 'visited', jp: 'wishlist' };
-  data.homeCountryId = 'ca';
+  data.homePlaceId = 'ca';
   return data;
 }
 
@@ -257,4 +257,13 @@ describe('shared card content', () => {
     ])
       expect(parseShareTarget(kind, id)).toBeNull();
   });
+});
+
+test('world sharing includes a granular home only when explicitly enabled', () => {
+  const home: Place = { id: 'city:6167865', name: 'Toronto', kind: 'city', countryId: 'ca', countryName: 'Canada', regionName: 'Ontario', coordinates: [-79.4163, 43.70011] };
+  const data = changeHome(defaultAppData(), home.id);
+  const shown = getShareContent(data, { kind: 'world' }, { ...defaultShareOptions, includeHome: true }, [home]);
+  expect(shown).toMatchObject({ homeName: 'Toronto, Ontario, Canada' });
+  const hidden = getShareContent(data, { kind: 'world' }, defaultShareOptions, [home]);
+  expect(hidden).toMatchObject({ homeName: undefined, places: { ca: 'visited' } });
 });

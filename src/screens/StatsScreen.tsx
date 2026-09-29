@@ -15,7 +15,9 @@ import { IconButton } from '../components/IconButton';
 import { Screen } from '../components/Screen';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Surface } from '../components/Surface';
-import { countryById } from '../countries/catalog';
+import type { Place } from '../places/catalog';
+import { useHome } from '../places/useHome';
+import { PlaceFeedback } from '../places/PlaceFeedback';
 import type { CountryScope } from '../countries/filters';
 import { ProgressSummary } from '../countries/ProgressSummary';
 import { getTravelStatistics } from '../countries/statistics';
@@ -131,7 +133,7 @@ export function StatsScreen({
   onOpenSettings,
   onChooseHome,
   onOpenCountries,
-  onOpenCountry,
+  onOpenHome,
   onOpenRegions,
   onOpenCities,
   onOpenStamps,
@@ -140,7 +142,7 @@ export function StatsScreen({
   onOpenSettings: () => void;
   onChooseHome: () => void;
   onOpenCountries: (scope: CountryScope, continent?: string) => void;
-  onOpenCountry: (id: string) => void;
+  onOpenHome: (place: Place) => void;
   onOpenRegions: (scope: CountryScope) => void;
   onOpenCities: (scope: CountryScope) => void;
   onOpenStamps: () => void;
@@ -148,7 +150,8 @@ export function StatsScreen({
 }) {
   const { fontScale } = useWindowDimensions();
   const largeText = fontScale > theme.accessibility.largeTextScale;
-  const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
+  const home = useHome();
+  const homePlace = home.place;
   const places = useAppData((snapshot) => snapshot.data.places);
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
@@ -161,9 +164,6 @@ export function StatsScreen({
     [places],
   );
   const cityStats = useMemo(() => getPlaceStatistics(places, 'city'), [places]);
-  const home = homeCountryId
-    ? countryById.get(homeCountryId)
-    : undefined;
   const loading = dataStatus !== 'ready';
   const loadingMessage =
     dataStatus === 'load-error'
@@ -282,28 +282,22 @@ export function StatsScreen({
               {t('common.currentHome')}
             </AppText>
           </View>
-          {home ? (
-            <View style={styles.homeActions}>
+          <View style={styles.homeActions}>
+            {homePlace && home.name && (
               <Button
                 label={home.name}
                 variant="quiet"
-                onPress={() => onOpenCountry(home.id)}
+                onPress={() => onOpenHome(homePlace)}
               />
-              <Button
-                label={t('settings.changeHome')}
-                variant="quiet"
-                disabled={loading || busy}
-                onPress={onChooseHome}
-              />
-            </View>
-          ) : (
+            )}
             <Button
-              label={t('countries.stats.chooseHome')}
+              label={t(home.id ? 'settings.changeHome' : 'countries.stats.chooseHome')}
               variant="quiet"
               disabled={loading || busy}
               onPress={onChooseHome}
             />
-          )}
+          </View>
+          <PlaceFeedback loading={home.loading} error={home.error} onRetry={home.retry} />
         </Surface>
         <AppText variant="heading" accessibilityRole="header">
           {t('countries.byContinent')}

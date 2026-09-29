@@ -3,7 +3,7 @@ import { getTravelStatistics } from '../countries/statistics';
 import type { Country } from '../countries/types';
 import { getPlaceStatus, isVisited, type AppData } from '../data/model';
 import { formatList, t } from '../localization';
-import { formatPlaceName, type Place } from '../places/catalog';
+import { formatPlaceName, getStaticPlace, type Place } from '../places/catalog';
 
 export type ShareTarget =
   | { kind: 'world' }
@@ -46,11 +46,17 @@ export function parseShareTarget(
   return null;
 }
 
+export function getSharePlaceIds(data: AppData, target: ShareTarget | null, options: ShareOptions): readonly string[] {
+  if (target?.kind === 'list') return data.lists.find(({ id }) => id === target.id)?.placeIds ?? [];
+  if (target?.kind === 'world' && options.includeHome && data.homePlaceId) return [data.homePlaceId];
+  return [];
+}
+
 export function getShareContent(
   data: AppData,
   target: ShareTarget | null,
   options: ShareOptions,
-  listPlaces: readonly Place[] = [],
+  resolvedPlaces: readonly Place[] = [],
 ): ShareContent | null {
   if (!target) return null;
   if (target.kind === 'stamp') {
@@ -67,7 +73,7 @@ export function getShareContent(
     const list = data.lists.find(({ id }) => id === target.id);
     if (!list) return null;
     const memberIds = new Set(list.placeIds);
-    const places = listPlaces.filter(
+    const places = resolvedPlaces.filter(
       (place) =>
         memberIds.has(place.id) &&
         (options.includeWishlist ||
@@ -81,6 +87,9 @@ export function getShareContent(
         .length,
     };
   }
+  const home = data.homePlaceId
+    ? resolvedPlaces.find(({ id }) => id === data.homePlaceId) ?? getStaticPlace(data.homePlaceId)
+    : undefined;
   const places: AppData['places'] = {};
   for (const { id } of countries) {
     const status = data.places[id];
@@ -94,8 +103,8 @@ export function getShareContent(
     places,
     stats: getTravelStatistics(places),
     homeName:
-      options.includeHome && data.homeCountryId
-        ? countryById.get(data.homeCountryId)?.name
+      options.includeHome && home
+        ? formatPlaceName(home)
         : undefined,
   };
 }

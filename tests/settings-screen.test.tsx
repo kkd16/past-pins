@@ -1,5 +1,8 @@
+import { Database } from 'bun:sqlite';
+import type { SQLiteDatabase } from 'expo-sqlite';
+import { setCityCatalogDatabase } from '../src/cities/database';
 import type { DataSnapshot } from '../src/data/store';
-import { afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
+import { afterAll, afterEach, beforeEach, expect, mock, spyOn, test } from 'bun:test';
 import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 
@@ -24,6 +27,12 @@ mock.module('../src/components/Screen', () => ({ Screen: 'Screen' }));
 mock.module('../src/components/DataFeedback', () => ({ DataFeedback: 'DataFeedback' }));
 mock.module('../src/settings/SettingsSection', () => ({ SettingsSection: 'SettingsSection', SettingsRow: 'SettingsRow' }));
 
+mock.module('../src/places/PlaceFeedback', () => ({ PlaceFeedback: 'PlaceFeedback' }));
+
+const citySource = new Database(new URL('../src/cities/catalog.db', import.meta.url).pathname, { readonly: true });
+const cityConnection = { getAllAsync: async (sql: string, params: (string | number)[]) => citySource.query(sql).all(...params) } as unknown as SQLiteDatabase;
+afterAll(() => citySource.close());
+
 const { SettingsScreen } = await import('../src/screens/SettingsScreen');
 const resets = [
   ['clear', 'settings.clearTravel'],
@@ -34,6 +43,7 @@ let root: Root;
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 beforeEach(async () => {
+  setCityCatalogDatabase(cityConnection);
   await appData.load();
   await appData.resetApp();
   await appData.completeOnboarding(false);
@@ -55,6 +65,7 @@ afterEach(async () => {
   await act(async () => root.unmount());
   await arrivalStorage.load();
   navigation.focused = true;
+  setCityCatalogDatabase(null);
 });
 
 function row(title: string) {
@@ -99,7 +110,7 @@ test('backup preview shows simple totals and keeps data intact until confirmed',
     ...defaultAppData(),
     places: { ca: 'lived', fr: 'visited', jp: 'wishlist', [firstRegion]: 'visited', [secondRegion]: 'wishlist', 'city:6167865': 'visited' } as const,
     lists: [{ id: 'trip', name: 'Trip', placeIds: ['ca', 'jp'] }],
-    homeCountryId: 'ca',
+    homePlaceId: 'ca',
   };
   backupFile.text.mockResolvedValue(encodeDocument(backup));
   const before = appData.getSnapshot().data;
@@ -141,7 +152,7 @@ test.each(resets)('confirming %s applies only the selected reset', async (name, 
   await answer(true);
   const saved = await arrivalStorage.load();
   if (name === 'clear') {
-    expect(saved).toEqual({ ...before, places: {}, lists: [], homeCountryId: null });
+    expect(saved).toEqual({ ...before, places: {}, lists: [], homePlaceId: null });
     expect(toast.getSnapshot()?.message).toBe(t('settings.travelCleared'));
   } else if (name === 'preferences') {
     expect(saved).toEqual({ ...before, preferences: defaultPreferences });
@@ -185,4 +196,77 @@ test.each([
   } finally {
     fail.mockRestore();
   }
+});
+
+test('Settings displays country, region, and city homes and updates after clearing', async () => {
+  expect(row(t('common.currentHome')).props.value).toBe('Canada');
+  const ontario = getCountrySubdivisions('ca').find(({ code }) => code === 'CA-ON')!;
+  await act(async () => appData.setHome(ontario.id));
+  expect(row(t('common.currentHome')).props.value).toBe('Ontario, Canada');
+  await act(async () => appData.setHome('city:6167865'));
+  expect(row(t('common.currentHome')).props.value).toBe('Toronto, Ontario, Canada');
+  await act(async () => appData.setHome(null));
+  expect(row(t('common.currentHome')).props.value).toBe(t('settings.chooseHome'));
+});
+
+test('city home stays selected during catalog failure and appears after recovery', async () => {
+  await act(async () => {
+    setCityCatalogDatabase(null, true);
+    appData.setHome('city:6167865');
+  });
+  expect(row(t('common.currentHome')).props.value).toBe(t('places.loadError'));
+  expect(row(t('common.currentHome')).props.disabled).toBe(false);
+  expect(appData.getSnapshot().data.homePlaceId).toBe('city:6167865');
+  await act(async () => setCityCatalogDatabase(cityConnection));
+  expect(row(t('common.currentHome')).props.value).toBe('Toronto, Ontario, Canada');
+});
+
+test('city home backup preview resolves its full name before restoring', async () => {
+  await act(async () => appData.setHome('city:6167865'));
+  const backup = appData.getSnapshot().data;
+  await act(async () => appData.setHome('fr'));
+  backupFile.text.mockResolvedValue(encodeDocument(backup));
+  await press(t('settings.restoreBackup'));
+  expect(native.Alert.alert.mock.calls.at(-1)![1]).toContain('Toronto, Ontario, Canada');
+  expect(appData.getSnapshot().data.homePlaceId).toBe('fr');
+  await answer(true);
+  expect(appData.getSnapshot().data.homePlaceId).toBe('city:6167865');
+  expect(row(t('common.currentHome')).props.value).toBe('Toronto, Ontario, Canada');
+});
+
+test('backup restore preserves a city home when its display name is unavailable', async () => {
+  await act(async () => appData.setHome('city:6167865'));
+  const backup = appData.getSnapshot().data;
+  await act(async () => {
+    appData.setHome('fr');
+    setCityCatalogDatabase(null, true);
+  });
+  backupFile.text.mockResolvedValue(encodeDocument(backup));
+  await press(t('settings.restoreBackup'));
+  expect(native.Alert.alert.mock.calls.at(-1)![0]).toBe(t('settings.replaceTitle'));
+  expect(native.Alert.alert.mock.calls.at(-1)![1]).toContain(t('settings.homeNameUnavailable'));
+  expect(appData.getSnapshot().data.homePlaceId).toBe('fr');
+  await answer(false);
+  expect(appData.getSnapshot().data.homePlaceId).toBe('fr');
+  await press(t('settings.restoreBackup'));
+  await answer(true);
+  expect(appData.getSnapshot().data).toEqual(backup);
+  expect(await arrivalStorage.load()).toEqual(backup);
+});
+
+test('a late city name cannot replace a newer country home in Settings', async () => {
+  const gate = Promise.withResolvers<void>();
+  const delayed = { getAllAsync: async (sql: string, params: (string | number)[]) => {
+    await gate.promise;
+    return citySource.query(sql).all(...params);
+  } } as unknown as SQLiteDatabase;
+  await act(async () => {
+    setCityCatalogDatabase(delayed);
+    appData.setHome('city:6167865');
+  });
+  expect(row(t('common.currentHome')).props.value).toBe(t('places.loading'));
+  await act(async () => appData.setHome('fr'));
+  expect(row(t('common.currentHome')).props.value).toBe('France');
+  await act(async () => gate.resolve());
+  expect(row(t('common.currentHome')).props.value).toBe('France');
 });

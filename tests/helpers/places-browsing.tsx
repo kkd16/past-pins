@@ -5,7 +5,7 @@ import { act, createElement, useImperativeHandle, type ReactNode, type Ref } fro
 import { createRoot } from 'test-renderer';
 
 import { setCityCatalogDatabase } from '../../src/cities/database';
-import { defaultAppData } from '../../src/data/model';
+import { changeHome, defaultAppData } from '../../src/data/model';
 import type { CountryScope } from '../../src/countries/filters';
 import type { DataSnapshot } from '../../src/data/store';
 import { t } from '../../src/localization';
@@ -13,15 +13,17 @@ import { anywhere, readPlaceLocation, type PlaceLocation } from '../../src/place
 import type { Place } from '../../src/places/catalog';
 import type { PlacesMode } from '../../src/places/PlaceKindControl';
 import { getCountrySubdivisions } from '../../src/subdivisions/catalog';
-import { native } from '../setup';
+import { native, navigation } from '../setup';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 const data = defaultAppData();
 data.lists = [{ id: 'trip', name: 'Trip', placeIds: [] }];
 const setListPlaces = mock(() => true);
+const setHome = mock((id: string | null) => { data.homePlaceId = id; });
 const scrollCountries = mock();
 mock.module('react-native', () => ({
   ...native,
+  PixelRatio: { get: () => 3 },
   ActionSheetIOS: { showActionSheetWithOptions: mock() },
   LayoutAnimation: { easeInEaseOut: mock() },
   SectionList: function SectionList({ ref, ...props }: {
@@ -36,12 +38,13 @@ mock.module('react-native', () => ({
   },
 }));
 mock.module('../../src/data/AppData', () => ({ useAppData: <T,>(select: (snapshot: DataSnapshot) => T) => select({ data, status: 'ready', busy: false, saveError: false, resetVersion: 0 }) }));
-mock.module('../../src/data/app-data', () => ({ appData: { setListPlaces } }));
+mock.module('../../src/data/app-data', () => ({ appData: { setListPlaces, setHome } }));
 for (const name of ['AppPressable', 'AppText', 'Button', 'Checkmark', 'ChoiceControl', 'ChoiceMenu', 'DataFeedback', 'Icon', 'IconButton', 'Screen', 'SearchField']) {
   mock.module(`../../src/components/${name}`, () => ({ [name]: name }));
 }
 mock.module('../../src/support/ReportErrorButton', () => ({ ReportErrorButton: 'ReportErrorButton' }));
 
+const { default: HomeRoute } = await import('../../src/app/settings/home');
 const { PlaceLocationScreen } = await import('../../src/screens/PlaceLocationScreen');
 const { ListPlacesScreen } = await import('../../src/screens/ListPlacesScreen');
 const { CountriesScreen } = await import('../../src/screens/CountriesScreen');
@@ -228,9 +231,54 @@ async function statusChips() {
   }
 }
 
+async function homePicker() {
+  for (const [query, id] of [['Canada', 'ca'], ['Ontario', 'ne:1159309687'], ['Toronto', 'city:6167865']]) {
+    await act(async () => root.render(<HomeRoute />));
+    expect(element('SearchField').props.placeholder).toBe(t('places.searchAll'));
+    await act(async () => element('SearchField').props.onChangeText(query));
+    const list = element('FlatList');
+    const place = (list.props.data as Place[]).find((place) => place.id === id);
+    expect(place).toBeDefined();
+    const row = list.props.renderItem({ item: place });
+    await act(async () => row.props.onPress(place));
+    expect(setHome).toHaveBeenLastCalledWith(id);
+    expect(navigation.router.back).toHaveBeenCalled();
+    await act(async () => root.render(<HomeRoute />));
+    expect(element('FlatList').props.renderItem({ item: place }).props.home).toBe(true);
+  }
+  await act(async () => button(t('countries.details.clearHome')).props.onPress());
+  expect(setHome).toHaveBeenLastCalledWith(null);
+}
+
+async function shareHomeFailure() {
+  for (const name of ['Surface', 'ScreenHeader', 'ToggleRow']) {
+    mock.module(`../../src/components/${name}`, () => ({ [name]: name }));
+  }
+  mock.module('../../src/sharing/ShareCard', () => ({ ShareCard: 'ShareCard' }));
+  mock.module('../../src/sharing/share-image', () => ({ shareCardImage: mock() }));
+  const { ShareScreen } = await import('../../src/screens/ShareScreen');
+  Object.assign(data, changeHome(data, 'city:6167865'));
+  setCityCatalogDatabase(null, true);
+  await act(async () => root.render(<ShareScreen target={{ kind: 'world' }} onClose={() => {}} />));
+  const toggle = () => root.container.queryAll((node) => node.type === 'ToggleRow' && node.props.title === t('sharing.includeHome'))[0];
+  expect(toggle()).toBeDefined();
+  expect(button(t('sharing.shareImage')).props.disabled).toBe(false);
+  await act(async () => toggle().props.onValueChange(true));
+  expect(button(t('sharing.shareImage')).props.disabled).toBe(true);
+  expect(root.container.queryAll((node) => node.type === 'ShareCard')).toHaveLength(0);
+  expect(toggle()).toBeDefined();
+  expect(toggle().props.disabled).toBe(false);
+  await act(async () => toggle().props.onValueChange(false));
+  expect(button(t('sharing.shareImage')).props.disabled).toBe(false);
+  expect(element('ShareCard').props.content.homeName).toBeUndefined();
+  expect(data.homePlaceId).toBe('city:6167865');
+}
+
 try {
   const scenario = process.argv[2];
-  if (scenario === 'location-picker') await locationPicker();
+  if (scenario === 'share-home-failure') await shareHomeFailure();
+  else if (scenario === 'home-picker') await homePicker();
+  else if (scenario === 'location-picker') await locationPicker();
   else if (scenario === 'list-draft') await listDraft();
   else if (scenario === 'sheet-dismissal') await sheetDismissal();
   else if (scenario === 'status-chips') await statusChips();

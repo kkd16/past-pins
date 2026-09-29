@@ -61,6 +61,7 @@ export function SubdivisionsScreen({
 }) {
   const { setStatus } = appData;
   const subdivisions = useAppData((snapshot) => snapshot.data.places);
+  const homePlaceId = useAppData((snapshot) => snapshot.data.homePlaceId);
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
   const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
@@ -230,6 +231,7 @@ export function SubdivisionsScreen({
               <DataFeedback />
               {selectedRegion && dataStatus === 'ready' && (
                 <PlaceSelectionCard
+                  home={homePlaceId === selectedRegion.id}
                   title={selectedRegion.name}
                   subtitle={getSubdivisionKindLabel(selectedRegion.kind)}
                   status={subdivisions[selectedRegion.id] ?? 'unvisited'}

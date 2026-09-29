@@ -1,4 +1,3 @@
-import { countryIds } from '../countries/catalog';
 import { t } from '../localization';
 import { UserFacingError } from './errors';
 import { defaultPreferences, isVisited, MAX_LIST_NAME_LENGTH, type AppData, type TravelList } from './model';
@@ -76,7 +75,7 @@ export function validateAppData(value: unknown): AppData {
       'onboardingCompleted',
       'places',
       'lists',
-      'homeCountryId',
+      'homePlaceId',
       'preferences',
     ]) ||
     typeof value.onboardingCompleted !== 'boolean'
@@ -90,11 +89,11 @@ export function validateAppData(value: unknown): AppData {
       status === 'lived' ? places[parent] !== 'lived' : !isVisited(places[parent]),
     )) throw new DataError('invalid-document');
   }
-  const homeCountryId = value.homeCountryId;
+  const homePlaceId = value.homePlaceId;
   const lists = validateLists(value.lists);
   if (
-    homeCountryId !== null &&
-    (typeof homeCountryId !== 'string' || !countryIds.has(homeCountryId) || places[homeCountryId] !== 'lived')
+    homePlaceId !== null &&
+    (!isPlaceId(homePlaceId) || places[homePlaceId] !== 'lived')
   ) {
     throw new DataError('invalid-document');
   }
@@ -118,7 +117,7 @@ export function validateAppData(value: unknown): AppData {
     onboardingCompleted: value.onboardingCompleted,
     places,
     lists,
-    homeCountryId,
+    homePlaceId,
     preferences: {
       mapView: prefs.mapView,
       countryGrouping: prefs.countryGrouping,

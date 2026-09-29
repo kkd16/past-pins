@@ -172,7 +172,7 @@ async function confirmation(transition: string, details: boolean) {
   await act(async () => { confirm(); await settle(); });
   assert.equal(appData.getSnapshot().busy, false);
   if (transition === 'confirmed') {
-    assert.equal(appData.getSnapshot().data.homeCountryId, null);
+    assert.equal(appData.getSnapshot().data.homePlaceId, null);
     assert.equal(appData.getSnapshot().data.places.ca, undefined);
     assert.deepEqual(await arrivalStorage.load(), appData.getSnapshot().data);
     assert.equal(onEndSelection.mock.calls.length, details ? 0 : 1);

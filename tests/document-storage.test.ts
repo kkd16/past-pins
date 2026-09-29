@@ -85,7 +85,7 @@ describe('atomic document storage', () => {
     expect(await storage.load()).toEqual(defaultAppData());
     const data = defaultAppData();
     data.places.ca = 'lived';
-    data.homeCountryId = 'ca';
+    data.homePlaceId = 'ca';
     const region = getCountrySubdivisions('ca')[0].id;
     data.places[region] = 'visited';
     data.lists.push({
@@ -106,7 +106,7 @@ describe('atomic document storage', () => {
     const incomplete: Omit<AppData, 'lists'> = {
       onboardingCompleted: false,
       places: { ca: 'lived', fr: 'wishlist' },
-      homeCountryId: 'ca',
+      homePlaceId: 'ca',
       preferences: { ...defaultAppData().preferences, haptics: false },
     };
     const original = JSON.stringify({ app: 'past-pins', schemaVersion: 1, data: incomplete });
@@ -148,7 +148,7 @@ describe('atomic document storage', () => {
     const { storage, keyValue } = fixture();
     const data = defaultAppData();
     data.places.ca = 'lived';
-    data.homeCountryId = 'ca';
+    data.homePlaceId = 'ca';
     for (const invalid of [
       { ...data, extra: true },
       { ...data, preferences: null },
@@ -232,7 +232,7 @@ describe('atomic document storage', () => {
     initial.preferences.haptics = false;
     await storage.save(initial);
     await expect(
-      storage.save({ ...defaultAppData(), homeCountryId: 'ca' }),
+      storage.save({ ...defaultAppData(), homePlaceId: 'ca' }),
     ).rejects.toThrow();
     expect(await storage.load()).toEqual(initial);
     await storage.save(defaultAppData());

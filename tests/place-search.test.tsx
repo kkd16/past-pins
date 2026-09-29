@@ -1,5 +1,8 @@
+import { Database } from 'bun:sqlite';
+import type { SQLiteDatabase } from 'expo-sqlite';
+import { setCityCatalogDatabase } from '../src/cities/database';
 import type { DataSnapshot } from '../src/data/store';
-import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, afterEach, beforeEach, expect, mock, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 
@@ -32,8 +35,12 @@ const onSelect = mock();
 const onCancel = mock();
 const onClear = mock();
 let root: Root;
+const source = new Database(new URL('../src/cities/catalog.db', import.meta.url).pathname, { readonly: true });
+const connection = { getAllAsync: async (sql: string, params: (string | number)[]) => source.query(sql).all(...params) } as unknown as SQLiteDatabase;
+afterAll(() => source.close());
 
 beforeEach(() => {
+  setCityCatalogDatabase(connection);
   data = defaultAppData();
   status = 'ready';
   busy = false;
@@ -46,6 +53,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   await act(async () => root.unmount());
+  setCityCatalogDatabase(null);
 });
 
 async function render() {
@@ -53,7 +61,6 @@ async function render() {
     root.render(
       <PlaceSearchScreen
         title={t('places.searchTitle')}
-        countriesOnly
         onSelect={onSelect}
         onCancel={onCancel}
         onClear={onClear}
@@ -92,7 +99,7 @@ test.each(['loading', 'load-error'] as const)(
     await render();
     expect(element('SearchField').props.value).toBe('Canada');
     const list = element('FlatList');
-    expect(list.props.data.map(({ id }: { id: string }) => id)).toEqual(['ca']);
+    expect(list.props.data[0].id).toBe('ca');
     const result = list.props.renderItem({ item: list.props.data[0] });
     await act(async () => root.render(result));
     const row = element('Pressable');
@@ -111,7 +118,7 @@ test('a busy search keeps loaded travel statuses visible and prevents selection'
   await render();
   await act(async () => element('SearchField').props.onChangeText('Canada'));
   const list = element('FlatList');
-  expect(list.props.data).toHaveLength(1);
+  expect(list.props.data[0].id).toBe('ca');
   expect(list.props.renderItem({ item: list.props.data[0] }).props.disabled).toBe(true);
   expect(element('Button', t('countries.details.clearHome')).props.disabled).toBe(true);
 });

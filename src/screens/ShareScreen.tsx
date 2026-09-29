@@ -25,6 +25,7 @@ import { ShareCard } from '../sharing/ShareCard';
 import {
   defaultShareOptions,
   getShareContent,
+  getSharePlaceIds,
   type ShareOptions,
   type ShareTarget,
 } from '../sharing/content';
@@ -47,27 +48,20 @@ export function ShareScreen({
   const card = useRef<View>(null);
   const layoutVersion = useRef(0);
   const ready = dataStatus === 'ready';
-  const placeIds = useMemo(
-    () =>
-      ready && target?.kind === 'list'
-        ? data.lists.find(({ id }) => id === target.id)?.placeIds ?? []
-        : [],
-    [ready, target, data.lists],
-  );
-  const listPlaces = usePlaces(placeIds);
+  const resolved = usePlaces(ready ? getSharePlaceIds(data, target, options) : []);
   const content = useMemo(
     () =>
-      ready && !listPlaces.loading && !listPlaces.error
-        ? getShareContent(data, target, options, listPlaces.places)
+      ready && !resolved.loading && !resolved.error
+        ? getShareContent(data, target, options, resolved.places)
         : null,
     [
       ready,
       data,
       target,
       options,
-      listPlaces.loading,
-      listPlaces.error,
-      listPlaces.places,
+      resolved.loading,
+      resolved.error,
+      resolved.places,
     ],
   );
   const guard = useActionGuard(content);
@@ -120,9 +114,9 @@ export function ShareScreen({
         </ScreenHeader>
         <DataFeedback />
         <PlaceFeedback
-          loading={listPlaces.loading}
-          error={listPlaces.error}
-          onRetry={listPlaces.retry}
+          loading={resolved.loading}
+          error={resolved.error}
+          onRetry={resolved.retry}
         />
         {content ? (
           <>
@@ -135,35 +129,35 @@ export function ShareScreen({
             >
               <ShareCard content={content} />
             </View>
-            {content.kind !== 'stamp' && (
-              <Surface>
-                <ToggleRow
-                  title={t('sharing.includeWishlist')}
-                  value={options.includeWishlist}
-                  disabled={disabled}
-                  onValueChange={(includeWishlist) =>
-                    setOptions((value) => ({ ...value, includeWishlist }))
-                  }
-                />
-                {content.kind === 'world' && (
-                  <ToggleRow
-                    title={t('sharing.includeHome')}
-                    value={options.includeHome}
-                    disabled={disabled}
-                    onValueChange={(includeHome) =>
-                      setOptions((value) => ({ ...value, includeHome }))
-                    }
-                  />
-                )}
-              </Surface>
-            )}
             {empty && (
               <AppText tone="muted">{t('sharing.emptyList')}</AppText>
             )}
           </>
-        ) : ready && !listPlaces.loading && !listPlaces.error ? (
+        ) : ready && !resolved.loading && !resolved.error ? (
           <AppText tone="muted">{t('sharing.unavailable')}</AppText>
         ) : null}
+        {ready && target && target.kind !== 'stamp' && (
+          <Surface>
+            <ToggleRow
+              title={t('sharing.includeWishlist')}
+              value={options.includeWishlist}
+              disabled={disabled}
+              onValueChange={(includeWishlist) =>
+                setOptions((value) => ({ ...value, includeWishlist }))
+              }
+            />
+            {target.kind === 'world' && (
+              <ToggleRow
+                title={t('sharing.includeHome')}
+                value={options.includeHome}
+                disabled={disabled}
+                onValueChange={(includeHome) =>
+                  setOptions((value) => ({ ...value, includeHome }))
+                }
+              />
+            )}
+          </Surface>
+        )}
       </ScrollView>
       <Button
         style={styles.share}

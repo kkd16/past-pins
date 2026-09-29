@@ -1,6 +1,5 @@
 import { t } from '../localization';
 import { UserFacingError } from './errors';
-import { countryIds } from '../countries/catalog';
 import { dataError, type DataError } from './data-error';
 import type { AppStorage } from '../storage/document-storage';
 import {
@@ -23,7 +22,7 @@ import { isPlaceId } from './place-hierarchy';
 
 export type StatusChangeConfirmation = {
   descendants: number;
-  homeCountryId: string | null;
+  clearsHome: boolean;
   status: PlaceStatus;
 };
 
@@ -188,13 +187,11 @@ export function createAppDataStore(
           current !== next.places[id] &&
           (current === 'lived' || !isVisited(next.places[id])),
       ).length;
-      const homeCountryId = snapshot.data.homeCountryId && !next.homeCountryId
-        ? snapshot.data.homeCountryId
-        : null;
-      if (descendants || homeCountryId) {
+      const clearsHome = snapshot.data.homePlaceId !== null && next.homePlaceId === null;
+      if (descendants || clearsHome) {
         publish({ busy: true });
         try {
-          if (!(await effects.confirmStatusChange({ descendants, homeCountryId, status })))
+          if (!(await effects.confirmStatusChange({ descendants, clearsHome, status })))
             return false;
         } finally {
           publish({ busy: false });
@@ -255,8 +252,8 @@ export function createAppDataStore(
     },
     setHome(id: string | null) {
       if (!editable()) return;
-      if (id !== null && !countryIds.has(id))
-        throw new UserFacingError(t('common.errors.unknownCountry'));
+      if (id !== null && !isPlaceId(id))
+        throw new UserFacingError(t('common.errors.unknownPlace'));
       changeTravel(changeHome(snapshot.data, id));
     },
     updatePreferences(patch: Partial<Preferences>) {
@@ -292,7 +289,7 @@ export function createAppDataStore(
         ...snapshot.data,
         places: {},
         lists: [],
-        homeCountryId: null,
+        homePlaceId: null,
       });
     },
     async resetPreferences() {

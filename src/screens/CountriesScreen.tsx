@@ -25,6 +25,7 @@ import {
 import { showStatusPicker } from '../countries/StatusPicker';
 import type { CountryId } from '../countries/types';
 import { appData } from '../data/app-data';
+import { getHomeCountryId } from '../data/model';
 import { useAppData } from '../data/AppData';
 import { useReducedMotion } from '../motion/ReducedMotion';
 import { useActionGuard } from '../navigation/useActionGuard';
@@ -63,7 +64,7 @@ export function CountriesScreen({
   const { setStatus } = appData;
   const grouping = useAppData((snapshot) => snapshot.data.preferences.countryGrouping);
   const places = useAppData((snapshot) => snapshot.data.places);
-  const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
+  const homeCountryId = useAppData((snapshot) => getHomeCountryId(snapshot.data));
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
   const resetVersion = useAppData((snapshot) => snapshot.resetVersion);

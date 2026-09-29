@@ -19,13 +19,11 @@ import { t } from '../localization';
 
 export function PlaceSearchScreen({
   title,
-  countriesOnly = false,
   onSelect,
   onCancel,
   onClear,
 }: {
   title: string;
-  countriesOnly?: boolean;
   onSelect: (id: string) => void;
   onCancel?: () => void;
   onClear?: () => void;
@@ -37,12 +35,10 @@ export function PlaceSearchScreen({
   const busy = useAppData((snapshot) => snapshot.busy);
   const ready = status === 'ready';
   const disabled = busy || !ready;
-  const results = usePlaceSearch({ query, scope: countriesOnly ? 'country' : 'all' });
-  const searchLabel = t(
-    countriesOnly ? 'countries.search' : 'places.searchAll',
-  );
+  const results = usePlaceSearch({ query });
+  const searchLabel = t('places.searchAll');
   const renderPlace = (place: Place) => <PlaceRow place={place} status={getPlaceStatus(data, place.id)}
-    home={data.homeCountryId === place.id} disabled={disabled}
+    home={data.homePlaceId === place.id} disabled={disabled}
     onPress={(selected) => { Keyboard.dismiss(); onSelect(selected.id); }} />;
   return (
     <Screen onAccessibilityEscape={onCancel}>
@@ -92,15 +88,9 @@ export function PlaceSearchScreen({
           ready && !results.loading && !results.error && !results.suggestions.length ? (
             <View style={styles.empty}>
               <AppText tone="muted">
-                {t(
-                  countriesOnly
-                    ? 'countries.empty.noSearchResults'
-                    : 'places.noSearchResults',
-                )}
+                {t('places.noSearchResults')}
               </AppText>
-              {!countriesOnly && (
-                <AppText tone="muted">{t('places.noSearchResultsHint')}</AppText>
-              )}
+              <AppText tone="muted">{t('places.noSearchResultsHint')}</AppText>
             </View>
           ) : null
         }

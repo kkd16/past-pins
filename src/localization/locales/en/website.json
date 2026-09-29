@@ -40,7 +40,7 @@
     "updated": "Effective September 26, 2026",
     "intro": "PastPins is an iPhone travel atlas developed by Kyle Deliyannides. This policy covers the app and this website. You do not need an account, and the app has no advertising, analytics, or developer-operated server that receives your travel record.",
     "localTitle": "What stays on your iPhone",
-    "localText": "Travel records: country, region, and city statuses, home country, lists, and preferences are saved locally to display your atlas and remember your choices.",
+    "localText": "Travel records: country, region, and city statuses, home place, lists, and preferences are saved locally to display your atlas and remember your choices.",
     "diagnosticsText": "Diagnostics: up to 50 recent technical events contain app versions, timestamps, and error codes. Error and bug report drafts include app/build version, device make/model, and iOS version. Only error reports include the log. Feature requests include no diagnostics or device details. Each asks for consent before opening an editable draft. Automatically included details exclude travel records, list names, coordinates, device names, unique device identifiers, and raw errors. Nothing is sent until you choose Send. Your email account supplies your sender name and email address.",
     "locationTitle": "Optional location and reminders",
     "locationText": "Finding your current country requires location permission. It uses Apple’s native geocoding service, which may send location information to Apple, and an offline map fallback. Apple’s privacy policy covers its handling of this information.",

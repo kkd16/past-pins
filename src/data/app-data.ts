@@ -1,6 +1,5 @@
 import * as Haptics from 'expo-haptics';
 
-import { countryById } from '../countries/catalog';
 import { confirmDestructiveAction } from '../feedback/confirmDestructiveAction';
 import { formatNumber, t } from '../localization';
 import { appStorage } from '../storage/app-storage';
@@ -9,7 +8,7 @@ import { createAppDataStore } from './store';
 
 export const appData = createAppDataStore(appStorage, {
   report: (operation, error) => diagnostics.record(operation, error),
-  confirmStatusChange: ({ descendants, homeCountryId, status }) =>
+  confirmStatusChange: ({ descendants, clearsHome, status }) =>
     confirmDestructiveAction(
       t(descendants ? 'common.statusChangeTitle' : 'common.clearHomeTitle'),
       [
@@ -17,9 +16,7 @@ export const appData = createAppDataStore(appStorage, {
           status === 'visited' ? 'common.downgradeDescendantVisits' : 'common.clearDescendantVisits',
           { count: descendants, amount: formatNumber(descendants) },
         ) : '',
-        homeCountryId ? t('common.clearHomeMessage', {
-          country: countryById.get(homeCountryId)?.name ?? t('common.thisPlace'),
-        }) : '',
+        clearsHome ? t('common.clearHomeMessage') : '',
       ].filter(Boolean).join(' '),
       t('common.updatePlace'),
     ),

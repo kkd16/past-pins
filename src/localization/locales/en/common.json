@@ -21,7 +21,7 @@
   "unknown": "Unknown",
   "thisPlace": "This place",
   "clearHomeTitle": "Clear current home?",
-  "clearHomeMessage": "%{country} will no longer be your home.",
+  "clearHomeMessage": "This will also clear your current home.",
   "updatePlace": "Update place",
   "errors": {
     "invalidListName": "Use 1–%{count} characters on one line.",

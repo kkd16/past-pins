@@ -5,6 +5,7 @@ import {
   changePlaceStatus,
   defaultAppData,
   getPlaceStatus,
+  getHomeCountryId,
   isVisited,
 } from '../src/data/model';
 import { getCityParents } from '../src/cities';
@@ -90,13 +91,13 @@ describe('travel statuses', () => {
     expect(data.places).toEqual({ ca: 'lived', fr: 'lived' });
     const places = data.places;
     data = changeHome(data, null);
-    expect(data.homeCountryId).toBeNull();
+    expect(data.homePlaceId).toBeNull();
     expect(data.places).toBe(places);
     data = changeHome(data, 'ca');
     expect(changePlaceStatus(data, ['ca'], 'visited')).toBe(data);
     const next = changePlaceStatus(data, ['ca'], 'visited', false);
-    expect(next.homeCountryId).toBeNull();
-    expect(data.homeCountryId).toBe('ca');
+    expect(next.homePlaceId).toBeNull();
+    expect(data.homePlaceId).toBe('ca');
   });
 
   test('fresh app data has independent preferences, places and lists; no-op edits preserve identity', () => {
@@ -109,4 +110,24 @@ describe('travel statuses', () => {
     expect(changePlaceStatus(two, [], 'visited')).toBe(two);
     expect(changePlaceStatus(one, ['ca'], 'visited')).toBe(one);
   });
+});
+
+test.each(['ca', ontario, toronto])('home supports %s and preserves former home history', (id) => {
+  const data = changeHome(defaultAppData(), id);
+  expect(data.homePlaceId).toBe(id);
+  expect(data.places[id]).toBe('lived');
+  expect(data.places.ca).toBe('lived');
+  if (id === toronto) expect(data.places[ontario]).toBe('lived');
+  expect(getHomeCountryId(data)).toBe('ca');
+  const moved = changeHome(data, 'fr');
+  expect(moved.places[id]).toBe('lived');
+  expect(moved.homePlaceId).toBe('fr');
+  expect(changeHome(data, null).places).toBe(data.places);
+});
+
+test.each(['ca', ontario, toronto])('downgrading %s clears a contained city home', (id) => {
+  const data = changeHome(defaultAppData(), toronto);
+  const next = changePlaceStatus(data, [id], 'visited', false);
+  expect(next.homePlaceId).toBeNull();
+  expect(data.homePlaceId).toBe(toronto);
 });

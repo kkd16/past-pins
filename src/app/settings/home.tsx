@@ -7,17 +7,16 @@ import { PlaceSearchScreen } from '../../screens/PlaceSearchScreen';
 
 export default function HomeRoute() {
   const { setHome } = appData;
-  const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
+  const homePlaceId = useAppData((snapshot) => snapshot.data.homePlaceId);
   function choose(id: string | null) {
     setHome(id);
     router.back();
   }
   return (
     <PlaceSearchScreen
-      countriesOnly
       title={t('common.currentHome')}
       onSelect={choose}
-      onClear={homeCountryId ? () => choose(null) : undefined}
+      onClear={homePlaceId ? () => choose(null) : undefined}
     />
   );
 }

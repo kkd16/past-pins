@@ -172,7 +172,7 @@ describe('app data owner', () => {
     expect(await f.storage.load()).toEqual(defaultAppData());
     f.store.setHome('jp');
     await settle(f.storage);
-    expect((await f.storage.load()).homeCountryId).toBe('jp');
+    expect((await f.storage.load()).homePlaceId).toBe('jp');
   });
 
   test('failed reset retains live data, and can be retried', async () => {
@@ -268,7 +268,7 @@ describe('app data owner', () => {
       { id: secondId, name: 'Next trip', placeIds: [] },
     ]);
     expect(store.getSnapshot().data.places).toBe(original.places);
-    expect(store.getSnapshot().data.homeCountryId).toBe('ca');
+    expect(store.getSnapshot().data.homePlaceId).toBe('ca');
     await settle(storage);
     expect(await storage.load()).toEqual(store.getSnapshot().data);
   });
@@ -367,11 +367,11 @@ describe('app data owner', () => {
       await f.store.setStatus(['ca'], 'visited', { preserveLived: false }),
     ).toBe(true);
     expect(f.store.getSnapshot().data).toMatchObject({
-      homeCountryId: null,
+      homePlaceId: null,
       places: { ca: 'visited' },
     });
     expect(f.confirmations()).toBe(2);
-    expect(f.store.getSnapshot().data.homeCountryId).toBeNull();
+    expect(f.store.getSnapshot().data.homePlaceId).toBeNull();
   });
 
   test('confirmation locks concurrent writes and default mark-visited skips confirmation', async () => {
@@ -614,7 +614,7 @@ describe('app data owner', () => {
     const listId = f.store.createList('Next trip', ['ca'])!;
     f.store.updatePreferences({ haptics: false });
     await f.store.resetPreferences();
-    expect(f.store.getSnapshot().data.homeCountryId).toBe('ca');
+    expect(f.store.getSnapshot().data.homePlaceId).toBe('ca');
     expect(f.store.getSnapshot().data.places).toEqual({
       ca: 'lived',
       [regionOne]: 'visited',
@@ -629,7 +629,7 @@ describe('app data owner', () => {
     await f.store.clearTravel();
     expect(f.store.getSnapshot().data.places).toEqual({});
     expect(f.store.getSnapshot().data.lists).toEqual([]);
-    expect(f.store.getSnapshot().data.homeCountryId).toBeNull();
+    expect(f.store.getSnapshot().data.homePlaceId).toBeNull();
     expect(f.store.getSnapshot().data.preferences.mapView).toBe('map');
   });
 
@@ -655,7 +655,7 @@ describe('app data owner', () => {
     await f.store.load();
     const replacement = defaultAppData();
     replacement.places.ca = 'lived';
-    replacement.homeCountryId = 'ca';
+    replacement.homePlaceId = 'ca';
     f.failWrites(true);
     await expect(f.store.restore(replacement)).rejects.toThrow('storage-write');
     expect(f.store.getSnapshot().status).toBe('load-error');
@@ -733,7 +733,7 @@ test('recovery blocks edits, including an already-open home confirmation, but pe
   expect(await pending).toBe(false);
   expect(await store.setStatus(['fr'], 'visited')).toBe(false);
   store.updatePreferences({ haptics: false });
-  expect(store.getSnapshot().data).toMatchObject({ homeCountryId: 'ca', preferences: { haptics: true } });
+  expect(store.getSnapshot().data).toMatchObject({ homePlaceId: 'ca', preferences: { haptics: true } });
   await store.restore(defaultAppData());
   expect(store.getSnapshot().recovery).toBe(true);
   store.leaveRecovery();
@@ -755,10 +755,10 @@ describe('hierarchy edits', () => {
     const writes = f.writes();
     expect(await store.setStatus(['ca'], 'wishlist')).toBe(true);
     await settle(f.storage);
-    expect(confirmations).toEqual([{ descendants: 2, homeCountryId: 'ca', status: 'wishlist' }]);
+    expect(confirmations).toEqual([{ descendants: 2, clearsHome: true, status: 'wishlist' }]);
     expect(f.writes()).toBe(writes + 1);
     expect(store.getSnapshot().data.places).toEqual({ ca: 'wishlist' });
-    expect(store.getSnapshot().data.homeCountryId).toBeNull();
+    expect(store.getSnapshot().data.homePlaceId).toBeNull();
     expect(store.getSnapshot().data.lists).toEqual([{ id: listId, name: 'Cities', placeIds: ['city:6167865'] }]);
     expect(await f.storage.load()).toEqual(store.getSnapshot().data);
   });
@@ -816,4 +816,15 @@ describe('hierarchy edits', () => {
     expect(await f.storage.load()).toEqual(f.store.getSnapshot().data);
   });
 
+});
+
+test('city home persists and rejects unknown places', async () => {
+  const f = fixture();
+  await f.store.load();
+  f.store.setHome('city:6167865');
+  await settle(f.storage);
+  const before = f.store.getSnapshot().data;
+  expect((await f.storage.load()).homePlaceId).toBe('city:6167865');
+  expect(() => f.store.setHome('city:999999999')).toThrow('Unknown place');
+  expect(f.store.getSnapshot().data).toBe(before);
 });

@@ -12,8 +12,8 @@
       "ne:1159307653": "wishlist",
       "ae": "visited",
       "ch": "lived",
-      "city:6167865": "visited",
-      "ne:1159309687": "visited"
+      "city:6167865": "lived",
+      "ne:1159309687": "lived"
     },
     "lists": [
       {
@@ -33,7 +33,7 @@
         "placeIds": []
       }
     ],
-    "homeCountryId": "ca",
+    "homePlaceId": "city:6167865",
     "preferences": {
       "mapView": "map",
       "countryLabels": false,

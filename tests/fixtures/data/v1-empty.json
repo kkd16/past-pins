@@ -5,7 +5,7 @@
     "onboardingCompleted": false,
     "places": {},
     "lists": [],
-    "homeCountryId": null,
+    "homePlaceId": null,
     "preferences": {
       "mapView": "globe",
       "countryLabels": true,

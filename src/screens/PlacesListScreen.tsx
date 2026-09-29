@@ -70,7 +70,7 @@ export function PlacesListScreen({ mode, location, query, scope, intent,
       if (isCurrent()) void appData.setStatus([place.id], status, { preserveLived: false, isCurrent });
     });
   }, [guard]);
-  const renderPlace = (place: Place) => <PlaceRow place={place} status={data.places[place.id] ?? 'unvisited'}
+  const renderPlace = (place: Place) => <PlaceRow place={place} status={data.places[place.id] ?? 'unvisited'} home={data.homePlaceId === place.id}
     disabled={disabled} onPress={select} onChangeStatus={changeStatus} />;
   return (
     <Screen>

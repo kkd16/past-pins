@@ -11,7 +11,7 @@ import { ToggleRow } from '../components/ToggleRow';
 import { countryById } from './catalog';
 import { appData as app } from '../data/app-data';
 import { useAppData } from '../data/AppData';
-import { getPlaceStatus, isVisited } from '../data/model';
+import { getHomeCountryId, getPlaceStatus, isVisited } from '../data/model';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { PlaceSelectionContent } from '../places/PlaceSelectionCard';
 import { citiesHref, regionsHref, worldMapHref } from '../places/navigation';
@@ -58,7 +58,7 @@ export function CountryDetailsContent({
   const disabled = !ready || busy;
   const status = getPlaceStatus(data, id);
   const collected = isVisited(status);
-  const home = data.homeCountryId === id;
+  const home = getHomeCountryId(data) === id;
   const cityStats = getPlaceStatistics(data.places, 'city', id);
   const cityProgress = ready ? t('places.cityCount', {
     count: cityStats.visited,

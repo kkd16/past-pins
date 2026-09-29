@@ -5,18 +5,19 @@ import { ChoiceRow } from '../components/ChoiceRow';
 import { DataFeedback } from '../components/DataFeedback';
 import { Screen } from '../components/Screen';
 import { ToggleRow } from '../components/ToggleRow';
-import { countryById } from '../countries/catalog';
+import { useHome } from '../places/useHome';
+import { PlaceFeedback } from '../places/PlaceFeedback';
 import { appData } from '../data/app-data';
 import { useAppData } from '../data/AppData';
 import { recoveryMessage } from '../recovery/error-message';
 import { confirmDestructiveAction } from '../feedback/confirmDestructiveAction';
 import { useToast } from '../feedback/ToastProvider';
-import { formatNumber, t } from '../localization';
+import { t } from '../localization';
 import { ArrivalAlertsSetting } from '../location/ArrivalAlertsSetting';
 import { useActionGuard } from '../navigation/useActionGuard';
 import { pickBackup, shareBackup } from '../settings/backup-files';
 import { SettingsRow, SettingsSection } from '../settings/SettingsSection';
-import { getPlaceStatistics } from '../places/statistics';
+import { getBackupSummary } from '../settings/backup-summary';
 import { composeSupportEmail } from '../support/compose-email';
 import { theme } from '../theme';
 
@@ -46,6 +47,10 @@ export function SettingsScreen({
   const disabled = status !== 'ready' || busy || working;
   const recoveryDisabled = status === 'loading' || busy || working;
   const prefs = data.preferences;
+  const home = useHome();
+  let homeValue = t('settings.chooseHome');
+  if (status !== 'ready') homeValue = t(status === 'load-error' ? 'countries.loadError' : 'countries.loadingPlaces');
+  else if (home.id) homeValue = home.name ?? t(home.error ? 'places.loadError' : 'places.loading');
   const resets = [
     {
       name: 'clear',
@@ -96,19 +101,12 @@ export function SettingsScreen({
     const isCurrent = guard();
     const backup = await pickBackup();
     if (!backup || !isCurrent()) return;
-    const home = backup.homeCountryId
-      ? countryById.get(backup.homeCountryId)!.name
-      : t('common.none');
+    const summary = await getBackupSummary(backup);
+    if (!isCurrent()) return;
     if (
       await confirmDestructiveAction(
         t('settings.replaceTitle'),
-        t('settings.replaceSummary', {
-          countries: formatNumber(getPlaceStatistics(backup.places, 'country').saved),
-          regions: formatNumber(getPlaceStatistics(backup.places, 'region').saved),
-          cities: formatNumber(getPlaceStatistics(backup.places, 'city').saved),
-          lists: formatNumber(backup.lists.length),
-          home,
-        }),
+        summary,
         t('settings.replaceData'),
         isCurrent,
       )
@@ -160,14 +158,11 @@ export function SettingsScreen({
           <SettingsRow
             title={t('common.currentHome')}
             disclosure
-            value={
-              data.homeCountryId
-                ? countryById.get(data.homeCountryId)?.name
-                : t('settings.chooseCountry')
-            }
+            value={homeValue}
             disabled={disabled}
             onPress={() => onOpen('home')}
           />
+          <PlaceFeedback loading={false} error={home.error} onRetry={home.retry} />
         </SettingsSection>
         <SettingsSection title={t('settings.countryList')}>
           <ChoiceRow

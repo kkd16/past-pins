@@ -51,13 +51,15 @@ Key patterns:
 
 ## Data format
 
-The v1 document is `{ app: "past-pins", schemaVersion: 1, data }`.
+The unreleased v1 document is `{ app: "past-pins", schemaVersion: 1, data }`.
+
+`homePlaceId` stores the selected country, region, or city ID, or `null`.
 
 Omitted fields within `preferences` use defaults; saves write all preferences. Invalid values, unknown fields, and missing required data are rejected.
 
 - **Model:** [model.ts](src/data/model.ts) defines transitions; [document.ts](src/data/document.ts) decodes both saved files and imports.
   - Countries, regions, and cities share one status map; lists store catalog IDs.
-  - Lived counts as Visited; home marks its country Lived. Child visits promote parents, but removing a child preserves parent history.
+  - Lived counts as Visited; home can be a country, region, or city and marks itself and its parents Lived. Child visits promote parents, but removing a child preserves parent history.
   - Lowering a parent confirms changes to contained visits and home. Wishlists and lists are independent.
 - **Persistence:** [document-storage.ts](src/storage/document-storage.ts) serializes atomic writes of one document.
   - Edits publish immediately; failed saves offer Retry. Unsaved changes can be lost on exit.

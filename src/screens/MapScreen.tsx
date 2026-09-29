@@ -19,6 +19,7 @@ import { DataFeedback } from '../components/DataFeedback';
 import { countryById } from '../countries/catalog';
 import { CountryMapSheet } from '../countries/CountryMapSheet';
 import { appData as app } from '../data/app-data';
+import { getHomeCountryId } from '../data/model';
 import { useAppData } from '../data/AppData';
 import { UserFacingError } from '../data/errors';
 import { t } from '../localization';
@@ -51,8 +52,9 @@ export function MapScreen({
   onFocusConsumed: () => void;
 }) {
   const places = useAppData((snapshot) => snapshot.data.places);
-  const homeCountryId = useAppData((snapshot) => snapshot.data.homeCountryId);
+  const homeCountryId = useAppData((snapshot) => getHomeCountryId(snapshot.data));
   const preferences = useAppData((snapshot) => snapshot.data.preferences);
+  const homePlaceId = useAppData((snapshot) => snapshot.data.homePlaceId);
   const dataStatus = useAppData((snapshot) => snapshot.status);
   const busy = useAppData((snapshot) => snapshot.busy);
   const resetVersion = useAppData((snapshot) => snapshot.resetVersion);
@@ -267,6 +269,7 @@ export function MapScreen({
             />
             {ready && selectedCity ? (
               <PlaceSelectionCard
+                home={homePlaceId === selectedCity.id}
                 key={`${selectedCity.id}:${resetVersion}`}
                 title={selectedCity.name}
                 subtitle={getPlaceSubtitle(selectedCity)}

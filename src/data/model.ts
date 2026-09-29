@@ -26,7 +26,7 @@ export type AppData = {
   onboardingCompleted: boolean;
   places: Partial<Record<string, SavedStatus>>;
   lists: TravelList[];
-  homeCountryId: string | null;
+  homePlaceId: string | null;
   preferences: Preferences;
 };
 
@@ -44,7 +44,7 @@ export function defaultAppData(): AppData {
     onboardingCompleted: false,
     places: {},
     lists: [],
-    homeCountryId: null,
+    homePlaceId: null,
     preferences: { ...defaultPreferences },
   };
 }
@@ -95,21 +95,22 @@ export function changePlaceStatus(
       if (current === 'lived' || !isVisited(places[parent])) set(parent, current);
     }
   }
-  const homeCountryId =
-    data.homeCountryId && places[data.homeCountryId] === 'lived'
-      ? data.homeCountryId
+  const homePlaceId =
+    data.homePlaceId && places[data.homePlaceId] === 'lived'
+      ? data.homePlaceId
       : null;
-  return { ...data, places, homeCountryId };
+  return { ...data, places, homePlaceId };
 }
 
 export function changeHome(data: AppData, id: string | null): AppData {
-  if (data.homeCountryId === id) return data;
+  if (data.homePlaceId === id) return data;
   return {
-    ...data,
-    places:
-      id && data.places[id] !== 'lived'
-        ? { ...data.places, [id]: 'lived' }
-        : data.places,
-    homeCountryId: id,
+    ...(id ? changePlaceStatus(data, [id], 'lived') : data),
+    homePlaceId: id,
   };
+}
+
+export function getHomeCountryId(data: AppData): string | null {
+  const id = data.homePlaceId;
+  return id ? getParentPlaceIds(id).at(-1) ?? id : null;
 }

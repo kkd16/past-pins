@@ -144,9 +144,9 @@ describe('current backup format', () => {
       { places: { ca: 'unvisited' } },
       { places: { ca: null } },
       { places: ['ca'] },
-      { places: { ca: 'visited' }, homeCountryId: 'ca' },
-      { homeCountryId: 'fr' },
-      { homeCountryId: false },
+      { places: { ca: 'visited' }, homePlaceId: 'ca' },
+      { homePlaceId: 'fr' },
+      { homePlaceId: false },
     ])
       expect(() =>
         validateAppData({ ...defaultAppData(), ...patch }),
@@ -163,7 +163,7 @@ describe('current backup format', () => {
     ]) expect(() => validateAppData({ ...defaultAppData(), places })).toThrow();
     const places = { 'city:6167865': 'visited', 'ne:1159309687': 'visited', ca: 'lived' } as const;
     expect(validateAppData({ ...defaultAppData(), places }).places).toEqual(places);
-    expect(() => validateAppData({ ...defaultAppData(), places, homeCountryId: 'city:6167865' })).toThrow();
+    expect(() => validateAppData({ ...defaultAppData(), places, homePlaceId: 'city:6167865' })).toThrow();
   });
 
   test('defaults omitted preference fields', () => {
@@ -211,4 +211,11 @@ describe('current backup format', () => {
       ).toThrow();
     expect(() => validateAppData({ ...data, extra: true })).toThrow();
   });
+});
+
+test.each(['ca', 'ne:1159309687', 'city:6167865'])('backup and saved-file decoder round trip home %s', (id) => {
+  const data = changeHome(defaultAppData(), id);
+  expect(decodeDocument(encodeDocument(data))).toEqual(data);
+  expect(() => encodeDocument({ ...data, homePlaceId: 'city:999999999' })).toThrow();
+  expect(() => encodeDocument({ ...data, places: { ...data.places, [id]: 'visited' } })).toThrow();
 });
