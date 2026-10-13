@@ -1,0 +1,18 @@
+appId: io.github.kkd16.pastpins
+---
+- launchApp:
+    permissions:
+      all: deny
+- openLink: "past-pins:///lists/demo-european-summer"
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+- extendedWaitUntil:
+    visible: "European summer"
+    timeout: 30000
+- assertVisible: "4 of 6 visited"
+- assertVisible: "Edit places"
+- waitForAnimationToEnd:
+    timeout: 5000

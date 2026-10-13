@@ -1,0 +1,19 @@
+appId: io.github.kkd16.pastpins
+---
+- launchApp:
+    permissions:
+      all: deny
+- openLink: "past-pins:///stats"
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+- extendedWaitUntil:
+    visible: "Your world"
+    timeout: 30000
+- assertVisible: ".*Countries visited.*"
+- assertVisible: "Countries, Wishlist: [0-9]+"
+- assertVisible: "Countries, Lived: [0-9]+"
+- waitForAnimationToEnd:
+    timeout: 5000

@@ -140,6 +140,12 @@ For each release, finish preparation and publish the [source and notices](#sourc
 
 EAS output stays in temporary runner files to keep signed download URLs out of public logs. Use your Expo dashboard to inspect builds or submission failures. If submission fails after a successful build, retry with `bunx eas-cli submit --platform ios --profile production --id BUILD_ID` using that completed build. Do not rerun the whole workflow just to retry an upload; it creates another build and increments the build number. If signing credentials expire, repair them with `bunx eas-cli credentials --platform ios` before another run.
 
+### Capture release screenshots
+
+Run **Actions → Capture screenshots → Run workflow → main**, then approve `ios-release`. The workflow verifies the commit, builds a standalone simulator app, and captures real screens with fictional travel data. An optional completed simulator build ID reuses that build; its recorded source commit must match the UI being released. Download the `app-store-screenshots` artifact, review every image, and save the selected JPEGs and `capture.json` under `assets/app-store/en/` before uploading them to App Store Connect.
+
+On a Mac with Xcode, Bun, and [Maestro](https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli), run `bash scripts/screenshots/capture.sh /absolute/path/to/simulator.tar.gz /absolute/path/to/output`. The script creates and deletes its own iPhone 16 Pro simulator. The [demo document](scripts/screenshots/demo-document.json) uses the same format as app backups; the capture flows are in [.maestro/screenshots](.maestro/screenshots/). Recheck [Apple’s current specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/) before each release. Captures use 1206 × 2622 portraits, English, and native JPEG output without transparency.
+
 ### Source and license obligations
 
 - **Notices:** `bun run licenses:generate` includes app dependencies, development tools, and data credits. `bun run licenses:check` checks the result; missing text stops generation.

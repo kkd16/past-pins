@@ -1,0 +1,110 @@
+{
+  "app": "past-pins",
+  "schemaVersion": 1,
+  "data": {
+    "onboardingCompleted": true,
+    "places": {
+      "ca": "visited",
+      "us": "visited",
+      "mx": "visited",
+      "cr": "visited",
+      "gb": "visited",
+      "ie": "visited",
+      "fr": "visited",
+      "es": "visited",
+      "pt": "visited",
+      "de": "visited",
+      "be": "visited",
+      "ch": "visited",
+      "at": "visited",
+      "it": "visited",
+      "gr": "visited",
+      "is": "visited",
+      "dk": "visited",
+      "se": "visited",
+      "jp": "visited",
+      "th": "visited",
+      "au": "visited",
+      "ma": "visited",
+      "br": "visited",
+      "ar": "visited",
+      "no": "wishlist",
+      "fi": "wishlist",
+      "hr": "wishlist",
+      "tr": "wishlist",
+      "nz": "wishlist",
+      "fj": "wishlist",
+      "za": "wishlist",
+      "in": "wishlist",
+      "city:6167865": "visited",
+      "city:2988507": "visited",
+      "city:3169070": "visited",
+      "city:3176959": "visited",
+      "city:3173435": "visited",
+      "city:3128760": "visited",
+      "city:2950159": "visited",
+      "city:2267057": "visited",
+      "city:1857910": "visited",
+      "city:1850147": "visited",
+      "city:2673730": "visited",
+      "ne:1159309687": "visited",
+      "ne:1159316799": "visited",
+      "ne:1159309565": "visited",
+      "ne:1159317003": "visited",
+      "ne:1159316939": "visited",
+      "ne:1159309497": "visited",
+      "ne:1159312769": "visited",
+      "ne:1159310551": "visited",
+      "ne:1159309411": "visited",
+      "ne:1159311135": "visited",
+      "ne:1159308733": "visited",
+      "city:2759794": "lived",
+      "ne:1159315439": "lived",
+      "nl": "lived"
+    },
+    "lists": [
+      {
+        "id": "demo-european-summer",
+        "name": "European summer",
+        "placeIds": [
+          "fr",
+          "it",
+          "es",
+          "gr",
+          "hr",
+          "tr"
+        ]
+      },
+      {
+        "id": "demo-nordic-journey",
+        "name": "Nordic journey",
+        "placeIds": [
+          "is",
+          "dk",
+          "se",
+          "no",
+          "fi"
+        ]
+      },
+      {
+        "id": "demo-pacific-dream",
+        "name": "Pacific dream",
+        "placeIds": [
+          "jp",
+          "au",
+          "nz",
+          "fj"
+        ]
+      }
+    ],
+    "homePlaceId": "city:2759794",
+    "preferences": {
+      "mapView": "globe",
+      "countryGrouping": "continent",
+      "countryLabels": true,
+      "mapSummary": true,
+      "haptics": false,
+      "countryArrivalAlerts": false
+    }
+  }
+}

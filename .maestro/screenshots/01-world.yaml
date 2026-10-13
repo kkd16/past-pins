@@ -1,0 +1,12 @@
+appId: io.github.kkd16.pastpins
+---
+- launchApp:
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible: "[0-9]+ countries visited"
+    timeout: 30000
+- assertVisible: "Globe"
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertNotVisible: "The globe couldn’t load."

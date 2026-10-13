@@ -15,6 +15,14 @@
     "production": {
       "extends": "base",
       "autoIncrement": true
+    },
+    "screenshots": {
+      "extends": "production",
+      "autoIncrement": false,
+      "withoutCredentials": true,
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {

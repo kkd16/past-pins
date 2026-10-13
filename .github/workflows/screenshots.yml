@@ -1,0 +1,69 @@
+name: Capture screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: Completed iOS simulator build ID to reuse; leave empty to build this commit
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-screenshots
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
+    runs-on: macos-26
+    timeout-minutes: 300
+    environment: ios-release
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+      - run: bun run verify
+      - name: Get the simulator build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          BUILD_ID: ${{ inputs.build_id }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Add EXPO_TOKEN to the ios-release environment."
+            exit 1
+          fi
+          umask 077
+          if [ -n "$BUILD_ID" ]; then
+            bunx eas-cli build:view "$BUILD_ID" --json > "$RUNNER_TEMP/build.json" 2> "$RUNNER_TEMP/eas.log"
+          else
+            bunx eas-cli build --platform ios --profile screenshots --non-interactive --wait --json > "$RUNNER_TEMP/builds.json" 2> "$RUNNER_TEMP/eas.log"
+            jq '.[0]' "$RUNNER_TEMP/builds.json" > "$RUNNER_TEMP/build.json"
+          fi
+          archive_url="$(jq -er 'select(.status == "FINISHED" and .platform == "IOS" and .isForIosSimulator and .app.id == "cb45cd45-ff76-42b1-878a-a548b611d249") | .artifacts.applicationArchiveUrl' "$RUNNER_TEMP/build.json")"
+          echo "::add-mask::$archive_url"
+          curl --fail --silent --show-error --location "$archive_url" --output "$RUNNER_TEMP/simulator.tar.gz"
+      - name: Install Maestro
+        run: |
+          curl --fail --silent --show-error --location https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Capture native iPhone screenshots
+        env:
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        run: |
+          bash scripts/screenshots/capture.sh "$RUNNER_TEMP/simulator.tar.gz" "$RUNNER_TEMP/screenshots"
+          jq '{buildId: .id, sourceCommit: .gitCommitHash, appVersion, appBuildVersion, device: "iPhone 16 Pro", locale: "en-US", dimensions: [1206, 2622]}' "$RUNNER_TEMP/build.json" > "$RUNNER_TEMP/screenshots/capture.json"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: app-store-screenshots
+          path: ${{ runner.temp }}/screenshots/
+          if-no-files-found: error
+          retention-days: 30
