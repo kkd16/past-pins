@@ -4,7 +4,8 @@ set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
 archive="${1:?Pass an EAS iOS simulator archive.}"
 output="${2:?Pass a screenshot output directory.}"
-device="$(xcrun simctl create 'PastPins screenshots' com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro)"
+model="${3:-iPhone-16-Pro}"
+device="$(xcrun simctl create 'PastPins screenshots' "com.apple.CoreSimulator.SimDeviceType.$model")"
 scratch="$(mktemp -d)"
 cleanup() {
   capture_status=$?
@@ -32,7 +33,7 @@ for flow in .maestro/screenshots/*.yaml; do
   maestro --device "$device" test "$flow"
   xcrun simctl io "$device" screenshot --type=jpeg "$output/$name.jpg"
   info="$(sips -g pixelWidth -g pixelHeight -g hasAlpha "$output/$name.jpg")"
-  if ! [[ "$info" == *'pixelWidth: 1206'* && "$info" == *'pixelHeight: 2622'* && "$info" == *'hasAlpha: no'* ]]; then
+  if ! [[ "$info" == *'hasAlpha: no'* && ( "$info" == *'pixelWidth: 1206'* && "$info" == *'pixelHeight: 2622'* || "$info" == *'pixelWidth: 1320'* && "$info" == *'pixelHeight: 2868'* ) ]]; then
     echo "Unexpected App Store screenshot dimensions or transparency: $name" >&2
     exit 1
   fi

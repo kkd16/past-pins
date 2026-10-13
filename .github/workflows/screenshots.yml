@@ -75,8 +75,10 @@ jobs:
         env:
           MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
-          bash scripts/screenshots/capture.sh "$RUNNER_TEMP/simulator.tar.gz" "$RUNNER_TEMP/screenshots"
-          jq '{buildId: .id, sourceCommit: .gitCommitHash, appVersion, appBuildVersion, device: "iPhone 16 Pro", locale: "en-US", dimensions: [1206, 2622]}' "$RUNNER_TEMP/build.json" > "$RUNNER_TEMP/screenshots/capture.json"
+          for model in iPhone-16-Pro iPhone-16-Pro-Max; do
+            bash scripts/screenshots/capture.sh "$RUNNER_TEMP/simulator.tar.gz" "$RUNNER_TEMP/screenshots/$model" "$model"
+          done
+          jq '{buildId: .id, sourceCommit: .gitCommitHash, appVersion, appBuildVersion, locale: "en-US", devices: [{name: "iPhone 16 Pro", directory: "iPhone-16-Pro", dimensions: [1206, 2622]}, {name: "iPhone 16 Pro Max", directory: "iPhone-16-Pro-Max", dimensions: [1320, 2868]}]}' "$RUNNER_TEMP/build.json" > "$RUNNER_TEMP/screenshots/capture.json"
       - uses: actions/upload-artifact@v7
         if: always() && steps.capture.outcome != 'skipped'
         with:
