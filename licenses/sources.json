@@ -65,7 +65,7 @@
   },
   {
     "packages": [
-      "expo@57.0.25"
+      "expo@57.0.28"
     ],
     "file": "licenses/upstream/web-streams-polyfill-4.1.0.txt",
     "url": "https://github.com/MattiasBuelens/web-streams-polyfill/blob/v4.1.0/LICENSE"
@@ -93,7 +93,7 @@
   },
   {
     "packages": [
-      "expo-router@57.0.23"
+      "expo-router@57.0.26"
     ],
     "file": "node_modules/expo/LICENSE",
     "url": "https://github.com/expo/expo/blob/9349d1457178dd9cccb8bdd3aed47473c49134e1/LICENSE"
@@ -110,7 +110,7 @@
   },
   {
     "packages": [
-      "expo-router@57.0.23"
+      "expo-router@57.0.26"
     ],
     "file": "licenses/upstream/react-navigation.txt",
     "url": "https://github.com/react-navigation/react-navigation/blob/90950419c0ee5dec77cd40cee0687add80dcf625/packages/core/LICENSE"
@@ -128,14 +128,6 @@
     "url": "https://raw.githubusercontent.com/fb55/boolbase/54811f01c797a6bb1c263183ae90b7dd627e0638/LICENSE",
     "packages": [
       "boolbase@1.0.0"
-    ]
-  },
-  {
-    "file": "licenses/upstream/facebook-watchman.txt",
-    "url": "https://raw.githubusercontent.com/facebook/watchman/v4.9.0/LICENSE",
-    "packages": [
-      "bser@2.1.1",
-      "fb-watchman@2.0.2"
     ]
   },
   {
@@ -315,30 +307,6 @@
   },
   {
     "packages": [
-      "@expo/devcert@1.2.1"
-    ],
-    "file": "licenses/upstream/mit-terms.txt",
-    "url": "https://registry.npmjs.org/@expo/devcert/1.2.1",
-    "attribution": "MIT © Dave Wasmer. Source: package README."
-  },
-  {
-    "packages": [
-      "@expo/sdk-runtime-versions@1.0.0"
-    ],
-    "file": "licenses/upstream/mit-terms.txt",
-    "url": "https://registry.npmjs.org/@expo/sdk-runtime-versions/1.0.0",
-    "attribution": "Author: Expo <support@expo.io>. Declared license: MIT."
-  },
-  {
-    "packages": [
-      "@expo/ws-tunnel@2.0.0"
-    ],
-    "file": "licenses/upstream/mit-terms.txt",
-    "url": "https://registry.npmjs.org/@expo/ws-tunnel/2.0.0",
-    "attribution": "Publisher: Expo. Declared license: MIT."
-  },
-  {
-    "packages": [
       "client-only@0.0.1"
     ],
     "file": "licenses/upstream/mit-terms.txt",
@@ -379,14 +347,6 @@
   },
   {
     "packages": [
-      "@expo/xcpretty@4.4.5"
-    ],
-    "file": "licenses/upstream/bsd-3-clause-terms.txt",
-    "url": "https://registry.npmjs.org/@expo/xcpretty/4.4.5",
-    "attribution": "Author: Evan Bacon <bacon@expo.io>. Declared license: BSD-3-Clause."
-  },
-  {
-    "packages": [
       "jimp-compact@0.16.1"
     ],
     "file": "licenses/upstream/jimp.txt",
@@ -414,7 +374,7 @@
   },
   {
     "packages": [
-      "expo-sqlite@57.0.3"
+      "expo-sqlite@57.0.4"
     ],
     "file": "licenses/upstream/sqlite-3.50.3.txt",
     "url": "https://raw.githubusercontent.com/expo/expo/9e5319c0f821a27b7924841903abae50e2b41790/packages/expo-sqlite/vendor/sqlite3/sqlite3.c"
