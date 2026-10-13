@@ -18,5 +18,5 @@ appId: io.github.kkd16.pastpins
     duration: 500
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "Japan"
+- assertVisible: "Japan, Asia, Visited"
 - assertVisible: "Enlarge stamp for Japan"
