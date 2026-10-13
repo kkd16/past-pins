@@ -1,6 +1,7 @@
 {
   "permissionMessage": "Show your location on the map.",
   "alwaysPermissionMessage": "Detect new countries in the background and remind you to mark them visited.",
+  "motionPermissionMessage": "PastPins does not use motion or fitness data. Its location library includes motion features that require this privacy description.",
   "arrivalSettingsTitle": "Travel reminders",
   "arrivalSetting": "New country reminders",
   "arrivalDescription": "Remind me to mark new countries visited. Needs Always location and notifications.",

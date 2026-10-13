@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         locationAlwaysPermission: false,
         locationAlwaysAndWhenInUsePermission: location.alwaysPermissionMessage,
         isIosBackgroundLocationEnabled: true,
-        motionUsagePermission: false,
+        motionUsagePermission: location.motionPermissionMessage,
       },
     ],
     'expo-notifications',
