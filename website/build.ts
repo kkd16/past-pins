@@ -8,6 +8,11 @@ import messages from '../src/localization/locales/en/website.json';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const output = join(root, '_site');
 const pages = ['index.html', 'privacy/index.html', 'support/index.html'];
+const screenshots = [
+  '01-world.jpg',
+  '02-places.jpg',
+  '03-list.jpg',
+];
 const { t } = createLocalization({ en: messages }, 'en');
 type MessageKey = Parameters<typeof t>[0];
 
@@ -48,4 +53,11 @@ await Bun.write(
   join(output, 'styles.css'),
   Bun.file(join(root, 'website/styles.css')),
 );
-console.log('Built Home, Privacy, and Support in _site/.');
+await mkdir(join(output, 'screenshots'), { recursive: true });
+for (const screenshot of screenshots) {
+  await Bun.write(
+    join(output, 'screenshots', screenshot),
+    Bun.file(join(root, 'assets/app-store/en/iPhone-16-Pro', screenshot)),
+  );
+}
+console.log('Built Home, Privacy, Support, and app screenshots in _site/.');

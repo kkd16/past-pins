@@ -1,0 +1,16 @@
+{
+  "buildId": "e6a41500-f3d6-452c-97b9-f8b07b1fbcb3",
+  "sourceCommit": "fc5374c78a75d8901ef677a14228758fc5c0c474",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "4",
+  "locale": "en-US",
+  "devices": [
+    {
+      "name": "iPhone 16 Pro",
+      "directory": "iPhone-16-Pro",
+      "dimensions": [1206, 2622]
+    }
+  ],
+  "captureRun": "https://github.com/kkd16/past-pins/actions/runs/38349451925",
+  "screenshots": ["01-world.jpg", "02-places.jpg", "03-list.jpg"]
+}

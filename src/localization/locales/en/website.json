@@ -30,7 +30,19 @@
     "aboutText": "PastPins is open source. Explore the code, contribute an improvement, or get in touch for help.",
     "supportLink": "Get support",
     "privacyLink": "Read the privacy policy",
-    "licenseText": "The source is available under GNU GPL version 3 or later, with additional permission for Apple App Store distribution. Third-party materials keep their own licenses."
+    "licenseText": "The source is available under GNU GPL version 3 or later, with additional permission for Apple App Store distribution. Third-party materials keep their own licenses.",
+    "screenshotsTitle": "A look inside PastPins",
+    "screenshotsIntro": "Browse your places and bring each trip together in a list.",
+    "screenshotsHint": "Select a screenshot to view it full size.",
+    "worldScreenshotTitle": "Your world",
+    "worldScreenshotText": "See Visited, Lived, and Wishlist places on your globe.",
+    "worldScreenshotAlt": "PastPins atlas with a globe showing visited, lived, and wishlist countries.",
+    "placesScreenshotTitle": "Places you have visited",
+    "placesScreenshotText": "Browse your travel record country by country.",
+    "placesScreenshotAlt": "PastPins Places screen listing visited countries in Europe.",
+    "listScreenshotTitle": "Trips and travel goals",
+    "listScreenshotText": "Bring the places for each trip together in a list.",
+    "listScreenshotAlt": "PastPins European summer list with a map, four of six places visited, and country rows."
   },
   "privacy": {
     "title": "Privacy policy — PastPins",

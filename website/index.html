@@ -21,13 +21,73 @@
       </nav>
     </header>
 
-    <main id="main" tabindex="-1">
+    <main id="main" class="home-page" tabindex="-1">
       <div class="hero">
-        <p class="eyebrow">{{home.eyebrow}}</p>
-        <h1>{{home.heading}}</h1>
-        <p class="intro">{{home.intro}}</p>
-        <p class="status">{{home.status}}</p>
+        <div class="hero-copy">
+          <p class="eyebrow">{{home.eyebrow}}</p>
+          <h1>{{home.heading}}</h1>
+          <p class="intro">{{home.intro}}</p>
+          <p class="status">{{home.status}}</p>
+        </div>
+        <figure class="screenshot screenshot-world">
+          <a href="/past-pins/screenshots/01-world.jpg">
+            <img
+              src="/past-pins/screenshots/01-world.jpg"
+              width="1206"
+              height="2622"
+              fetchpriority="high"
+              decoding="async"
+              alt="{{home.worldScreenshotAlt}}"
+            />
+          </a>
+          <figcaption>
+            <strong>{{home.worldScreenshotTitle}}</strong>
+            <span>{{home.worldScreenshotText}}</span>
+          </figcaption>
+        </figure>
       </div>
+
+      <section class="screenshots" aria-labelledby="screenshots-heading">
+        <div class="screenshots-heading">
+          <h2 id="screenshots-heading">{{home.screenshotsTitle}}</h2>
+          <p>{{home.screenshotsIntro}}</p>
+          <p class="muted">{{home.screenshotsHint}}</p>
+        </div>
+        <div class="screenshot-grid">
+          <figure class="screenshot">
+            <a href="/past-pins/screenshots/02-places.jpg">
+              <img
+                src="/past-pins/screenshots/02-places.jpg"
+                width="1206"
+                height="2622"
+                loading="lazy"
+                decoding="async"
+                alt="{{home.placesScreenshotAlt}}"
+              />
+            </a>
+            <figcaption>
+              <strong>{{home.placesScreenshotTitle}}</strong>
+              <span>{{home.placesScreenshotText}}</span>
+            </figcaption>
+          </figure>
+          <figure class="screenshot">
+            <a href="/past-pins/screenshots/03-list.jpg">
+              <img
+                src="/past-pins/screenshots/03-list.jpg"
+                width="1206"
+                height="2622"
+                loading="lazy"
+                decoding="async"
+                alt="{{home.listScreenshotAlt}}"
+              />
+            </a>
+            <figcaption>
+              <strong>{{home.listScreenshotTitle}}</strong>
+              <span>{{home.listScreenshotText}}</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
 
       <section class="features">
         <h2>{{home.featuresTitle}}</h2>
