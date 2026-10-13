@@ -25,9 +25,10 @@ mock.module('../src/components/ChoiceRow', () => ({ ChoiceRow: 'ChoiceRow' }));
 mock.module('../src/components/ToggleRow', () => ({ ToggleRow: 'ToggleRow' }));
 mock.module('../src/components/Screen', () => ({ Screen: 'Screen' }));
 mock.module('../src/components/DataFeedback', () => ({ DataFeedback: 'DataFeedback' }));
+mock.module('../src/components/AppText', () => ({ AppText: 'Text' }));
+mock.module('../src/components/Button', () => ({ Button: 'Button' }));
 mock.module('../src/settings/SettingsSection', () => ({ SettingsSection: 'SettingsSection', SettingsRow: 'SettingsRow' }));
-
-mock.module('../src/places/PlaceFeedback', () => ({ PlaceFeedback: 'PlaceFeedback' }));
+mock.module('../src/support/ReportErrorButton', () => ({ ReportErrorButton: 'ReportErrorButton' }));
 
 const citySource = new Database(new URL('../src/cities/catalog.db', import.meta.url).pathname, { readonly: true });
 const cityConnection = { getAllAsync: async (sql: string, params: (string | number)[]) => citySource.query(sql).all(...params) } as unknown as SQLiteDatabase;
