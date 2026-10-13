@@ -74,6 +74,7 @@ jobs:
         id: capture
         env:
           MAESTRO_CLI_NO_ANALYTICS: "1"
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: "600000"
         run: |
           for model in iPhone-16-Pro iPhone-16-Pro-Max; do
             bash scripts/screenshots/capture.sh "$RUNNER_TEMP/simulator.tar.gz" "$RUNNER_TEMP/screenshots/$model" "$model"
