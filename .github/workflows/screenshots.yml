@@ -55,13 +55,14 @@ jobs:
           curl --fail --silent --show-error --location https://get.maestro.mobile.dev | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
       - name: Capture native iPhone screenshots
+        id: capture
         env:
           MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
           bash scripts/screenshots/capture.sh "$RUNNER_TEMP/simulator.tar.gz" "$RUNNER_TEMP/screenshots"
           jq '{buildId: .id, sourceCommit: .gitCommitHash, appVersion, appBuildVersion, device: "iPhone 16 Pro", locale: "en-US", dimensions: [1206, 2622]}' "$RUNNER_TEMP/build.json" > "$RUNNER_TEMP/screenshots/capture.json"
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && steps.capture.outcome != 'skipped'
         with:
           name: app-store-screenshots
           path: ${{ runner.temp }}/screenshots/

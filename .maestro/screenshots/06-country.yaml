@@ -3,14 +3,14 @@ appId: io.github.kkd16.pastpins
 - launchApp:
     permissions:
       all: deny
-- openLink: "past-pins:///country/it"
+- openLink: "past-pins:///country/jp"
 - runFlow:
     when:
       visible: "Open"
     commands:
       - tapOn: "Open"
 - extendedWaitUntil:
-    visible: "Cities in Italy"
+    visible: "Cities in Japan"
     timeout: 30000
 - swipe:
     start: "50%, 37%"
@@ -18,5 +18,5 @@ appId: io.github.kkd16.pastpins
     duration: 500
 - waitForAnimationToEnd:
     timeout: 5000
-- assertVisible: "Italy"
-- assertVisible: "Enlarge stamp for Italy"
+- assertVisible: "Japan"
+- assertVisible: "Enlarge stamp for Japan"

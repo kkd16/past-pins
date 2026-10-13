@@ -1,6 +1,6 @@
 import plist from '@expo/plist';
 import { afterEach, expect, test } from 'bun:test';
-import { cp, mkdtemp, rm, symlink } from 'node:fs/promises';
+import { cp, mkdtemp, realpath, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -13,7 +13,7 @@ const notice: Notice = { name: 'example', version: '1.0.0', license: 'MIT', text
 const directories: string[] = [];
 
 async function fixture() {
-  const root = await mkdtemp(join(tmpdir(), 'pastpins-licenses-test-'));
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'pastpins-licenses-test-')));
   directories.push(root);
   return root;
 }
@@ -229,7 +229,7 @@ async function cliFixture() {
     await Bun.write(join(root, name, 'LICENSE'), license);
   }
   const install = Bun.spawnSync([process.execPath, 'install', '--ignore-scripts'], { cwd: root });
-  expect(install.exitCode).toBe(0);
+  expect(install.exitCode, install.stderr.toString()).toBe(0);
   await Bun.write(join(root, 'scripts/data/subdivisions-source.json'), JSON.stringify({ version: '1', license: 'Public domain' }));
   await Bun.write(join(root, 'scripts/data/cities-source.json'), JSON.stringify({ snapshotDate: '2026-09-27', license: 'CC-BY-4.0' }));
   await Bun.write(join(root, 'licenses/sources.json'), JSON.stringify([{
@@ -301,7 +301,8 @@ EXTERNAL SOURCES:
   ExampleNative:
     :podspec: ../node_modules/example/ios/ExampleNative.podspec
 `, [{ Title: 'NativeOnly', FooterText: license }]);
-  expect(run('--native').exitCode).toBe(0);
+  const generatedNative = run('--native');
+  expect(generatedNative.exitCode, generatedNative.stderr.toString()).toBe(0);
   const native = await Bun.file(output).text();
   expect((JSON.parse(native) as Notice[]).map((entry) => entry.name)).toContain('NativeOnly');
   expect(run('--native', '--check').exitCode).toBe(0);
