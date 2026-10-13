@@ -127,6 +127,19 @@ Use the existing EAS project, Apple team, and App Store Connect record for `io.g
 5. **Release:** choose timing/phased rollout, submit, and monitor crashes and support feedback.
    - If needed, pause rollout and ship a newer compatible version. Never downgrade or erase saved data.
 
+### Build and submit with GitHub Actions
+
+The [Release iOS workflow](.github/workflows/release-ios.yml) replaces the local build and submission commands above with one manual run. It verifies the selected commit with `bun run verify`, waits for owner approval, builds with EAS, and submits that exact build. Only the repository owner can start or rerun its jobs, and only `main` is allowed. Active releases run one at a time.
+
+One-time setup:
+
+1. In GitHub **Settings → Environments → ios-release**, allow only the `main` branch, require the repository owner as reviewer, and allow that owner to approve their own run. Disable administrator bypass if other administrators are added.
+2. Create an [Expo access token](https://docs.expo.dev/accounts/programmatic-access/) and add it there as the environment secret `EXPO_TOKEN`. Keep signing credentials and the assigned App Store Connect API key in EAS; no Apple credentials belong in the repository.
+
+For each release, finish preparation and publish the [source and notices](#source-and-license-obligations), then open **Actions → Release iOS → Run workflow**, select `main`, and start the run. After verification passes, open **Review deployments**, approve `ios-release`, and let build and submission finish. Continue with TestFlight, device checks, App Review, and release above; uploading does not publish the app.
+
+EAS output stays in temporary runner files to keep signed download URLs out of public logs. Use your Expo dashboard to inspect builds or submission failures. If submission fails after a successful build, retry with `bunx eas-cli submit --platform ios --profile production --id BUILD_ID` using that completed build. Do not rerun the whole workflow just to retry an upload; it creates another build and increments the build number. If signing credentials expire, repair them with `bunx eas-cli credentials --platform ios` before another run.
+
 ### Source and license obligations
 
 - **Notices:** `bun run licenses:generate` includes app dependencies, development tools, and data credits. `bun run licenses:check` checks the result; missing text stops generation.
